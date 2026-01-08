@@ -1,5 +1,7 @@
 ﻿using Spectre.Console;
 using Spectre.Console.Rendering;
+using SoloForge.Console.Engines.Mythic2e;
+using SoloForge.Console.Models;
 
 var app = new SoloForgeApp();
 app.Run();
@@ -35,7 +37,7 @@ class SoloForgeApp
 
     private readonly List<MenuItem> _menuItems =
     [
-        new("Fate Check", 'F', 1, "green", app => app.ShowNotImplemented("Fate Check")),
+        new("Fate Check", 'F', 1, "green", app => app.ShowFateCheck()),
         new("Random Event", 'R', 2, "green", app => app.ShowNotImplemented("Random Event")),
         new("Scene Check", 'C', 3, "green", app => app.ShowNotImplemented("Scene Check")),
         new("NPC Generator", 'N', 4, "green", app => app.ShowNotImplemented("NPC Generator")),
@@ -168,6 +170,46 @@ class SoloForgeApp
             (m.NumberKey.HasValue && m.NumberKey.Value.ToString()[0] == keyChar));
 
         return menuItem?.Action(this) ?? true;
+    }
+
+    public bool ShowFateCheck()
+    {
+        AnsiConsole.Clear();
+        AnsiConsole.WriteLine();
+
+        // Prompt user to select odds
+        var selectedOdds = AnsiConsole.Prompt(
+            new SelectionPrompt<Odds>()
+                .Title("[bold cyan]Select Odds:[/]")
+                .AddChoices(Enum.GetValues<Odds>())
+                .UseConverter(odds => odds.GetDisplayName())
+        );
+
+        // Perform the fate check
+        var result = FateCheck.PerformCheck(Session.Chaos, selectedOdds);
+
+        // Display results
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine($"[bold cyan]Odds:[/] {selectedOdds.GetDisplayName()}");
+        AnsiConsole.MarkupLine($"[bold cyan]Chaos Factor:[/] {Session.Chaos}");
+        AnsiConsole.MarkupLine($"[bold cyan]Roll:[/] {result.Roll}");
+        AnsiConsole.WriteLine();
+
+        // Color-code the result
+        string resultColor = result.Result.Contains("Yes") ? "green" : "red";
+        AnsiConsole.MarkupLine($"[bold {resultColor}]{result.Result}[/]");
+
+        // Show random event notification if triggered
+        if (result.RandomEventTriggered)
+        {
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine("[bold yellow][Random Event!][/] [grey](not implemented yet)[/]");
+        }
+
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine("[grey]Press any key to continue...[/]");
+        Console.ReadKey(intercept: true);
+        return true;
     }
 
     public bool ShowNotImplemented(string feature)
