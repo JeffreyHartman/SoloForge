@@ -44,7 +44,7 @@ public static class FateCheck
             throw new ArgumentException("Chaos factor must be between 1 and 9", nameof(chaosFactor));
 
         if (!Enum.IsDefined(typeof(Odds), odds))
-+           throw new ArgumentException("Invalid odds value", nameof(odds));
+            throw new ArgumentException("Invalid odds value", nameof(odds));
 
         // Roll d100 (1-100)
         int roll = Random.Shared.Next(1, 101);
