@@ -1,4 +1,5 @@
 using SoloForge.Console.Models;
+using SoloForge.Console.Services;
 
 namespace SoloForge.Console.Engines.Mythic2e;
 
@@ -26,17 +27,77 @@ public static class RandomEvent
         (86..100, "Current Context")
     ];
 
-    private static string[]? _action1Words;
-    private static string[]? _action2Words;
+    /// <summary>
+    /// Focus types that involve NPCs/Characters.
+    /// </summary>
+    private static readonly HashSet<string> NpcFocusTypes =
+    [
+        "NPC Action",
+        "NPC Negative",
+        "NPC Positive"
+    ];
+
+    /// <summary>
+    /// Focus types that involve Threads.
+    /// </summary>
+    private static readonly HashSet<string> ThreadFocusTypes =
+    [
+        "Move Toward a Thread",
+        "Move Away from a Thread",
+        "Close a Thread"
+    ];
 
     /// <summary>
     /// Generates a complete random event with focus and action.
+    /// Integrates with adventure lists for NPC and Thread selection.
     /// </summary>
     public static RandomEventResult Generate()
     {
         var eventFocus = GenerateEventFocus();
         var eventAction = GenerateAction();
-        return new RandomEventResult(eventFocus, eventAction);
+        var state = AdventureStateManager.Instance;
+
+        string? selectedCharacter = null;
+        string? selectedThread = null;
+        bool isNewNpc = eventFocus == "New NPC";
+        bool listWasEmpty = false;
+
+        // Handle NPC-related focus types
+        if (NpcFocusTypes.Contains(eventFocus))
+        {
+            var character = state.State.GetRandomCharacter();
+            if (character != null)
+            {
+                selectedCharacter = character.Name;
+            }
+            else
+            {
+                listWasEmpty = true;
+            }
+        }
+
+        // Handle Thread-related focus types
+        if (ThreadFocusTypes.Contains(eventFocus))
+        {
+            var thread = state.State.GetRandomThread();
+            if (thread != null)
+            {
+                selectedThread = thread.Name;
+            }
+            else
+            {
+                listWasEmpty = true;
+            }
+        }
+
+        return new RandomEventResult(
+            eventFocus,
+            eventAction,
+            selectedCharacter,
+            selectedThread,
+            isNewNpc,
+            listWasEmpty
+        );
     }
 
     /// <summary>
@@ -62,52 +123,16 @@ public static class RandomEvent
     /// </summary>
     public static string GenerateAction()
     {
-        var action1 = GetRandomWord(ref _action1Words, "action1.txt");
-        var action2 = GetRandomWord(ref _action2Words, "action2.txt");
-        return $"{action1} {action2}";
+        return TableService.Instance.GetFusionPair("action1", "action2");
     }
 
-    private static string GetRandomWord(ref string[]? cachedWords, string filename)
-    {
-        if (cachedWords == null)
-        {
-            var filePath = GetDataFilePath(filename);
-            if (!File.Exists(filePath))
-            {
-                return $"[{filename} not found]";
-            }
-            cachedWords = File.ReadAllLines(filePath)
-                .Select(line => line.Trim())
-                .Where(line => !string.IsNullOrEmpty(line))
-                .ToArray();
-        }
+    /// <summary>
+    /// Checks if the given focus type is NPC-related.
+    /// </summary>
+    public static bool IsNpcFocus(string focus) => NpcFocusTypes.Contains(focus) || focus == "New NPC";
 
-        if (cachedWords.Length == 0)
-        {
-            return $"[{filename} is empty]";
-        }
-
-        return cachedWords[Random.Shared.Next(cachedWords.Length)];
-    }
-
-    private static string GetDataFilePath(string filename)
-    {
-        // Try to find data directory relative to executable
-        var baseDir = AppContext.BaseDirectory;
-
-        // Walk up directories looking for 'data' folder at solution root
-        var currentDir = new DirectoryInfo(baseDir);
-        while (currentDir != null)
-        {
-            var dataPath = Path.Combine(currentDir.FullName, "data", filename);
-            if (File.Exists(dataPath))
-            {
-                return dataPath;
-            }
-            currentDir = currentDir.Parent;
-        }
-
-        // Fallback to relative path from current directory
-        return Path.Combine("data", filename);
-    }
+    /// <summary>
+    /// Checks if the given focus type is Thread-related.
+    /// </summary>
+    public static bool IsThreadFocus(string focus) => ThreadFocusTypes.Contains(focus);
 }
