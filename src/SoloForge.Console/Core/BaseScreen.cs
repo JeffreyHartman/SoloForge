@@ -9,10 +9,18 @@ namespace SoloForge.Console.Core;
 /// </summary>
 /// <param name="session">The current session state (chaos factor, engine, theme).</param>
 /// <param name="stateManager">The adventure state manager (characters, threads).</param>
-public abstract class BaseScreen(Session session, AdventureStateManager stateManager) : IScreen
+/// <param name="historyService">The history/journal service.</param>
+/// <param name="campaignService">The campaign persistence service.</param>
+public abstract class BaseScreen(
+    Session session,
+    AdventureStateManager stateManager,
+    HistoryService historyService,
+    CampaignService campaignService) : IScreen
 {
     protected Session Session { get; } = session;
     protected AdventureStateManager StateManager { get; } = stateManager;
+    protected HistoryService HistoryService { get; } = historyService;
+    protected CampaignService CampaignService { get; } = campaignService;
 
     /// <summary>
     /// Runs the screen logic. Must be implemented by derived classes.
@@ -20,7 +28,7 @@ public abstract class BaseScreen(Session session, AdventureStateManager stateMan
     public abstract IScreen? Run();
 
     /// <summary>
-    /// Clears the console and renders the session header.
+    /// Clears the console and renders the session header with campaign name.
     /// </summary>
     protected void RenderHeader(string title)
     {
@@ -29,7 +37,8 @@ public abstract class BaseScreen(Session session, AdventureStateManager stateMan
             title,
             Session.Chaos,
             StateManager.CharacterCount,
-            StateManager.ActiveThreadCount
+            StateManager.ActiveThreadCount,
+            CampaignService.CurrentCampaign?.Name
         );
     }
 
@@ -55,6 +64,19 @@ public abstract class BaseScreen(Session session, AdventureStateManager stateMan
     /// Gets the uppercase character from a key press.
     /// </summary>
     protected static char GetKeyChar(ConsoleKeyInfo key) => char.ToUpperInvariant(key.KeyChar);
+
+    /// <summary>
+    /// Prompts for optional context/question before a roll.
+    /// </summary>
+    protected static string? PromptForContext(string prompt = "Enter question/context (optional):")
+    {
+        var input = AnsiConsole.Prompt(
+            new TextPrompt<string>($"[grey]{prompt}[/]")
+                .PromptStyle("white")
+                .AllowEmpty()
+        );
+        return string.IsNullOrWhiteSpace(input) ? null : input;
+    }
 }
 
 /// <summary>

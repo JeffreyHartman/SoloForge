@@ -1,0 +1,297 @@
+using System.Text.Json;
+using SoloForge.Console.Core;
+using SoloForge.Console.Models;
+
+namespace SoloForge.Console.Services;
+
+/// <summary>
+/// Orchestrates campaign persistence across Session, AdventureStateManager, and HistoryService.
+/// </summary>
+public sealed class CampaignService
+{
+    private readonly Session _session;
+    private readonly AdventureStateManager _stateManager;
+    private readonly HistoryService _historyService;
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
+    /// <summary>
+    /// The currently loaded campaign.
+    /// </summary>
+    public CampaignData? CurrentCampaign { get; private set; }
+
+    /// <summary>
+    /// Directory where campaign saves are stored.
+    /// </summary>
+    public string SavesDirectory { get; }
+
+    /// <summary>
+    /// Path to the global settings file.
+    /// </summary>
+    public string SettingsPath => Path.Combine(SavesDirectory, "settings.json");
+
+    public CampaignService(Session session, AdventureStateManager stateManager, HistoryService historyService)
+    {
+        _session = session;
+        _stateManager = stateManager;
+        _historyService = historyService;
+
+        // Find saves directory relative to app
+        SavesDirectory = FindOrCreateSavesDirectory();
+    }
+
+    /// <summary>
+    /// Initializes the campaign system on startup.
+    /// Loads the last played campaign or creates a default one.
+    /// </summary>
+    public void Initialize()
+    {
+        var settings = LoadGlobalSettings();
+
+        if (settings.LastPlayedCampaignId.HasValue)
+        {
+            var campaignPath = GetCampaignPath(settings.LastPlayedCampaignId.Value);
+            if (File.Exists(campaignPath))
+            {
+                try
+                {
+                    Load(settings.LastPlayedCampaignId.Value);
+                    return;
+                }
+                catch
+                {
+                    // Corrupt save, backup and continue to create new
+                    BackupCorruptFile(campaignPath);
+                }
+            }
+        }
+
+        // No valid campaign found, create default
+        CreateNew("Default Campaign");
+    }
+
+    /// <summary>
+    /// Saves the current campaign state to disk.
+    /// </summary>
+    public void Save()
+    {
+        if (CurrentCampaign == null) return;
+
+        // Gather current state
+        var data = GatherState();
+
+        // Serialize and write
+        var json = JsonSerializer.Serialize(data, JsonOptions);
+        var path = GetCampaignPath(data.Id);
+        File.WriteAllText(path, json);
+
+        // Update global settings
+        var settings = new GlobalSettings { LastPlayedCampaignId = data.Id };
+        SaveGlobalSettings(settings);
+    }
+
+    /// <summary>
+    /// Loads a campaign by ID.
+    /// </summary>
+    public void Load(Guid campaignId)
+    {
+        var path = GetCampaignPath(campaignId);
+        if (!File.Exists(path))
+            throw new FileNotFoundException($"Campaign not found: {campaignId}");
+
+        var json = File.ReadAllText(path);
+        var data = JsonSerializer.Deserialize<CampaignData>(json, JsonOptions)
+            ?? throw new InvalidDataException("Failed to deserialize campaign");
+
+        HydrateServices(data);
+        CurrentCampaign = data;
+
+        // Update global settings
+        var settings = new GlobalSettings { LastPlayedCampaignId = campaignId };
+        SaveGlobalSettings(settings);
+    }
+
+    /// <summary>
+    /// Creates a new campaign with the given name.
+    /// </summary>
+    public void CreateNew(string name)
+    {
+        // Reset all services
+        _session.Chaos = 5;
+        _session.Engine = "Mythic 2e";
+        _session.Theme = "Fantasy";
+        _stateManager.Reset();
+        _historyService.Clear();
+
+        // Create new campaign data
+        CurrentCampaign = new CampaignData
+        {
+            Name = name
+        };
+
+        // Save immediately
+        Save();
+    }
+
+    /// <summary>
+    /// Deletes a campaign by ID.
+    /// </summary>
+    public bool Delete(Guid campaignId)
+    {
+        var path = GetCampaignPath(campaignId);
+        if (!File.Exists(path)) return false;
+
+        File.Delete(path);
+
+        // If this was the current campaign, clear it
+        if (CurrentCampaign?.Id == campaignId)
+        {
+            CurrentCampaign = null;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Lists all available campaigns.
+    /// </summary>
+    public IEnumerable<CampaignData> ListCampaigns()
+    {
+        if (!Directory.Exists(SavesDirectory))
+            yield break;
+
+        foreach (var file in Directory.GetFiles(SavesDirectory, "*.json"))
+        {
+            if (Path.GetFileName(file) == "settings.json")
+                continue;
+
+            CampaignData? data = null;
+            try
+            {
+                var json = File.ReadAllText(file);
+                data = JsonSerializer.Deserialize<CampaignData>(json, JsonOptions);
+            }
+            catch
+            {
+                // Skip corrupt files
+            }
+
+            if (data != null)
+                yield return data;
+        }
+    }
+
+    /// <summary>
+    /// Gets the file path for a campaign.
+    /// </summary>
+    public string GetCampaignPath(Guid id) => Path.Combine(SavesDirectory, $"{id}.json");
+
+    private void HydrateServices(CampaignData data)
+    {
+        // Hydrate session
+        _session.Chaos = data.Chaos;
+        _session.Engine = data.Engine;
+        _session.Theme = data.Theme;
+
+        // Hydrate adventure state
+        var state = new AdventureState
+        {
+            Characters = data.Characters,
+            ActiveThreads = data.ActiveThreads,
+            ClosedThreads = data.ClosedThreads
+        };
+        _stateManager.LoadState(state);
+
+        // Hydrate history
+        _historyService.LoadHistory(data.History);
+    }
+
+    private CampaignData GatherState()
+    {
+        if (CurrentCampaign == null)
+            throw new InvalidOperationException("No campaign loaded");
+
+        return CurrentCampaign with
+        {
+            LastPlayed = DateTime.Now,
+            Chaos = _session.Chaos,
+            Engine = _session.Engine,
+            Theme = _session.Theme,
+            Characters = [.. _stateManager.State.Characters],
+            ActiveThreads = [.. _stateManager.State.ActiveThreads],
+            ClosedThreads = [.. _stateManager.State.ClosedThreads],
+            History = _historyService.GetAllEntries()
+        };
+    }
+
+    private GlobalSettings LoadGlobalSettings()
+    {
+        if (!File.Exists(SettingsPath))
+            return new GlobalSettings();
+
+        try
+        {
+            var json = File.ReadAllText(SettingsPath);
+            return JsonSerializer.Deserialize<GlobalSettings>(json, JsonOptions)
+                ?? new GlobalSettings();
+        }
+        catch
+        {
+            return new GlobalSettings();
+        }
+    }
+
+    private void SaveGlobalSettings(GlobalSettings settings)
+    {
+        var json = JsonSerializer.Serialize(settings, JsonOptions);
+        File.WriteAllText(SettingsPath, json);
+    }
+
+    private static string FindOrCreateSavesDirectory()
+    {
+        // Try relative to executable first
+        var baseDir = AppContext.BaseDirectory;
+        var savesDir = Path.Combine(baseDir, "saves");
+
+        // Walk up looking for existing saves directory or src folder
+        var current = new DirectoryInfo(baseDir);
+        while (current != null)
+        {
+            var candidate = Path.Combine(current.FullName, "saves");
+            if (Directory.Exists(candidate))
+                return candidate;
+
+            // If we find src/SoloForge.Console, create saves there
+            var srcCandidate = Path.Combine(current.FullName, "src", "SoloForge.Console", "saves");
+            if (Directory.Exists(Path.GetDirectoryName(srcCandidate)))
+            {
+                Directory.CreateDirectory(srcCandidate);
+                return srcCandidate;
+            }
+
+            current = current.Parent;
+        }
+
+        // Default: create next to executable
+        Directory.CreateDirectory(savesDir);
+        return savesDir;
+    }
+
+    private static void BackupCorruptFile(string path)
+    {
+        if (!File.Exists(path)) return;
+
+        var backupPath = path + ".bak";
+        var counter = 1;
+        while (File.Exists(backupPath))
+        {
+            backupPath = $"{path}.{counter}.bak";
+            counter++;
+        }
+        File.Move(path, backupPath);
+    }
+}

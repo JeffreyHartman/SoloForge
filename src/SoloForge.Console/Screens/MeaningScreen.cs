@@ -1,6 +1,7 @@
 using Spectre.Console;
 using SoloForge.Console.Core;
 using SoloForge.Console.Engines.Mythic2e;
+using SoloForge.Console.Models;
 using SoloForge.Console.Services;
 using SoloForge.Console.UI;
 
@@ -9,8 +10,12 @@ namespace SoloForge.Console.Screens;
 /// <summary>
 /// Screen for the Discovering Meaning submenu with quick rolls, element browser, and fusion rolls.
 /// </summary>
-public class MeaningScreen(Session session, AdventureStateManager stateManager)
-    : BaseScreen(session, stateManager)
+public class MeaningScreen(
+    Session session,
+    AdventureStateManager stateManager,
+    HistoryService historyService,
+    CampaignService campaignService)
+    : BaseScreen(session, stateManager, historyService, campaignService)
 {
     public override IScreen? Run()
     {
@@ -41,10 +46,10 @@ public class MeaningScreen(Session session, AdventureStateManager stateManager)
             switch (GetKeyChar(key))
             {
                 case 'A':
-                    ShowMeaningResult(MeaningEngine.GenerateAction());
+                    ShowMeaningWithContext("Action");
                     break;
                 case 'D':
-                    ShowMeaningResult(MeaningEngine.GenerateDescription());
+                    ShowMeaningWithContext("Description");
                     break;
                 case 'E':
                     ShowElementBrowser();
@@ -62,11 +67,41 @@ public class MeaningScreen(Session session, AdventureStateManager stateManager)
         }
     }
 
-    private void ShowMeaningResult(MeaningResult result, string? tableId1 = null, string? tableId2 = null)
+    private void ShowMeaningWithContext(string type)
+    {
+        RenderHeader($"{type} Roll");
+
+        // Prompt for context
+        var context = PromptForContext("What are you trying to understand? (optional):");
+
+        var result = type == "Action"
+            ? MeaningEngine.GenerateAction()
+            : MeaningEngine.GenerateDescription();
+
+        // Log and save
+        HistoryService.AddEntry(
+            LogType.Meaning,
+            result.Combined,
+            context,
+            $"Table: {type}"
+        );
+        CampaignService.Save();
+
+        ShowMeaningResult(result, context: context);
+    }
+
+    private void ShowMeaningResult(MeaningResult result, string? tableId1 = null, string? tableId2 = null, string? context = null)
     {
         while (true)
         {
             RenderHeader("Meaning Result");
+
+            // Show context if provided
+            if (!string.IsNullOrEmpty(context))
+            {
+                AnsiConsole.Write(Align.Center(new Markup($"[italic grey]\"{context}\"[/]")));
+                AnsiConsole.WriteLine();
+            }
 
             var panel = new Panel(
                 new Align(
@@ -106,6 +141,15 @@ public class MeaningScreen(Session session, AdventureStateManager stateManager)
                         result = MeaningEngine.GenerateAction();
                     else if (result.TableName == "Description")
                         result = MeaningEngine.GenerateDescription();
+
+                    // Log re-roll
+                    HistoryService.AddEntry(
+                        LogType.Meaning,
+                        result.Combined,
+                        context,
+                        $"Table: {result.TableName} (Re-roll)"
+                    );
+                    CampaignService.Save();
                     break;
                 case 'N':
                 case 'B':
@@ -127,6 +171,9 @@ public class MeaningScreen(Session session, AdventureStateManager stateManager)
 
         RenderHeader("Element Tables");
 
+        // Prompt for context
+        var context = PromptForContext("What are you looking for? (optional):");
+
         var selectedTable = AnsiConsole.Prompt(
             new SelectionPrompt<TableInfo>()
                 .Title("[bold cyan]Select an element table:[/]")
@@ -139,7 +186,17 @@ public class MeaningScreen(Session session, AdventureStateManager stateManager)
         );
 
         var result = MeaningEngine.GenerateFromTable(selectedTable.Id, selectedTable.DisplayName);
-        ShowMeaningResult(result, selectedTable.Id);
+
+        // Log and save
+        HistoryService.AddEntry(
+            LogType.Meaning,
+            result.Combined,
+            context,
+            $"Table: {selectedTable.DisplayName}"
+        );
+        CampaignService.Save();
+
+        ShowMeaningResult(result, selectedTable.Id, context: context);
     }
 
     private void ShowFusionRoll()
@@ -147,6 +204,9 @@ public class MeaningScreen(Session session, AdventureStateManager stateManager)
         var allTables = TableService.Instance.AvailableTables.ToList();
 
         RenderHeader("Fusion Roll");
+
+        // Prompt for context
+        var context = PromptForContext("What are you combining meanings for? (optional):");
 
         AnsiConsole.MarkupLine("[bold cyan]Select first table:[/]");
         var table1 = AnsiConsole.Prompt(
@@ -176,7 +236,17 @@ public class MeaningScreen(Session session, AdventureStateManager stateManager)
         );
 
         var result = MeaningEngine.GenerateFusion(table1.Id, table2.Id);
-        ShowMeaningResult(result, table1.Id, table2.Id);
+
+        // Log and save
+        HistoryService.AddEntry(
+            LogType.Meaning,
+            result.Combined,
+            context,
+            $"Fusion: {table1.DisplayName} + {table2.DisplayName}"
+        );
+        CampaignService.Save();
+
+        ShowMeaningResult(result, table1.Id, table2.Id, context);
     }
 
     private void ShowNpcProfile()
@@ -186,6 +256,16 @@ public class MeaningScreen(Session session, AdventureStateManager stateManager)
             RenderHeader("NPC Profile Generator");
 
             var profile = MeaningEngine.GenerateNpcProfile();
+
+            // Log NPC profile generation
+            var profileSummary = string.Join(", ", profile.Attributes.Select(a => $"{a.Key}: {a.Value.Combined}"));
+            HistoryService.AddEntry(
+                LogType.Meaning,
+                "NPC Profile Generated",
+                null,
+                profileSummary
+            );
+            CampaignService.Save();
 
             var table = new Table()
                 .Border(TableBorder.Rounded)

@@ -101,9 +101,9 @@ public static class MythicUi
     }
 
     /// <summary>
-    /// Creates a session info table showing chaos, characters, and threads.
+    /// Creates a session info table showing chaos, characters, threads, and optionally campaign name.
     /// </summary>
-    public static Table CreateSessionTable(string title, int chaos, int characterCount, int threadCount)
+    public static Table CreateSessionTable(string title, int chaos, int characterCount, int threadCount, string? campaignName = null)
     {
         var table = new Table()
             .Border(TableBorder.Rounded)
@@ -111,6 +111,17 @@ public static class MythicUi
             .AddColumn(new TableColumn($"[bold cyan]{title}[/]").Centered())
             .AddColumn(new TableColumn($"[grey]Chaos:[/] [white]{chaos}[/]").Centered())
             .AddColumn(new TableColumn($"[grey]Characters:[/] [aqua]{characterCount}[/] [grey]|[/] [grey]Threads:[/] [aqua]{threadCount}[/]").Centered());
+
+        // Add campaign name row if provided
+        if (!string.IsNullOrEmpty(campaignName))
+        {
+            table.AddEmptyRow();
+            table.AddRow(
+                new Markup($"[grey]Campaign:[/] [gold1]{campaignName}[/]"),
+                new Text(""),
+                new Text("")
+            );
+        }
 
         return table;
     }
@@ -153,13 +164,13 @@ public static class MythicUi
     }
 
     /// <summary>
-    /// Renders the standard session header with title and stats.
+    /// Renders the standard session header with title, stats, and campaign name.
     /// </summary>
-    public static void RenderSessionHeader(string title, int chaos, int characterCount, int threadCount)
+    public static void RenderSessionHeader(string title, int chaos, int characterCount, int threadCount, string? campaignName = null)
     {
         RenderFigletTitle(title);
 
-        var table = CreateSessionTable(title, chaos, characterCount, threadCount);
+        var table = CreateSessionTable(title, chaos, characterCount, threadCount, campaignName);
         AnsiConsole.Write(Align.Center(table));
         AnsiConsole.WriteLine();
     }

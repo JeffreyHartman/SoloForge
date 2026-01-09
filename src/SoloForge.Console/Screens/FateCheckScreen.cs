@@ -1,6 +1,7 @@
 using Spectre.Console;
 using SoloForge.Console.Core;
 using SoloForge.Console.Engines.Mythic2e;
+using SoloForge.Console.Models;
 using SoloForge.Console.Services;
 using SoloForge.Console.UI;
 
@@ -9,12 +10,19 @@ namespace SoloForge.Console.Screens;
 /// <summary>
 /// Screen for performing Fate Checks against the Mythic 2e fate chart.
 /// </summary>
-public class FateCheckScreen(Session session, AdventureStateManager stateManager)
-    : BaseScreen(session, stateManager)
+public class FateCheckScreen(
+    Session session,
+    AdventureStateManager stateManager,
+    HistoryService historyService,
+    CampaignService campaignService)
+    : BaseScreen(session, stateManager, historyService, campaignService)
 {
     public override IScreen? Run()
     {
         RenderHeader("Fate Check");
+
+        // Prompt for optional question/context
+        var context = PromptForContext("Enter question (optional):");
 
         // Prompt user to select odds
         var selectedOdds = AnsiConsole.Prompt(
@@ -28,8 +36,26 @@ public class FateCheckScreen(Session session, AdventureStateManager stateManager
         // Perform the fate check
         var result = FateCheck.PerformCheck(Session.Chaos, selectedOdds);
 
+        // Log the result
+        HistoryService.AddEntry(
+            LogType.FateCheck,
+            result.Result,
+            context,
+            $"Odds: {selectedOdds.GetDisplayName()}, Roll: {result.Roll}, Chaos: {Session.Chaos}"
+        );
+
+        // Auto-save
+        CampaignService.Save();
+
         // Display results
         RenderHeader("Fate Check");
+
+        // Show context if provided
+        if (!string.IsNullOrEmpty(context))
+        {
+            AnsiConsole.Write(Align.Center(new Markup($"[italic grey]\"{context}\"[/]")));
+            AnsiConsole.WriteLine();
+        }
 
         // Color-code the result
         string resultColor = result.Result.Contains("Yes") ? "green" : "red";
@@ -55,6 +81,14 @@ public class FateCheckScreen(Session session, AdventureStateManager stateManager
         {
             var randomEvent = RandomEvent.Generate();
             AnsiConsole.WriteLine();
+
+            // Log the random event too
+            HistoryService.AddEntry(
+                LogType.RandomEvent,
+                $"{randomEvent.EventFocus}: {randomEvent.EventAction}",
+                "Triggered by Fate Check"
+            );
+            CampaignService.Save();
 
             var eventPanel = new Panel(
                 new Markup($"[bold gold1]{randomEvent.EventAction}[/]")

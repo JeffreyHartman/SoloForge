@@ -24,6 +24,11 @@ public sealed class AdventureStateManager
     public void Reset() => State = new AdventureState();
 
     /// <summary>
+    /// Loads adventure state from saved data (used by CampaignService).
+    /// </summary>
+    public void LoadState(AdventureState state) => State = state;
+
+    /// <summary>
     /// Adds a new character to the adventure.
     /// </summary>
     public Character AddCharacter(string name, string? description = null)

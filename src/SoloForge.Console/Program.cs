@@ -9,6 +9,8 @@ var services = new ServiceCollection();
 // Register singletons (state persists across screens)
 services.AddSingleton<Session>();
 services.AddSingleton(AdventureStateManager.Instance);
+services.AddSingleton<HistoryService>();
+services.AddSingleton<CampaignService>();
 
 // Register screens as transients (new instance each navigation)
 services.AddTransient<MainMenuScreen>();
@@ -17,8 +19,14 @@ services.AddTransient<SceneCheckScreen>();
 services.AddTransient<RandomEventScreen>();
 services.AddTransient<MeaningScreen>();
 services.AddTransient<AdventureListScreen>();
+services.AddTransient<GameManagerScreen>();
+services.AddTransient<HistoryScreen>();
 
 var provider = services.BuildServiceProvider();
+
+// Initialize campaign service (loads last campaign or creates default)
+var campaignService = provider.GetRequiredService<CampaignService>();
+campaignService.Initialize();
 
 // Main application loop
 IScreen? currentScreen = provider.GetRequiredService<MainMenuScreen>();

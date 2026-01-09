@@ -1,6 +1,7 @@
 using Spectre.Console;
 using SoloForge.Console.Core;
 using SoloForge.Console.Engines.Mythic2e;
+using SoloForge.Console.Models;
 using SoloForge.Console.Services;
 using SoloForge.Console.UI;
 
@@ -9,14 +10,48 @@ namespace SoloForge.Console.Screens;
 /// <summary>
 /// Screen for performing Scene Checks to determine scene alterations.
 /// </summary>
-public class SceneCheckScreen(Session session, AdventureStateManager stateManager)
-    : BaseScreen(session, stateManager)
+public class SceneCheckScreen(
+    Session session,
+    AdventureStateManager stateManager,
+    HistoryService historyService,
+    CampaignService campaignService)
+    : BaseScreen(session, stateManager, historyService, campaignService)
 {
     public override IScreen? Run()
     {
         RenderHeader("Scene Check");
 
+        // Prompt for optional scene context
+        var context = PromptForContext("Enter scene setup/context (optional):");
+
+        // Perform the check
         var result = SceneCheck.PerformCheck(Session.Chaos);
+
+        // Build result details
+        var details = $"Roll: {result.Roll}, Chaos: {Session.Chaos}";
+        if (result.SceneAdjustment != null)
+            details += $", Adjustment: {result.SceneAdjustment}";
+
+        // Log the result
+        HistoryService.AddEntry(
+            LogType.SceneCheck,
+            result.Result,
+            context,
+            details
+        );
+
+        // Auto-save
+        CampaignService.Save();
+
+        // Display results
+        RenderHeader("Scene Check");
+
+        // Show context if provided
+        if (!string.IsNullOrEmpty(context))
+        {
+            AnsiConsole.Write(Align.Center(new Markup($"[italic grey]\"{context}\"[/]")));
+            AnsiConsole.WriteLine();
+        }
 
         // Color-code the result
         var (resultColor, borderColor) = result.Result switch
@@ -66,6 +101,14 @@ public class SceneCheckScreen(Session session, AdventureStateManager stateManage
         if (result.RandomEvent != null)
         {
             AnsiConsole.WriteLine();
+
+            // Log the random event
+            HistoryService.AddEntry(
+                LogType.RandomEvent,
+                $"{result.RandomEvent.EventFocus}: {result.RandomEvent.EventAction}",
+                "Triggered by Scene Interrupt"
+            );
+            CampaignService.Save();
 
             var eventPanel = new Panel(
                 new Align(

@@ -13,7 +13,10 @@ namespace SoloForge.Console.Screens;
 public class MainMenuScreen(
     Session session,
     AdventureStateManager stateManager,
-    IServiceProvider serviceProvider) : BaseScreen(session, stateManager)
+    HistoryService historyService,
+    CampaignService campaignService,
+    IServiceProvider serviceProvider)
+    : BaseScreen(session, stateManager, historyService, campaignService)
 {
     private readonly IServiceProvider _serviceProvider = serviceProvider;
 
@@ -72,19 +75,21 @@ public class MainMenuScreen(
 
     private Panel BuildSessionPanel()
     {
+        var campaignName = CampaignService.CurrentCampaign?.Name ?? "No Campaign";
+
         var table = new Table()
             .Border(TableBorder.None)
             .HideHeaders()
             .AddColumn(new TableColumn("Label").PadRight(1))
             .AddColumn(new TableColumn("Value"));
 
+        table.AddRow("[grey]Campaign:[/]", $"[gold1]{campaignName}[/]");
         table.AddRow("[grey]Engine:[/]", $"[white]{Session.Engine}[/]");
         table.AddRow("[grey]Theme:[/]", $"[white]{Session.Theme}[/]");
         table.AddRow("[grey]Chaos:[/]", $"[white]{Session.Chaos}[/]");
         table.AddRow("[grey]───────────[/]", "");
         table.AddRow("[grey]Characters:[/]", $"[aqua]{StateManager.CharacterCount}[/]");
         table.AddRow("[grey]Threads:[/]", $"[aqua]{StateManager.ActiveThreadCount}[/]");
-        table.AddRow("", "");
         table.AddRow("", "");
         table.AddRow("", "");
 
@@ -109,6 +114,8 @@ public class MainMenuScreen(
             $"[grey]5[/] {FormatShortcut("L", "bold green")} Adventure Lists",
             $"[grey]6[/] {FormatShortcut("D", "bold green")} Dice Roller",
             "[grey]───────────────────────[/]",
+            $"[grey]7[/] {FormatShortcut("G", "bold cyan")} Game Manager",
+            $"[grey]8[/] {FormatShortcut("J", "bold cyan")} Journal",
             $"  {FormatShortcut("S", "bold yellow")} Settings",
             $"  {FormatShortcut("Q", "bold red")} Quit"
         };
@@ -164,6 +171,12 @@ public class MainMenuScreen(
                 return false;
             case 'D' or '6':
                 ShowNotImplemented("Dice Roller");
+                return false;
+            case 'G' or '7':
+                _serviceProvider.GetRequiredService<GameManagerScreen>().Run();
+                return false;
+            case 'J' or '8':
+                _serviceProvider.GetRequiredService<HistoryScreen>().Run();
                 return false;
             case 'S':
                 ShowNotImplemented("Settings");

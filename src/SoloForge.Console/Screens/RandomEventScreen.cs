@@ -1,6 +1,7 @@
 using Spectre.Console;
 using SoloForge.Console.Core;
 using SoloForge.Console.Engines.Mythic2e;
+using SoloForge.Console.Models;
 using SoloForge.Console.Services;
 using SoloForge.Console.UI;
 
@@ -9,8 +10,12 @@ namespace SoloForge.Console.Screens;
 /// <summary>
 /// Screen for generating random events with focus and action.
 /// </summary>
-public class RandomEventScreen(Session session, AdventureStateManager stateManager)
-    : BaseScreen(session, stateManager)
+public class RandomEventScreen(
+    Session session,
+    AdventureStateManager stateManager,
+    HistoryService historyService,
+    CampaignService campaignService)
+    : BaseScreen(session, stateManager, historyService, campaignService)
 {
     public override IScreen? Run()
     {
@@ -19,6 +24,21 @@ public class RandomEventScreen(Session session, AdventureStateManager stateManag
             RenderHeader("Random Event");
 
             var result = RandomEvent.Generate();
+
+            // Log the event
+            var eventDetails = result.SelectedCharacter != null
+                ? $"Character: {result.SelectedCharacter}"
+                : result.SelectedThread != null
+                    ? $"Thread: {result.SelectedThread}"
+                    : null;
+
+            HistoryService.AddEntry(
+                LogType.RandomEvent,
+                $"{result.EventFocus}: {result.EventAction}",
+                null,
+                eventDetails
+            );
+            CampaignService.Save();
 
             // Build focus text with optional character/thread
             var focusText = result.EventFocus;
@@ -108,6 +128,7 @@ public class RandomEventScreen(Session session, AdventureStateManager stateManag
             );
 
             StateManager.AddCharacter(name, string.IsNullOrWhiteSpace(description) ? null : description);
+            CampaignService.Save();
             AnsiConsole.MarkupLine($"[green]Added character:[/] [aqua]{name}[/]");
             Thread.Sleep(800);
         }

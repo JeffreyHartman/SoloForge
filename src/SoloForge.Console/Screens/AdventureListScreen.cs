@@ -9,8 +9,12 @@ namespace SoloForge.Console.Screens;
 /// <summary>
 /// Screen for managing adventure lists (characters and threads).
 /// </summary>
-public class AdventureListScreen(Session session, AdventureStateManager stateManager)
-    : BaseScreen(session, stateManager)
+public class AdventureListScreen(
+    Session session,
+    AdventureStateManager stateManager,
+    HistoryService historyService,
+    CampaignService campaignService)
+    : BaseScreen(session, stateManager, historyService, campaignService)
 {
     public override IScreen? Run()
     {
@@ -182,6 +186,7 @@ public class AdventureListScreen(Session session, AdventureStateManager stateMan
                 if (AnsiConsole.Confirm($"[red]Delete {character.Name}?[/]", defaultValue: false))
                 {
                     StateManager.RemoveCharacter(character);
+                    CampaignService.Save();
                     AnsiConsole.MarkupLine($"[red]Deleted:[/] {character.Name}");
                     Thread.Sleep(600);
                 }
@@ -207,6 +212,7 @@ public class AdventureListScreen(Session session, AdventureStateManager stateMan
         );
         character.Description = string.IsNullOrWhiteSpace(newDesc) ? null : newDesc;
 
+        CampaignService.Save();
         AnsiConsole.MarkupLine("[green]Character updated.[/]");
         Thread.Sleep(600);
     }
@@ -244,6 +250,7 @@ public class AdventureListScreen(Session session, AdventureStateManager stateMan
                 break;
             case 'X':
                 StateManager.CloseThread(thread);
+                CampaignService.Save();
                 AnsiConsole.MarkupLine($"[yellow]Closed:[/] {thread.Name}");
                 Thread.Sleep(600);
                 break;
@@ -251,6 +258,7 @@ public class AdventureListScreen(Session session, AdventureStateManager stateMan
                 if (AnsiConsole.Confirm($"[red]Delete {thread.Name}?[/]", defaultValue: false))
                 {
                     StateManager.RemoveThread(thread);
+                    CampaignService.Save();
                     AnsiConsole.MarkupLine($"[red]Deleted:[/] {thread.Name}");
                     Thread.Sleep(600);
                 }
@@ -276,6 +284,7 @@ public class AdventureListScreen(Session session, AdventureStateManager stateMan
         );
         thread.Description = string.IsNullOrWhiteSpace(newDesc) ? null : newDesc;
 
+        CampaignService.Save();
         AnsiConsole.MarkupLine("[green]Thread updated.[/]");
         Thread.Sleep(600);
     }
@@ -297,6 +306,7 @@ public class AdventureListScreen(Session session, AdventureStateManager stateMan
         );
 
         StateManager.AddCharacter(name, string.IsNullOrWhiteSpace(description) ? null : description);
+        CampaignService.Save();
         AnsiConsole.MarkupLine($"[green]Added:[/] [aqua]{name}[/]");
         Thread.Sleep(600);
     }
@@ -318,6 +328,7 @@ public class AdventureListScreen(Session session, AdventureStateManager stateMan
         );
 
         StateManager.AddThread(name, string.IsNullOrWhiteSpace(description) ? null : description);
+        CampaignService.Save();
         AnsiConsole.MarkupLine($"[green]Added:[/] [aqua]{name}[/]");
         Thread.Sleep(600);
     }
@@ -356,6 +367,7 @@ public class AdventureListScreen(Session session, AdventureStateManager stateMan
                         .PromptStyle("white")
                 );
                 selected.Name = newName;
+                CampaignService.Save();
                 AnsiConsole.MarkupLine($"[green]Renamed to:[/] [aqua]{newName}[/]");
                 break;
             case "Edit Description":
@@ -366,12 +378,14 @@ public class AdventureListScreen(Session session, AdventureStateManager stateMan
                         .AllowEmpty()
                 );
                 selected.Description = string.IsNullOrWhiteSpace(newDesc) ? null : newDesc;
+                CampaignService.Save();
                 AnsiConsole.MarkupLine("[green]Description updated.[/]");
                 break;
             case "Delete":
                 if (AnsiConsole.Confirm($"[red]Delete {selected.Name}?[/]", defaultValue: false))
                 {
                     StateManager.RemoveCharacter(selected);
+                    CampaignService.Save();
                     AnsiConsole.MarkupLine($"[red]Deleted:[/] {selected.Name}");
                 }
                 break;
@@ -413,6 +427,7 @@ public class AdventureListScreen(Session session, AdventureStateManager stateMan
                         .PromptStyle("white")
                 );
                 selected.Name = newName;
+                CampaignService.Save();
                 AnsiConsole.MarkupLine($"[green]Renamed to:[/] [aqua]{newName}[/]");
                 break;
             case "Edit Description":
@@ -423,16 +438,19 @@ public class AdventureListScreen(Session session, AdventureStateManager stateMan
                         .AllowEmpty()
                 );
                 selected.Description = string.IsNullOrWhiteSpace(newDesc) ? null : newDesc;
+                CampaignService.Save();
                 AnsiConsole.MarkupLine("[green]Description updated.[/]");
                 break;
             case "Close Thread":
                 StateManager.CloseThread(selected);
+                CampaignService.Save();
                 AnsiConsole.MarkupLine($"[yellow]Closed:[/] {selected.Name}");
                 break;
             case "Delete":
                 if (AnsiConsole.Confirm($"[red]Delete {selected.Name}?[/]", defaultValue: false))
                 {
                     StateManager.RemoveThread(selected);
+                    CampaignService.Save();
                     AnsiConsole.MarkupLine($"[red]Deleted:[/] {selected.Name}");
                 }
                 break;
@@ -484,6 +502,7 @@ public class AdventureListScreen(Session session, AdventureStateManager stateMan
             );
 
             StateManager.ReopenThread(selected);
+            CampaignService.Save();
             AnsiConsole.MarkupLine($"[green]Reopened:[/] [aqua]{selected.Name}[/]");
             Thread.Sleep(600);
         }
