@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Serilog;
 using SoloForge.Console.Core;
 using SoloForge.Console.Models;
 
@@ -12,6 +13,7 @@ public sealed class CampaignService
     private readonly Session _session;
     private readonly AdventureStateManager _stateManager;
     private readonly HistoryService _historyService;
+    private readonly ILogger _log = AppLogger.ForContext<CampaignService>();
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -42,6 +44,7 @@ public sealed class CampaignService
 
         // Find saves directory relative to app
         SavesDirectory = FindOrCreateSavesDirectory();
+        _log.Debug("CampaignService initialized with saves directory: {Path}", SavesDirectory);
     }
 
     /// <summary>
@@ -50,10 +53,12 @@ public sealed class CampaignService
     /// </summary>
     public void Initialize()
     {
+        _log.Information("Initializing campaign system");
         var settings = LoadGlobalSettings();
 
         if (settings.LastPlayedCampaignId.HasValue)
         {
+            _log.Debug("Found last played campaign ID: {CampaignId}", settings.LastPlayedCampaignId.Value);
             var campaignPath = GetCampaignPath(settings.LastPlayedCampaignId.Value);
             if (File.Exists(campaignPath))
             {
@@ -62,15 +67,15 @@ public sealed class CampaignService
                     Load(settings.LastPlayedCampaignId.Value);
                     return;
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Corrupt save, backup and continue to create new
+                    _log.Warning(ex, "Corrupt save file, backing up: {Path}", campaignPath);
                     BackupCorruptFile(campaignPath);
                 }
             }
         }
 
-        // No valid campaign found, create default
+        _log.Information("No valid campaign found, creating default");
         CreateNew("Default Campaign");
     }
 
@@ -79,7 +84,13 @@ public sealed class CampaignService
     /// </summary>
     public void Save()
     {
-        if (CurrentCampaign == null) return;
+        if (CurrentCampaign == null)
+        {
+            _log.Warning("Save called with no campaign loaded");
+            return;
+        }
+
+        _log.Debug("Saving campaign: {Name} ({Id})", CurrentCampaign.Name, CurrentCampaign.Id);
 
         // Gather current state
         var data = GatherState();
@@ -92,6 +103,8 @@ public sealed class CampaignService
         // Update global settings
         var settings = new GlobalSettings { LastPlayedCampaignId = data.Id };
         SaveGlobalSettings(settings);
+
+        _log.Debug("Campaign saved to {Path}", path);
     }
 
     /// <summary>
@@ -99,9 +112,13 @@ public sealed class CampaignService
     /// </summary>
     public void Load(Guid campaignId)
     {
+        _log.Information("Loading campaign: {CampaignId}", campaignId);
         var path = GetCampaignPath(campaignId);
         if (!File.Exists(path))
+        {
+            _log.Error("Campaign file not found: {Path}", path);
             throw new FileNotFoundException($"Campaign not found: {campaignId}");
+        }
 
         var json = File.ReadAllText(path);
         var data = JsonSerializer.Deserialize<CampaignData>(json, JsonOptions)
@@ -113,6 +130,8 @@ public sealed class CampaignService
         // Update global settings
         var settings = new GlobalSettings { LastPlayedCampaignId = campaignId };
         SaveGlobalSettings(settings);
+
+        _log.Information("Loaded campaign: {Name} with {HistoryCount} history entries", data.Name, data.History.Count);
     }
 
     /// <summary>
@@ -120,6 +139,8 @@ public sealed class CampaignService
     /// </summary>
     public void CreateNew(string name)
     {
+        _log.Information("Creating new campaign: {Name}", name);
+
         // Reset all services
         _session.Chaos = 5;
         _session.Engine = "Mythic 2e";
@@ -135,6 +156,7 @@ public sealed class CampaignService
 
         // Save immediately
         Save();
+        _log.Information("Created campaign: {Name} ({Id})", name, CurrentCampaign.Id);
     }
 
     /// <summary>

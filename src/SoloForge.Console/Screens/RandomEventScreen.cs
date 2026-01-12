@@ -89,7 +89,7 @@ public class RandomEventScreen(
             AnsiConsole.WriteLine();
 
             // Build options string
-            var options = $"[grey]{FormatShortcut("R", "grey")} Re-roll  {FormatShortcut("B", "grey")} Back";
+            var options = $"[grey]{FormatShortcut("C", "grey")} Copy  {FormatShortcut("R", "grey")} Re-roll  {FormatShortcut("B", "grey")} Back";
             if (result.IsNewNpc)
             {
                 options += $"  {FormatShortcut("A", "grey")} Add NPC";
@@ -100,6 +100,9 @@ public class RandomEventScreen(
             var key = ReadKey();
             switch (GetKeyChar(key))
             {
+                case 'C':
+                    CopyLastEntryToClipboard();
+                    continue;
                 case 'R':
                     continue;
                 case 'A' when result.IsNewNpc:

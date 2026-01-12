@@ -1,4 +1,6 @@
+using Serilog;
 using Spectre.Console;
+using SoloForge.Console.Models;
 using SoloForge.Console.Services;
 using SoloForge.Console.UI;
 
@@ -56,9 +58,86 @@ public abstract class BaseScreen(
         => MythicUi.WaitForKey(message);
 
     /// <summary>
-    /// Reads a key without echoing to console.
+    /// Waits for a key press, showing copy shortcut hint.
+    /// Handles C to copy the most recent entry.
     /// </summary>
-    protected static ConsoleKeyInfo ReadKey() => System.Console.ReadKey(intercept: true);
+    protected void WaitForKeyWithCopyHint()
+    {
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine($"[grey]{FormatShortcut("C", "grey")} Copy to clipboard  Press any key to continue...[/]");
+
+        while (true)
+        {
+            var key = System.Console.ReadKey(intercept: true);
+
+            // Handle C to copy last entry
+            if (char.ToUpperInvariant(key.KeyChar) == 'C')
+            {
+                CopyLastEntryToClipboard();
+                continue; // Stay on screen after copying
+            }
+
+            // Any other key exits
+            return;
+        }
+    }
+
+    /// <summary>
+    /// Reads a key without echoing to console.
+    /// Intercepts global shortcuts like Alt+C for clipboard operations.
+    /// </summary>
+    protected ConsoleKeyInfo ReadKey()
+    {
+        while (true)
+        {
+            var key = System.Console.ReadKey(intercept: true);
+
+            // Check for Alt+C (copy last entry to clipboard)
+            if (key.Modifiers.HasFlag(ConsoleModifiers.Alt) &&
+                char.ToUpperInvariant(key.KeyChar) == 'C')
+            {
+                CopyLastEntryToClipboard();
+                continue; // Swallow the input and wait for next key
+            }
+
+            return key;
+        }
+    }
+
+    /// <summary>
+    /// Copies the most recent history entry to the clipboard as markdown.
+    /// </summary>
+    protected void CopyLastEntryToClipboard()
+    {
+        var log = AppLogger.ForContext<BaseScreen>();
+        log.Debug("CopyLastEntryToClipboard triggered via Alt+C");
+
+        var lastEntry = HistoryService.Entries.LastOrDefault();
+        if (lastEntry == null)
+        {
+            log.Debug("No entries to copy");
+            MythicUi.ShowClipboardFeedback(false, "No entries to copy");
+            return;
+        }
+
+        log.Debug("Copying last entry: {Type} from {Timestamp}", lastEntry.Type, lastEntry.Timestamp);
+        CopyEntryToClipboard(lastEntry);
+    }
+
+    /// <summary>
+    /// Copies a specific log entry to the clipboard as markdown.
+    /// </summary>
+    protected static void CopyEntryToClipboard(LogEntry entry)
+    {
+        var log = AppLogger.ForContext<BaseScreen>();
+        log.Debug("CopyEntryToClipboard: {Type}, Result: {Result}", entry.Type, entry.Result);
+
+        var markdown = TemplateService.Instance.ToMarkdown(entry);
+        log.Debug("Generated markdown ({Length} chars)", markdown.Length);
+
+        var success = ClipboardService.Instance.CopyToClipboard(markdown);
+        MythicUi.ShowClipboardFeedback(success, success ? "Copied to clipboard" : "Failed to copy");
+    }
 
     /// <summary>
     /// Gets the uppercase character from a key press.

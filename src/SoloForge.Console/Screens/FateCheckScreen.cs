@@ -103,7 +103,7 @@ public class FateCheckScreen(
             AnsiConsole.Write(Align.Center(eventPanel));
         }
 
-        WaitForKey();
+        WaitForKeyWithCopyHint();
         return null;
     }
 }

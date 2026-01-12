@@ -126,11 +126,14 @@ public class MeaningScreen(
             AnsiConsole.Write(Align.Center(table));
             AnsiConsole.WriteLine();
 
-            AnsiConsole.MarkupLine($"[grey]{FormatShortcut("R", "grey")} Re-roll  {FormatShortcut("N", "grey")} New Roll  {FormatShortcut("B", "grey")} Back[/]");
+            AnsiConsole.MarkupLine($"[grey]{FormatShortcut("C", "grey")} Copy  {FormatShortcut("R", "grey")} Re-roll  {FormatShortcut("N", "grey")} New Roll  {FormatShortcut("B", "grey")} Back[/]");
 
             var key = ReadKey();
             switch (GetKeyChar(key))
             {
+                case 'C':
+                    CopyLastEntryToClipboard();
+                    break;
                 case 'R':
                     // Re-roll with same tables
                     if (result.IsFusion && tableId1 != null && tableId2 != null)
@@ -251,47 +254,59 @@ public class MeaningScreen(
 
     private void ShowNpcProfile()
     {
+        var needsGenerate = true;
+        NpcProfile? profile = null;
+
         while (true)
         {
-            RenderHeader("NPC Profile Generator");
-
-            var profile = MeaningEngine.GenerateNpcProfile();
-
-            // Log NPC profile generation
-            var profileSummary = string.Join(", ", profile.Attributes.Select(a => $"{a.Key}: {a.Value.Combined}"));
-            HistoryService.AddEntry(
-                LogType.Meaning,
-                "NPC Profile Generated",
-                null,
-                profileSummary
-            );
-            CampaignService.Save();
-
-            var table = new Table()
-                .Border(TableBorder.Rounded)
-                .BorderColor(MythicUi.AccentColor)
-                .Title("[bold gold1]Complete NPC Profile[/]")
-                .AddColumn(new TableColumn("[bold cyan]Attribute[/]").Width(14))
-                .AddColumn(new TableColumn("[bold cyan]Result[/]"));
-
-            foreach (var (attribute, meaning) in profile.Attributes)
+            if (needsGenerate)
             {
-                table.AddRow(
-                    $"[yellow]{attribute}[/]",
-                    $"[white]{meaning.Combined}[/]"
+                RenderHeader("NPC Profile Generator");
+
+                profile = MeaningEngine.GenerateNpcProfile();
+
+                // Log NPC profile generation with line breaks for markdown
+                var profileSummary = string.Join("<br>", profile.Attributes.Select(a => $"**{a.Key}:** {a.Value.Combined}"));
+                HistoryService.AddEntry(
+                    LogType.Meaning,
+                    "NPC Profile Generated",
+                    null,
+                    profileSummary
                 );
+                CampaignService.Save();
+
+                var table = new Table()
+                    .Border(TableBorder.Rounded)
+                    .BorderColor(MythicUi.AccentColor)
+                    .Title("[bold gold1]Complete NPC Profile[/]")
+                    .AddColumn(new TableColumn("[bold cyan]Attribute[/]").Width(14))
+                    .AddColumn(new TableColumn("[bold cyan]Result[/]"));
+
+                foreach (var (attribute, meaning) in profile.Attributes)
+                {
+                    table.AddRow(
+                        $"[yellow]{attribute}[/]",
+                        $"[white]{meaning.Combined}[/]"
+                    );
+                }
+
+                AnsiConsole.Write(Align.Center(table));
+                AnsiConsole.WriteLine();
+
+                AnsiConsole.MarkupLine($"[grey]{FormatShortcut("C", "grey")} Copy  {FormatShortcut("R", "grey")} Generate New NPC  {FormatShortcut("B", "grey")} Back[/]");
+
+                needsGenerate = false;
             }
-
-            AnsiConsole.Write(Align.Center(table));
-            AnsiConsole.WriteLine();
-
-            AnsiConsole.MarkupLine($"[grey]{FormatShortcut("R", "grey")} Generate New NPC  {FormatShortcut("B", "grey")} Back[/]");
 
             var key = ReadKey();
             switch (GetKeyChar(key))
             {
+                case 'C':
+                    CopyLastEntryToClipboard();
+                    break;
                 case 'R':
-                    continue;
+                    needsGenerate = true;
+                    break;
                 default:
                     return;
             }

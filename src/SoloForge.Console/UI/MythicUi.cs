@@ -199,6 +199,39 @@ public static class MythicUi
     /// </summary>
     public static void Clear() => AnsiConsole.Clear();
 
+    /// <summary>
+    /// Shows a brief feedback message for clipboard operations.
+    /// The message appears momentarily then disappears.
+    /// </summary>
+    public static void ShowClipboardFeedback(bool success, string message)
+    {
+        var (left, top) = System.Console.GetCursorPosition();
+
+        // Move to bottom of visible area or use current position
+        var feedbackLine = Math.Min(top + 1, System.Console.WindowHeight - 1);
+
+        System.Console.SetCursorPosition(0, feedbackLine);
+
+        if (success)
+        {
+            AnsiConsole.Markup($"[green][[Copied]][/] [grey]{message}[/]");
+        }
+        else
+        {
+            AnsiConsole.Markup($"[red][[Failed]][/] [grey]{message}[/]");
+        }
+
+        // Brief pause so user can see the feedback
+        Thread.Sleep(800);
+
+        // Clear the feedback line
+        System.Console.SetCursorPosition(0, feedbackLine);
+        AnsiConsole.Write(new string(' ', System.Console.WindowWidth - 1));
+
+        // Restore cursor position
+        System.Console.SetCursorPosition(left, top);
+    }
+
     private static string GetColorName(Color color)
     {
         if (color == Color.Cyan1) return "cyan";

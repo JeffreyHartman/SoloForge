@@ -126,7 +126,7 @@ public class SceneCheckScreen(
             AnsiConsole.Write(Align.Center(eventPanel));
         }
 
-        WaitForKey();
+        WaitForKeyWithCopyHint();
         return null;
     }
 }
