@@ -1,3 +1,4 @@
+using Serilog;
 using Spectre.Console;
 using SoloForge.Console.Core;
 using SoloForge.Console.Engines.Mythic2e;
@@ -17,6 +18,7 @@ public class MeaningScreen(
     CampaignService campaignService)
     : BaseScreen(session, stateManager, historyService, campaignService)
 {
+    private readonly ILogger _log = AppLogger.ForContext<MeaningScreen>();
     public override IScreen? Run()
     {
         while (true)
@@ -29,7 +31,7 @@ public class MeaningScreen(
                     $"{FormatShortcut("D")} Description (Quick Roll)",
                     $"{FormatShortcut("E")} Element Tables",
                     $"{FormatShortcut("F")} Fusion Roll",
-                    $"{FormatShortcut("N")} NPC Profile",
+                    $"{FormatShortcut("Q")} Quick Sets",
                     "[grey]───────────────────────[/]",
                     $"{FormatShortcut("B", "bold yellow")} Back to Main Menu"
                 ]))
@@ -57,11 +59,10 @@ public class MeaningScreen(
                 case 'F':
                     ShowFusionRoll();
                     break;
-                case 'N':
-                    ShowNpcProfile();
+                case 'Q':
+                    ShowQuickSets();
                     break;
                 case 'B':
-                case 'Q':
                     return null;
             }
         }
@@ -252,48 +253,85 @@ public class MeaningScreen(
         ShowMeaningResult(result, table1.Id, table2.Id, context);
     }
 
-    private void ShowNpcProfile()
+    private void ShowQuickSets()
+    {
+        var quickSets = QuickSetService.Instance.QuickSets;
+
+        if (quickSets.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[red]No quick sets found. Check data/quicksets.json[/]");
+            WaitForKey();
+            return;
+        }
+
+        RenderHeader("Quick Sets");
+
+        var selectedSet = AnsiConsole.Prompt(
+            new SelectionPrompt<QuickSet>()
+                .Title("[bold cyan]Select a Quick Set:[/]")
+                .HighlightStyle(new Style(MythicUi.AccentColor))
+                .PageSize(10)
+                .AddChoices(quickSets)
+                .UseConverter(q => $"[gold1]{q.Name}[/] - [grey]{q.Description}[/]")
+        );
+
+        ShowQuickSetResult(selectedSet);
+    }
+
+    private void ShowQuickSetResult(QuickSet quickSet)
     {
         var needsGenerate = true;
-        NpcProfile? profile = null;
+        QuickSetResult? result = null;
+        var historyWritten = false;
 
         while (true)
         {
             if (needsGenerate)
             {
-                RenderHeader("NPC Profile Generator");
+                RenderHeader(quickSet.Name);
+                historyWritten = false;
 
-                profile = MeaningEngine.GenerateNpcProfile();
-
-                // Log NPC profile generation with line breaks for markdown
-                var profileSummary = string.Join("<br>", profile.Attributes.Select(a => $"**{a.Key}:** {a.Value.Combined}"));
-                HistoryService.AddEntry(
-                    LogType.Meaning,
-                    "NPC Profile Generated",
-                    null,
-                    profileSummary
-                );
-                CampaignService.Save();
-
-                var table = new Table()
-                    .Border(TableBorder.Rounded)
-                    .BorderColor(MythicUi.AccentColor)
-                    .Title("[bold gold1]Complete NPC Profile[/]")
-                    .AddColumn(new TableColumn("[bold cyan]Attribute[/]").Width(14))
-                    .AddColumn(new TableColumn("[bold cyan]Result[/]"));
-
-                foreach (var (attribute, meaning) in profile.Attributes)
+                try
                 {
-                    table.AddRow(
-                        $"[yellow]{attribute}[/]",
-                        $"[white]{meaning.Combined}[/]"
+                    result = QuickSetService.Instance.Generate(quickSet);
+
+                    var table = new Table()
+                        .Border(TableBorder.Rounded)
+                        .BorderColor(MythicUi.AccentColor)
+                        .Title($"[bold gold1]{Markup.Escape(quickSet.Name)}[/]")
+                        .AddColumn(new TableColumn("[bold cyan]Attribute[/]").Width(14))
+                        .AddColumn(new TableColumn("[bold cyan]Result[/]"));
+
+                    foreach (var stepResult in result.Results)
+                    {
+                        table.AddRow(
+                            $"[yellow]{Markup.Escape(stepResult.Label)}[/]",
+                            $"[white]{Markup.Escape(stepResult.Combined)}[/]"
+                        );
+                    }
+
+                    AnsiConsole.Write(Align.Center(table));
+                    AnsiConsole.WriteLine();
+
+                    // Only log after successful display
+                    HistoryService.AddEntry(
+                        LogType.Meaning,
+                        $"{quickSet.Name} Generated",
+                        null,
+                        result.ToDisplayDetails()
                     );
+                    CampaignService.Save();
+                    historyWritten = true;
+
+                    AnsiConsole.MarkupLine($"[grey]{FormatShortcut("C", "grey")} Copy  {FormatShortcut("R", "grey")} Generate New  {FormatShortcut("B", "grey")} Back[/]");
                 }
-
-                AnsiConsole.Write(Align.Center(table));
-                AnsiConsole.WriteLine();
-
-                AnsiConsole.MarkupLine($"[grey]{FormatShortcut("C", "grey")} Copy  {FormatShortcut("R", "grey")} Generate New NPC  {FormatShortcut("B", "grey")} Back[/]");
+                catch (Exception ex)
+                {
+                    _log.Error(ex, "Failed to generate or display quick set '{Name}'", quickSet.Name);
+                    AnsiConsole.MarkupLine($"[red]Error generating quick set: {Markup.Escape(ex.Message)}[/]");
+                    AnsiConsole.WriteLine();
+                    AnsiConsole.MarkupLine($"[grey]{FormatShortcut("R", "grey")} Try Again  {FormatShortcut("B", "grey")} Back[/]");
+                }
 
                 needsGenerate = false;
             }
@@ -302,7 +340,8 @@ public class MeaningScreen(
             switch (GetKeyChar(key))
             {
                 case 'C':
-                    CopyLastEntryToClipboard();
+                    if (historyWritten)
+                        CopyLastEntryToClipboard();
                     break;
                 case 'R':
                     needsGenerate = true;

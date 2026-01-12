@@ -107,7 +107,7 @@ public sealed class TableService
 
         return File.ReadAllLines(table.FilePath)
             .Select(line => line.Trim())
-            .Where(line => !string.IsNullOrEmpty(line))
+            .Where(line => !string.IsNullOrEmpty(line) && !line.StartsWith('#'))
             .ToArray();
     }
 

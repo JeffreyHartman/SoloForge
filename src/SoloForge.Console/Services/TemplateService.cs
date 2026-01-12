@@ -164,7 +164,9 @@ public sealed partial class TemplateService
         result = result.Replace("{Type}", entry.Type.ToString());
         result = result.Replace("{Result}", entry.Result);
         result = result.Replace("{Context}", entry.Context ?? "");
-        result = result.Replace("{Details}", entry.Details ?? "");
+        // Convert newlines to <br> for markdown compatibility in Details
+        var markdownDetails = (entry.Details ?? "").Replace("\n", "<br>");
+        result = result.Replace("{Details}", markdownDetails);
         result = result.Replace("{Timestamp}", entry.Timestamp.ToString("yyyy-MM-dd h:mm tt"));
         result = result.Replace("{Date}", entry.Timestamp.ToString("yyyy-MM-dd"));
         result = result.Replace("{Time}", entry.Timestamp.ToString("h:mm tt"));

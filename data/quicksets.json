@@ -1,0 +1,40 @@
+[
+  {
+    "id": "npc_profile",
+    "name": "NPC Profile",
+    "description": "Generates a complete NPC dossier with identity, personality, and background",
+    "steps": [
+      { "label": "Identity", "table": "Character Identity" },
+      { "label": "Description", "table": "Character Description" },
+      { "label": "Appearance", "table": "Character Appearance" },
+      { "label": "Background", "table": "Character Background" },
+      { "label": "Personality", "table": "Character Personality" },
+      { "label": "Motivation", "table": "Character Motivation" },
+      { "label": "Skills", "table": "Character Skills" },
+      { "label": "Trait", "table": "Character Trait" }
+    ]
+  },
+  {
+    "id": "location_profile",
+    "name": "Location Profile",
+    "description": "Generates details for a location or place of interest",
+    "steps": [
+      { "label": "Type", "table": "Location" },
+      { "label": "Description", "table": "Descriptor 1", "count": 1 },
+      { "label": "Atmosphere", "table": "Adventure Tone" },
+      { "label": "Feature", "table": "Descriptor 1", "count": 1 },
+      { "label": "Detail", "table": "Descriptor 2", "count": 1 }
+    ]
+  },
+  {
+    "id": "creature_profile",
+    "name": "Creature Profile",
+    "description": "Generates details for a creature or monster",
+    "steps": [
+      { "label": "Type", "table": "Creature" },
+      { "label": "Abilities", "table": "Creature Abilities" },
+      { "label": "Description", "table": "Character Description" },
+      { "label": "Behavior", "table": "Animal Action" }
+    ]
+  }
+]
