@@ -26,6 +26,7 @@ try
     services.AddTransient<RandomEventScreen>();
     services.AddTransient<MeaningScreen>();
     services.AddTransient<AdventureListScreen>();
+    services.AddTransient<DiceRollScreen>();
     services.AddTransient<GameManagerScreen>();
     services.AddTransient<HistoryScreen>();
 

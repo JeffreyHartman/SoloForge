@@ -206,6 +206,7 @@ public sealed partial class TemplateService
         LogType.SceneCheck => DefaultSceneCheckTemplate,
         LogType.RandomEvent => DefaultRandomEventTemplate,
         LogType.Meaning => DefaultMeaningTemplate,
+        LogType.DiceRoll => DefaultDiceRollTemplate,
         LogType.Note => DefaultNoteTemplate,
         _ => DefaultGenericTemplate
     };
@@ -264,6 +265,14 @@ public sealed partial class TemplateService
         | ------------ | ------ |
         {?Context}| **For** | {Context} |{/Context}
         | **Result** | {Result} |
+        {?Details}| *Details* | {Details} |{/Details}
+        """;
+
+    private const string DefaultDiceRollTemplate = """
+        | Dice Roll | &nbsp; |
+        | --------- | ------ |
+        | **Expression** | {Context} |
+        | **Total** | {Result} |
         {?Details}| *Details* | {Details} |{/Details}
         """;
 

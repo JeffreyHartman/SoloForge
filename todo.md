@@ -55,19 +55,19 @@
 ## Planned Features
 
 ### High Priority (Next)
-- [ ] Save/Load System (JSON persistence)
-- [ ] Campaign/Session persistence
+- [x] Save/Load System (JSON persistence)
+- [x] Campaign/Session persistence
 - [ ] Allow users to define custom Meaning Quick-Sets via configuration
 
 ### Near-Term
 - [ ] Scene list with status tracking
-- [ ] Adventure log/journal
+- [x] Adventure log/journal
 - [ ] Custom table support (user-defined .txt files)
 
 ### Medium-Term
 - [ ] UNE (Universal NPC Emulator) integration
-- [ ] Export to markdown/PDF
-- [ ] Session history/undo
+- [x] Export to markdown
+- [x] Session history
 
 ### Long-Term / Experimental
 - [ ] AI Integration via OpenRouter API
@@ -77,8 +77,8 @@
 
 ## Technical Debt
 - [ ] Add unit tests for core engines
-- [ ] Refactor Program.cs into separate UI components
-- [ ] Implement proper dependency injection
+- [x] Refactor Program.cs into separate UI components
+- [x] Implement proper dependency injection
 
 ## Notes
 - Data files located in `data/` directory

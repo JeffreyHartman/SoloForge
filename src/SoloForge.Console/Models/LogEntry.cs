@@ -9,6 +9,7 @@ public enum LogType
     SceneCheck,
     RandomEvent,
     Meaning,
+    DiceRoll,
     Note
 }
 

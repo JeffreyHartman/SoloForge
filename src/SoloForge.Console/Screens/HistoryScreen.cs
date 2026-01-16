@@ -75,6 +75,12 @@ public class HistoryScreen(
             // Add all entries
             foreach (var entry in entries)
             {
+                if (entry.Type == LogType.DiceRoll)
+                {
+                    choices.Add(new JournalChoice(JournalChoiceType.Info, FormatEntryLine(entry)));
+                    continue;
+                }
+
                 choices.Add(new JournalChoice(JournalChoiceType.Entry, entry));
             }
 
@@ -102,6 +108,8 @@ public class HistoryScreen(
                     break;
                 case JournalChoiceType.Back:
                     return null;
+                case JournalChoiceType.Info:
+                    break;
                 case JournalChoiceType.Entry when selected.Entry != null:
                     ShowEntryDetail(entries, selected.Entry);
                     break;
@@ -136,6 +144,7 @@ public class HistoryScreen(
         return choice.Type switch
         {
             JournalChoiceType.Separator => "[grey]──────────────────────────────────────────────[/]",
+            JournalChoiceType.Info => choice.Label ?? "",
             JournalChoiceType.Entry when choice.Entry != null => FormatEntryLine(choice.Entry),
             _ => choice.Label ?? ""
         };
@@ -145,7 +154,9 @@ public class HistoryScreen(
     {
         var time = entry.Timestamp.ToString("h:mm tt");
         var typeColor = GetTypeColor(entry.Type);
-        var context = TruncateText(entry.Context ?? entry.Result, ContextTruncateLength);
+        var context = entry.Type == LogType.DiceRoll
+            ? TruncateText($"{entry.Context ?? "Roll"} = {entry.Result}", ContextTruncateLength)
+            : TruncateText(entry.Context ?? entry.Result, ContextTruncateLength);
         return $"[grey]{time}[/] [bold {typeColor}]{entry.Type,-12}[/] {Markup.Escape(context)}";
     }
 
@@ -405,6 +416,7 @@ public class HistoryScreen(
         LogType.SceneCheck => "yellow",
         LogType.RandomEvent => "red",
         LogType.Meaning => "cyan",
+        LogType.DiceRoll => "gold1",
         LogType.Note => "grey",
         _ => "white"
     };
@@ -415,6 +427,7 @@ public class HistoryScreen(
         LogType.SceneCheck => Color.Yellow,
         LogType.RandomEvent => Color.Red,
         LogType.Meaning => Color.Cyan1,
+        LogType.DiceRoll => Color.Gold1,
         LogType.Note => Color.Grey,
         _ => Color.White
     };
@@ -444,6 +457,7 @@ public class HistoryScreen(
     private enum JournalChoiceType
     {
         Entry,
+        Info,
         ReadMode,
         Filter,
         ClearFilter,

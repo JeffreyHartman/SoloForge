@@ -42,6 +42,8 @@ public abstract class BaseScreen(
             StateManager.ActiveThreadCount,
             CampaignService.CurrentCampaign?.Name
         );
+
+        MythicUi.RenderQuickRollLine(Session.LastQuickRoll);
     }
 
     /// <summary>
@@ -54,8 +56,13 @@ public abstract class BaseScreen(
     /// <summary>
     /// Waits for a key press with optional custom message.
     /// </summary>
-    protected static void WaitForKey(string message = "Press any key to continue...")
-        => MythicUi.WaitForKey(message);
+    protected void WaitForKey(string message = "Press any key to continue...")
+    {
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine($"[grey]{message}[/]");
+
+        ReadKey();
+    }
 
     /// <summary>
     /// Waits for a key press, showing copy shortcut hint.
@@ -68,7 +75,7 @@ public abstract class BaseScreen(
 
         while (true)
         {
-            var key = System.Console.ReadKey(intercept: true);
+            var key = ReadKey();
 
             // Handle C to copy last entry
             if (char.ToUpperInvariant(key.KeyChar) == 'C')
@@ -97,6 +104,13 @@ public abstract class BaseScreen(
                 char.ToUpperInvariant(key.KeyChar) == 'C')
             {
                 CopyLastEntryToClipboard();
+                continue; // Swallow the input and wait for next key
+            }
+
+            if (key.Modifiers.HasFlag(ConsoleModifiers.Alt) &&
+                char.ToUpperInvariant(key.KeyChar) == 'R')
+            {
+                TriggerQuickRoll();
                 continue; // Swallow the input and wait for next key
             }
 
@@ -156,6 +170,72 @@ public abstract class BaseScreen(
         );
         return string.IsNullOrWhiteSpace(input) ? null : input;
     }
+
+    protected void TriggerQuickRoll()
+    {
+        if (!TryPromptDiceExpressionInline("Quick roll: ", out var expression))
+        {
+            return;
+        }
+
+        if (expression == null)
+        {
+            return;
+        }
+
+        var result = DiceRoller.Instance.Roll(expression);
+        var summary = result.Summary;
+        var details = result.BuildBreakdown();
+
+        Session.LastQuickRoll = summary;
+        MythicUi.RenderQuickRollLine(summary);
+
+        HistoryService.AddEntry(LogType.DiceRoll, result.Total.ToString(), expression.ToDisplayString(), details);
+        CampaignService.Save();
+    }
+
+    protected static bool TryPromptDiceExpressionInline(string prompt, out DiceExpression? expression)
+    {
+        expression = null;
+        var input = MythicUi.PromptInlineAtBottom(prompt);
+
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return false;
+        }
+
+        if (!DiceExpression.TryParse(input, out expression, out var error))
+        {
+            MythicUi.RenderBottomMessage(error, isError: true);
+            return false;
+        }
+
+        MythicUi.RenderBottomMessage(string.Empty, isError: false);
+        return true;
+    }
+
+    protected static bool TryPromptDiceExpression(string prompt, out DiceExpression? expression)
+    {
+        expression = null;
+        var input = AnsiConsole.Prompt(
+            new TextPrompt<string>(prompt)
+                .PromptStyle("white")
+                .AllowEmpty()
+        );
+
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return false;
+        }
+
+        if (!DiceExpression.TryParse(input, out expression, out var error))
+        {
+            AnsiConsole.MarkupLine($"[red]{error}[/]");
+            return false;
+        }
+
+        return true;
+    }
 }
 
 /// <summary>
@@ -165,6 +245,7 @@ public class Session
 {
     public string Engine { get; set; } = "Mythic 2e";
     public string Theme { get; set; } = "Fantasy";
+    public string? LastQuickRoll { get; set; }
 
     public int Chaos
     {
@@ -172,3 +253,4 @@ public class Session
         set => field = Math.Clamp(value, 1, 9);
     } = 5;
 }
+

@@ -12,9 +12,9 @@ public static class MythicUi
     // === UI Constants ===
     public const int MinPanelWidth = 36;
     public const int ResultPanelWidth = 40;
-    public const int MainMenuContainerWidth = 72;
-    public const int SessionPanelWidth = 28;
-    public const int MenuPanelWidth = 36;
+    public const int MainMenuContainerWidth = 80;
+    public const int SessionPanelWidth = 32;
+    public const int MenuPanelWidth = 38;
     public const int ListColumnWidth = 30;
 
     // === Theme Colors ===
@@ -185,19 +185,120 @@ public static class MythicUi
     }
 
     /// <summary>
-    /// Renders a standard "press any key" prompt.
-    /// </summary>
-    public static void WaitForKey(string message = "Press any key to continue...")
-    {
-        AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine($"[grey]{message}[/]");
-        System.Console.ReadKey(intercept: true);
-    }
-
-    /// <summary>
     /// Clears the console and prepares for new content.
     /// </summary>
     public static void Clear() => AnsiConsole.Clear();
+
+    /// <summary>
+    /// Renders the last quick roll summary in a fixed bottom line.
+    /// </summary>
+    public static void RenderQuickRollLine(string? summary)
+    {
+        RenderBottomMessage(string.IsNullOrWhiteSpace(summary)
+            ? string.Empty
+            : $"Last quick roll: {Markup.Escape(summary)}", isError: false);
+    }
+
+    /// <summary>
+    /// Prompts for inline input on the bottom prompt line.
+    /// </summary>
+    public static string? PromptInlineAtBottom(string prompt)
+    {
+        var promptLine = Math.Max(System.Console.WindowHeight - 1, 0);
+        var maxWidth = Math.Max(System.Console.WindowWidth - 1, 0);
+        var (left, top) = System.Console.GetCursorPosition();
+        var input = new List<char>();
+
+        void Render()
+        {
+            ClearConsoleLine(promptLine);
+            System.Console.SetCursorPosition(0, promptLine);
+
+            var promptText = prompt;
+            var inputText = new string(input.ToArray());
+            var fullText = promptText + inputText;
+
+            if (fullText.Length > maxWidth)
+            {
+                fullText = fullText[^maxWidth..];
+            }
+
+            System.Console.Write(fullText);
+        }
+
+        Render();
+
+        while (true)
+        {
+            var key = System.Console.ReadKey(intercept: true);
+
+            if (key.Key == ConsoleKey.Enter)
+            {
+                break;
+            }
+
+            if (key.Key == ConsoleKey.Escape)
+            {
+                input.Clear();
+                break;
+            }
+
+            if (key.Key == ConsoleKey.Backspace)
+            {
+                if (input.Count > 0)
+                    input.RemoveAt(input.Count - 1);
+                Render();
+                continue;
+            }
+
+            if (!char.IsControl(key.KeyChar))
+            {
+                input.Add(key.KeyChar);
+                Render();
+            }
+        }
+
+        ClearConsoleLine(promptLine);
+        System.Console.SetCursorPosition(left, top);
+
+        return input.Count == 0 ? null : new string(input.ToArray());
+    }
+
+    /// <summary>
+    /// Renders a bottom status line without moving the cursor.
+    /// </summary>
+    public static void RenderBottomMessage(string message, bool isError = false)
+    {
+        var line = Math.Max(System.Console.WindowHeight - 2, 0);
+        var (left, top) = System.Console.GetCursorPosition();
+
+        ClearConsoleLine(line);
+        System.Console.SetCursorPosition(0, line);
+
+        if (!string.IsNullOrWhiteSpace(message))
+        {
+            var color = isError ? "red" : "grey";
+            AnsiConsole.Markup($"[{color}]{Markup.Escape(message)}[/]");
+        }
+
+        System.Console.SetCursorPosition(left, top);
+    }
+
+    /// <summary>
+    /// Clears a specific console line without moving the cursor.
+    /// </summary>
+    public static void ClearConsoleLine(int line)
+    {
+        var windowHeight = System.Console.WindowHeight;
+        var windowWidth = System.Console.WindowWidth;
+        if (line < 0 || line >= windowHeight || windowWidth <= 0)
+            return;
+
+        var (left, top) = System.Console.GetCursorPosition();
+        System.Console.SetCursorPosition(0, line);
+        AnsiConsole.Write(new string(' ', Math.Max(windowWidth - 1, 0)));
+        System.Console.SetCursorPosition(left, top);
+    }
 
     /// <summary>
     /// Shows a brief feedback message for clipboard operations.

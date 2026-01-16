@@ -81,15 +81,18 @@ public class MainMenuScreen(
             .Border(TableBorder.None)
             .HideHeaders()
             .AddColumn(new TableColumn("Label").PadRight(1))
-            .AddColumn(new TableColumn("Value"));
+            .AddColumn(new TableColumn("Value").PadLeft(1));
 
         table.AddRow("[grey]Campaign:[/]", $"[gold1]{campaignName}[/]");
         table.AddRow("[grey]Engine:[/]", $"[white]{Session.Engine}[/]");
         table.AddRow("[grey]Theme:[/]", $"[white]{Session.Theme}[/]");
         table.AddRow("[grey]Chaos:[/]", $"[white]{Session.Chaos}[/]");
         table.AddRow("[grey]───────────[/]", "");
+        table.AddRow("", "");
         table.AddRow("[grey]Characters:[/]", $"[aqua]{StateManager.CharacterCount}[/]");
         table.AddRow("[grey]Threads:[/]", $"[aqua]{StateManager.ActiveThreadCount}[/]");
+        table.AddRow("", "");
+        table.AddRow("", "");
         table.AddRow("", "");
         table.AddRow("", "");
 
@@ -170,7 +173,7 @@ public class MainMenuScreen(
                 _serviceProvider.GetRequiredService<AdventureListScreen>().Run();
                 return false;
             case 'D' or '6':
-                ShowNotImplemented("Dice Roller");
+                _serviceProvider.GetRequiredService<DiceRollScreen>().Run();
                 return false;
             case 'G' or '7':
                 _serviceProvider.GetRequiredService<GameManagerScreen>().Run();
