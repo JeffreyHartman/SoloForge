@@ -1,3 +1,4 @@
+using Serilog;
 using Terminal.Gui;
 using SoloForge.Console.Core;
 using SoloForge.Console.Services;
@@ -16,6 +17,7 @@ public class SoloForgeApp : Toplevel
     private readonly AdventureStateManager _stateManager;
     private readonly HistoryService _historyService;
     private readonly CampaignService _campaignService;
+    private readonly ILogger _log = AppLogger.ForContext<SoloForgeApp>();
 
     private readonly FrameView _contentFrame;
     private readonly FrameView _journalFrame;
@@ -57,7 +59,8 @@ public class SoloForgeApp : Toplevel
             Y = 1,
             Width = Dim.Percent(60),
             Height = Dim.Fill(1),
-            ColorScheme = ColorScheme
+            ColorScheme = ColorScheme,
+            CanFocus = true
         };
 
         // Create journal frame (right pane)
@@ -68,7 +71,8 @@ public class SoloForgeApp : Toplevel
             Y = 1,
             Width = Dim.Fill(),
             Height = Dim.Fill(1),
-            ColorScheme = ColorScheme
+            ColorScheme = ColorScheme,
+            CanFocus = true
         };
 
         // Create journal view
@@ -77,7 +81,8 @@ public class SoloForgeApp : Toplevel
             X = 0,
             Y = 0,
             Width = Dim.Fill(),
-            Height = Dim.Fill()
+            Height = Dim.Fill(),
+            CanFocus = true
         };
         _journalFrame.Add(_journalView);
 
@@ -88,7 +93,7 @@ public class SoloForgeApp : Toplevel
             Y = Pos.AnchorEnd(1),
             Width = Dim.Fill(),
             Height = 1,
-            Text = "[F]ate [R]andom [S]cene [M]eaning [L]ists [D]ice [G]ame | Alt+J Journal | +/- Chaos | Q Quit"
+            Text = "Alt: F=Fate R=Random S=Scene M=Meaning L=Lists D=Dice G=Game J=Journal | +/- Chaos | Esc=Menu | Tab=Focus"
         };
 
         Add(_sessionInfoBar, _contentFrame, _journalFrame, _statusBar);
@@ -102,84 +107,119 @@ public class SoloForgeApp : Toplevel
 
     private void SetupKeyBindings()
     {
-        // Global key bindings
-        KeyDown += (s, e) =>
+        // Global key bindings - all navigation uses Alt modifier
+        Application.KeyDown += (s, e) =>
         {
-            // Alt+J toggles journal
-            if (e.KeyCode == (KeyCode.J | KeyCode.AltMask))
+            if (Application.Top != this)
             {
-                ToggleJournal();
-                e.Handled = true;
                 return;
             }
 
-            // Chaos adjustment with + and -
-            if (e.KeyCode == KeyCode.D0 + 11 || e.KeyCode == (KeyCode.ShiftMask | KeyCode.D0 + 11)) // + key
+            // Check for Alt modifier for navigation shortcuts
+            var hasAlt = e.KeyCode.HasFlag(KeyCode.AltMask);
+            var baseKey = e.KeyCode & ~KeyCode.AltMask & ~KeyCode.ShiftMask & ~KeyCode.CtrlMask;
+            var focused = Application.Top?.Focused;
+            var inTextField = focused is TextField || focused is TextView;
+            var isTab = baseKey == KeyCode.Tab;
+            var isEscape = baseKey == KeyCode.Esc;
+            var isChaosIncrease = baseKey == (KeyCode)'+' ||
+                baseKey == (KeyCode)'=' && e.KeyCode.HasFlag(KeyCode.ShiftMask);
+            var isChaosDecrease = baseKey == (KeyCode)'-';
+            var isChaosKey = isChaosIncrease || isChaosDecrease;
+
+            if (!hasAlt && !isTab && !isEscape && !isChaosKey && focused is ListView)
             {
-                _session.Chaos++;
-                _sessionInfoBar.Refresh();
-                e.Handled = true;
                 return;
             }
 
-            if (e.KeyCode == KeyCode.D0 + 13) // - key
+            if (hasAlt)
             {
-                _session.Chaos--;
-                _sessionInfoBar.Refresh();
-                e.Handled = true;
-                return;
-            }
-
-            // Navigation shortcuts (when not in a text field)
-            if (!IsInTextInput())
-            {
-                switch (e.KeyCode)
+                switch (baseKey)
                 {
+                    case KeyCode.J:
+                        ToggleJournal();
+                        e.Handled = true;
+                        return;
                     case KeyCode.F:
                         ShowFateCheck();
                         e.Handled = true;
-                        break;
+                        return;
                     case KeyCode.R:
                         ShowRandomEvent();
                         e.Handled = true;
-                        break;
+                        return;
                     case KeyCode.S:
                         ShowSceneCheck();
                         e.Handled = true;
-                        break;
+                        return;
                     case KeyCode.M:
                         ShowMeaning();
                         e.Handled = true;
-                        break;
+                        return;
                     case KeyCode.L:
                         ShowAdventureLists();
                         e.Handled = true;
-                        break;
+                        return;
                     case KeyCode.D:
                         ShowDiceRoller();
                         e.Handled = true;
-                        break;
+                        return;
                     case KeyCode.G:
                         ShowGameManager();
                         e.Handled = true;
-                        break;
+                        return;
                     case KeyCode.Q:
                         RequestQuit();
                         e.Handled = true;
-                        break;
-                    case KeyCode.Esc:
-                        ShowMainMenu();
+                        return;
+                }
+            }
+
+            // Escape returns to main menu
+            if (baseKey == KeyCode.Esc)
+            {
+                ShowMainMenu();
+                e.Handled = true;
+                return;
+            }
+
+            if (!inTextField)
+            {
+                // Handle + key (Shift+= on US keyboards, or numpad +)
+                if (isChaosIncrease)
+                {
+                    _session.Chaos++;
+                    _sessionInfoBar.Refresh();
+                    e.Handled = true;
+                    return;
+                }
+
+                // Handle - key
+                if (isChaosDecrease)
+                {
+                    _session.Chaos--;
+                    _sessionInfoBar.Refresh();
+                    e.Handled = true;
+                    return;
+                }
+            }
+
+            // Tab to switch focus between content and journal
+            if (baseKey == KeyCode.Tab)
+            {
+                try
+                {
+                    if (TryToggleFocusBetweenPanes())
+                    {
                         e.Handled = true;
-                        break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _log.Warning(ex, "Failed to toggle focus between panes");
                 }
             }
         };
-    }
-
-    private bool IsInTextInput()
-    {
-        var focused = Application.Top?.MostFocused;
-        return focused is TextField or TextView;
     }
 
     private void ToggleJournal()
@@ -200,6 +240,78 @@ public class SoloForgeApp : Toplevel
         SetNeedsLayout();
     }
 
+    private bool TryToggleFocusBetweenPanes()
+    {
+        if (!_journalVisible)
+        {
+            return false;
+        }
+
+        if (_journalFrame.Visible == false || _contentFrame.Visible == false)
+        {
+            return false;
+        }
+
+        var focused = Application.Top?.Focused;
+        if (focused == null)
+        {
+            return false;
+        }
+
+        var inContent = ApplicationNavigation.IsInHierarchy(_contentFrame, focused);
+        var inJournal = ApplicationNavigation.IsInHierarchy(_journalFrame, focused);
+        if (!inContent && !inJournal)
+        {
+            return false;
+        }
+
+        var isTextInput = focused is TextField || focused is TextView;
+        if (isTextInput && !inJournal)
+        {
+            return false;
+        }
+
+        var target = _journalView.HasFocus ? _currentContentView : _journalView;
+        if (!inContent && inJournal && _currentContentView != null)
+        {
+            target = _currentContentView;
+        }
+        else if (inContent && !inJournal)
+        {
+            target = _journalView;
+        }
+        if (target == null)
+        {
+            _log.Warning("Tab focus toggle skipped because target view was null");
+            return false;
+        }
+
+        if (target.CanFocus)
+        {
+            try
+            {
+                if (target.FocusDeepest(NavigationDirection.Forward, TabBehavior.TabStop))
+                {
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.Warning(ex, "Failed to focus deepest view");
+            }
+        }
+
+        try
+        {
+            return target.SetFocus();
+        }
+        catch (Exception ex)
+        {
+            _log.Warning(ex, "Tab focus toggle failed while setting focus");
+            return false;
+        }
+    }
+
     private void SetContentView(View view, string title)
     {
         if (_currentContentView != null)
@@ -209,6 +321,7 @@ public class SoloForgeApp : Toplevel
         }
 
         _currentContentView = view;
+        _currentContentView.CanFocus = true;
         _currentContentView.X = 0;
         _currentContentView.Y = 0;
         _currentContentView.Width = Dim.Fill();
@@ -216,7 +329,18 @@ public class SoloForgeApp : Toplevel
 
         _contentFrame.Title = title;
         _contentFrame.Add(_currentContentView);
-        _currentContentView.SetFocus();
+
+        var preferredFocus = _currentContentView.MostFocused ?? _currentContentView.Focused;
+        if (preferredFocus != null)
+        {
+            preferredFocus.SetFocus();
+            return;
+        }
+
+        if (!_currentContentView.FocusDeepest(NavigationDirection.Forward, TabBehavior.TabStop))
+        {
+            _currentContentView.SetFocus();
+        }
     }
 
     public void ShowMainMenu()

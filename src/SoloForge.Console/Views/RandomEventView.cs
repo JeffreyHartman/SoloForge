@@ -47,7 +47,8 @@ public class RandomEventView : View
             X = Pos.Center(),
             Y = 1,
             Width = 40,
-            Height = 5
+            Height = 5,
+            CanFocus = true
         };
 
         _focusLabel = new Label
@@ -73,7 +74,8 @@ public class RandomEventView : View
             X = Pos.Center(),
             Y = Pos.Bottom(_focusFrame) + 1,
             Width = 40,
-            Height = 5
+            Height = 5,
+            CanFocus = true
         };
 
         _actionLabel = new Label
@@ -90,20 +92,40 @@ public class RandomEventView : View
         {
             X = Pos.Center() - 15,
             Y = Pos.Bottom(_actionFrame) + 1,
-            Text = "[R] Re-roll"
+            Text = "[R] Re-roll",
+            CanFocus = true
         };
         _rerollButton.Accepting += (s, e) => GenerateEvent();
+        _rerollButton.KeyDown += (s, e) =>
+        {
+            if (e == Key.Enter)
+            {
+                GenerateEvent();
+                e.Handled = true;
+            }
+        };
 
         _addNpcButton = new Button
         {
             X = Pos.Center() + 5,
             Y = Pos.Bottom(_actionFrame) + 1,
             Text = "[A] Add NPC",
-            Visible = false
+            Visible = false,
+            CanFocus = true
         };
         _addNpcButton.Accepting += (s, e) => AddNpc();
+        _addNpcButton.KeyDown += (s, e) =>
+        {
+            if (e == Key.Enter)
+            {
+                AddNpc();
+                e.Handled = true;
+            }
+        };
 
         Add(_focusFrame, _actionFrame, _rerollButton, _addNpcButton);
+
+        _rerollButton.FocusDeepest(NavigationDirection.Forward, TabBehavior.TabStop);
 
         // Generate initial event
         GenerateEvent();
@@ -229,34 +251,52 @@ public class RandomEventView : View
             Width = Dim.Fill(2)
         };
 
+        var errorLabel = new Label
+        {
+            X = 1,
+            Y = 7,
+            Text = "",
+            ColorScheme = new ColorScheme
+            {
+                Normal = new Terminal.Gui.Attribute(Color.Red, Color.Black)
+            },
+            Visible = false
+        };
+
         var okButton = new Button
         {
             X = Pos.Center() - 10,
-            Y = 7,
+            Y = 8,
             Text = "Add",
             IsDefault = true
         };
         okButton.Accepting += (s, e) =>
         {
             var name = nameField.Text.ToString();
-            if (!string.IsNullOrWhiteSpace(name))
+            if (string.IsNullOrWhiteSpace(name))
             {
-                var desc = descField.Text.ToString();
-                _stateManager.AddCharacter(name, string.IsNullOrWhiteSpace(desc) ? null : desc);
-                _campaignService.Save();
+                errorLabel.Text = "Name is required";
+                errorLabel.Visible = true;
+                nameField.SetFocus();
+                e.Cancel = true;
+                return;
             }
+
+            var desc = descField.Text.ToString();
+            _stateManager.AddCharacter(name, string.IsNullOrWhiteSpace(desc) ? null : desc);
+            _campaignService.Save();
             Application.RequestStop();
         };
 
         var cancelButton = new Button
         {
             X = Pos.Center() + 5,
-            Y = 7,
+            Y = 8,
             Text = "Cancel"
         };
         cancelButton.Accepting += (s, e) => Application.RequestStop();
 
-        dialog.Add(nameLabel, nameField, descLabel, descField, okButton, cancelButton);
+        dialog.Add(nameLabel, nameField, descLabel, descField, errorLabel, okButton, cancelButton);
         nameField.SetFocus();
 
         Application.Run(dialog);

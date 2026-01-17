@@ -49,14 +49,16 @@ public class GameManagerView : View
             X = Pos.Center(),
             Y = Pos.Bottom(infoFrame) + 1,
             Width = 35,
-            Height = 8
+            Height = 8,
+            CanFocus = true
         };
 
         var newBtn = new Button
         {
             X = 1,
             Y = 0,
-            Text = "[N] New Campaign"
+            Text = "[N] New Campaign",
+            CanFocus = true
         };
         newBtn.Accepting += (s, e) => CreateCampaign();
 
@@ -64,7 +66,8 @@ public class GameManagerView : View
         {
             X = 1,
             Y = 2,
-            Text = "[S] Switch Campaign"
+            Text = "[S] Switch Campaign",
+            CanFocus = true
         };
         switchBtn.Accepting += (s, e) => SwitchCampaign();
 
@@ -72,7 +75,8 @@ public class GameManagerView : View
         {
             X = 1,
             Y = 4,
-            Text = "[D] Delete Campaign"
+            Text = "[D] Delete Campaign",
+            CanFocus = true
         };
         deleteBtn.Accepting += (s, e) => DeleteCampaign();
 
@@ -101,6 +105,8 @@ public class GameManagerView : View
                     break;
             }
         };
+
+        newBtn.FocusDeepest(NavigationDirection.Forward, TabBehavior.TabStop);
     }
 
     private void RefreshInfo()
@@ -192,6 +198,15 @@ public class GameManagerView : View
             Height = Dim.Percent(60)
         };
 
+        dialog.KeyDown += (s, e) =>
+        {
+            if (e.KeyCode == KeyCode.Esc)
+            {
+                Application.RequestStop();
+                e.Handled = true;
+            }
+        };
+
         var campaignNames = new ObservableCollection<string>(campaigns.Select(c =>
         {
             var current = _campaignService.CurrentCampaign?.Id == c.Id ? " (current)" : "";
@@ -260,6 +275,15 @@ public class GameManagerView : View
             Title = "Delete Campaign",
             Width = Dim.Percent(70),
             Height = Dim.Percent(60)
+        };
+
+        dialog.KeyDown += (s, e) =>
+        {
+            if (e.KeyCode == KeyCode.Esc)
+            {
+                Application.RequestStop();
+                e.Handled = true;
+            }
         };
 
         var campaignNames = new ObservableCollection<string>(campaigns.Select(c =>

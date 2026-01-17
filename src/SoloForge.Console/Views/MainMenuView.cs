@@ -64,24 +64,26 @@ public class MainMenuView : View
             X = Pos.Center(),
             Y = Pos.Bottom(sessionFrame) + 1,
             Width = 35,
-            Height = 14
+            Height = 14,
+            CanFocus = true
         };
 
         var y = 0;
         var buttons = new (string label, Action? action)[]
         {
-            ("[F] Fate Check", () => _app.ShowFateCheck()),
-            ("[R] Random Event", () => _app.ShowRandomEvent()),
-            ("[S] Scene Check", () => _app.ShowSceneCheck()),
-            ("[M] Discovering Meaning", () => _app.ShowMeaning()),
-            ("[L] Adventure Lists", () => _app.ShowAdventureLists()),
-            ("[D] Dice Roller", () => _app.ShowDiceRoller()),
+            ("Fate Check", () => _app.ShowFateCheck()),
+            ("Random Event", () => _app.ShowRandomEvent()),
+            ("Scene Check", () => _app.ShowSceneCheck()),
+            ("Discovering Meaning", () => _app.ShowMeaning()),
+            ("Adventure Lists", () => _app.ShowAdventureLists()),
+            ("Dice Roller", () => _app.ShowDiceRoller()),
             ("─────────────────────────", null),
-            ("[G] Game Manager", () => _app.ShowGameManager()),
+            ("Game Manager", () => _app.ShowGameManager()),
             ("─────────────────────────", null),
-            ("[Q] Quit", () => Application.RequestStop())
+            ("Quit", () => Application.RequestStop())
         };
 
+        Button? firstButton = null;
         foreach (var (label, action) in buttons)
         {
             if (action == null)
@@ -91,25 +93,34 @@ public class MainMenuView : View
                 {
                     X = 1,
                     Y = y,
-                    Text = label
+                    Text = label,
+                    CanFocus = false
                 };
                 menuFrame.Add(sep);
             }
             else
             {
-                var btn = new Button
-                {
-                    X = 1,
-                    Y = y,
-                    Text = label,
-                    IsDefault = y == 0
-                };
+            var btn = new Button
+            {
+                X = 1,
+                Y = y,
+                Text = label,
+                CanFocus = true
+            };
+
                 btn.Accepting += (s, e) => action();
                 menuFrame.Add(btn);
+                firstButton ??= btn;
             }
             y++;
         }
 
         Add(sessionFrame, menuFrame);
+
+        // Set focus to first button
+        if (firstButton != null)
+        {
+            firstButton.FocusDeepest(NavigationDirection.Forward, TabBehavior.TabStop);
+        }
     }
 }

@@ -37,6 +37,17 @@ public class AdventureListView : View
             Width = Dim.Fill(),
             Height = Dim.Fill()
         };
+        _characterList.OpenSelectedItem += (s, e) => AddCharacter();
+        _characterList.TabStop = TabBehavior.TabStop;
+        _characterList.CanFocus = true;
+        _characterList.KeyDown += (s, e) =>
+        {
+            if (e.KeyCode == KeyCode.Enter)
+            {
+                AddCharacter();
+                e.Handled = true;
+            }
+        };
         charactersFrame.Add(_characterList);
 
         // Threads frame
@@ -56,6 +67,17 @@ public class AdventureListView : View
             Width = Dim.Fill(),
             Height = Dim.Fill()
         };
+        _threadList.OpenSelectedItem += (s, e) => ToggleThread();
+        _threadList.TabStop = TabBehavior.TabStop;
+        _threadList.CanFocus = true;
+        _threadList.KeyDown += (s, e) =>
+        {
+            if (e.KeyCode == KeyCode.Enter)
+            {
+                ToggleThread();
+                e.Handled = true;
+            }
+        };
         threadsFrame.Add(_threadList);
 
         // Button bar
@@ -63,7 +85,8 @@ public class AdventureListView : View
         {
             X = 1,
             Y = Pos.AnchorEnd(3),
-            Text = "[A] Add Character"
+            Text = "[A] Add Character",
+            CanFocus = true
         };
         addCharBtn.Accepting += (s, e) => AddCharacter();
 
@@ -71,7 +94,8 @@ public class AdventureListView : View
         {
             X = Pos.Right(addCharBtn) + 1,
             Y = Pos.AnchorEnd(3),
-            Text = "[X] Remove"
+            Text = "[X] Remove",
+            CanFocus = true
         };
         removeCharBtn.Accepting += (s, e) => RemoveCharacter();
 
@@ -79,7 +103,8 @@ public class AdventureListView : View
         {
             X = Pos.Percent(50) + 1,
             Y = Pos.AnchorEnd(3),
-            Text = "[T] Add Thread"
+            Text = "[T] Add Thread",
+            CanFocus = true
         };
         addThreadBtn.Accepting += (s, e) => AddThread();
 
@@ -87,7 +112,8 @@ public class AdventureListView : View
         {
             X = Pos.Right(addThreadBtn) + 1,
             Y = Pos.AnchorEnd(3),
-            Text = "[R] Resolve"
+            Text = "[R] Resolve",
+            CanFocus = true
         };
         toggleThreadBtn.Accepting += (s, e) => ToggleThread();
 
@@ -118,6 +144,16 @@ public class AdventureListView : View
                     break;
             }
         };
+
+        _characterList.FocusDeepest(NavigationDirection.Forward, TabBehavior.TabStop);
+        if (_stateManager.State.Characters.Count > 0)
+        {
+            _characterList.SelectedItem = Math.Min(_characterList.SelectedItem, _stateManager.State.Characters.Count - 1);
+        }
+        else
+        {
+            _characterList.SelectedItem = 0;
+        }
     }
 
     private void RefreshLists()
@@ -139,6 +175,24 @@ public class AdventureListView : View
 
         _characterList.SetSource(new ObservableCollection<string>(characters.Count > 0 ? characters : ["(No characters)"]));
         _threadList.SetSource(new ObservableCollection<string>(allThreads.Count > 0 ? allThreads : ["(No threads)"]));
+
+        if (characters.Count == 0)
+        {
+            _characterList.SelectedItem = 0;
+        }
+        else if (_characterList.SelectedItem >= characters.Count)
+        {
+            _characterList.SelectedItem = characters.Count - 1;
+        }
+
+        if (allThreads.Count == 0)
+        {
+            _threadList.SelectedItem = 0;
+        }
+        else if (_threadList.SelectedItem >= allThreads.Count)
+        {
+            _threadList.SelectedItem = allThreads.Count - 1;
+        }
     }
 
     private void AddCharacter()

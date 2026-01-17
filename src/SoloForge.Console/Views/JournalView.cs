@@ -6,7 +6,7 @@ namespace SoloForge.Console.Views;
 
 /// <summary>
 /// Journal panel using Terminal.Gui's TextView for proper scrolling and text editing.
-/// Supports vim-like navigation in normal mode.
+/// Implements debounced saving to avoid excessive disk writes.
 /// </summary>
 public class JournalView : View
 {
@@ -14,10 +14,16 @@ public class JournalView : View
     private readonly CampaignService _campaignService;
     private readonly TextView _textView;
 
+    private System.Timers.Timer? _saveTimer;
+    private bool _isDirty;
+    private readonly object _saveLock = new();
+
     public JournalView(HistoryService historyService, CampaignService campaignService)
     {
         _historyService = historyService;
         _campaignService = campaignService;
+
+        CanFocus = true;
 
         _textView = new TextView
         {
@@ -27,6 +33,7 @@ public class JournalView : View
             Height = Dim.Fill(),
             ReadOnly = false,
             WordWrap = true,
+            CanFocus = true,
             ColorScheme = new ColorScheme
             {
                 Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
@@ -39,10 +46,24 @@ public class JournalView : View
         // Load journal content when campaign is available
         LoadJournal();
 
-        // Save on text change
+        // Debounced save on text change
         _textView.ContentsChanged += OnTextChanged;
 
+        // Save when view loses focus
+        HasFocusChanged += (s, e) =>
+        {
+            if (!HasFocus) FlushSave();
+        };
+
         Add(_textView);
+
+        // Initialize debounce timer (500ms delay)
+        _saveTimer = new System.Timers.Timer(500);
+        _saveTimer.AutoReset = false;
+        _saveTimer.Elapsed += (s, e) =>
+        {
+            Application.Invoke(() => FlushSave());
+        };
     }
 
     private void LoadJournal()
@@ -62,33 +83,44 @@ public class JournalView : View
         {
             _textView.Text = $"# {campaign.Name}\n\nJournal entries will appear here.\n\n";
         }
+
+        _isDirty = false;
     }
 
     private void OnTextChanged(object? sender, EventArgs e)
     {
-        SaveJournal();
+        _isDirty = true;
+        // Reset and restart the debounce timer
+        _saveTimer?.Stop();
+        _saveTimer?.Start();
     }
 
-    private void SaveJournal()
+    private void FlushSave()
     {
-        var campaign = _campaignService.CurrentCampaign;
-        if (campaign == null) return;
-
-        var filePath = _campaignService.GetJournalPath(campaign.Id);
-
-        try
+        lock (_saveLock)
         {
-            var dir = Path.GetDirectoryName(filePath);
-            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+            if (!_isDirty) return;
+
+            var campaign = _campaignService.CurrentCampaign;
+            if (campaign == null) return;
+
+            var filePath = _campaignService.GetJournalPath(campaign.Id);
+
+            try
             {
-                Directory.CreateDirectory(dir);
-            }
+                var dir = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
 
-            File.WriteAllText(filePath, _textView.Text.ToString() ?? string.Empty);
-        }
-        catch (Exception ex)
-        {
-            AppLogger.Logger.Error(ex, "Failed to save journal: {Path}", filePath);
+                File.WriteAllText(filePath, _textView.Text.ToString() ?? string.Empty);
+                _isDirty = false;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Logger.Error(ex, "Failed to save journal: {Path}", filePath);
+            }
         }
     }
 
@@ -116,7 +148,10 @@ public class JournalView : View
 
         _textView.Text = currentText + markdown + "\n";
         _textView.MoveEnd();
-        SaveJournal();
+
+        // Immediate save for appended entries
+        _isDirty = true;
+        FlushSave();
     }
 
     /// <summary>
@@ -133,6 +168,19 @@ public class JournalView : View
     /// </summary>
     public void ReloadForCampaign()
     {
+        // Save current before switching
+        FlushSave();
         LoadJournal();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            FlushSave();
+            _saveTimer?.Dispose();
+            _saveTimer = null;
+        }
+        base.Dispose(disposing);
     }
 }

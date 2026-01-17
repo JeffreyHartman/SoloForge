@@ -43,7 +43,8 @@ public class DiceRollerView : View
             X = 1,
             Y = 1,
             Width = 30,
-            Height = 1
+            Height = 1,
+            CanFocus = true
         };
         _expressionField.KeyDown += OnExpressionKeyDown;
 
@@ -52,7 +53,8 @@ public class DiceRollerView : View
             X = 32,
             Y = 1,
             Text = "Roll",
-            IsDefault = true
+            IsDefault = true,
+            CanFocus = true
         };
         rollButton.Accepting += (s, e) => RollDice();
 
@@ -74,7 +76,8 @@ public class DiceRollerView : View
             {
                 X = x,
                 Y = 0,
-                Text = die
+                Text = die,
+                CanFocus = true
             };
             var dieExpr = die;
             btn.Accepting += (s, e) =>
@@ -136,7 +139,7 @@ public class DiceRollerView : View
 
         Add(inputLabel, _expressionField, rollButton, commonFrame, _resultFrame, historyFrame);
 
-        _expressionField.SetFocus();
+        _expressionField.FocusDeepest(NavigationDirection.Forward, TabBehavior.TabStop);
     }
 
     private void OnExpressionKeyDown(object? sender, Key e)

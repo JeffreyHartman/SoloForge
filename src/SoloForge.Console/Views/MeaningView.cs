@@ -45,7 +45,8 @@ public class MeaningView : View
             X = Pos.Center(),
             Y = 1,
             Width = 35,
-            Height = 12
+            Height = 12,
+            CanFocus = true
         };
 
         var y = 0;
@@ -64,7 +65,8 @@ public class MeaningView : View
             {
                 X = 1,
                 Y = y,
-                Text = label
+                Text = label,
+                CanFocus = true
             };
             btn.Accepting += (s, e) => action();
             _menuFrame.Add(btn);
@@ -79,7 +81,8 @@ public class MeaningView : View
             Y = Pos.Bottom(_menuFrame) + 1,
             Width = 45,
             Height = 8,
-            Visible = false
+            Visible = false,
+            CanFocus = true
         };
 
         _resultLabel = new Label
@@ -100,13 +103,24 @@ public class MeaningView : View
         {
             X = 1,
             Y = 5,
-            Text = "[R] Re-roll"
+            Text = "[R] Re-roll",
+            CanFocus = true
         };
         rerollButton.Accepting += (s, e) => Reroll();
+        rerollButton.KeyDown += (s, e) =>
+        {
+            if (e.KeyCode == KeyCode.Enter)
+            {
+                Reroll();
+                e.Handled = true;
+            }
+        };
 
         _resultFrame.Add(_resultLabel, _wordsLabel, rerollButton);
 
         Add(_menuFrame, _resultFrame);
+
+        _menuFrame.FocusDeepest(NavigationDirection.Forward, TabBehavior.TabStop);
     }
 
     private void ShowMeaning(string type)
@@ -144,6 +158,15 @@ public class MeaningView : View
             Height = Dim.Percent(80)
         };
 
+        dialog.KeyDown += (s, e) =>
+        {
+            if (e.KeyCode == KeyCode.Esc)
+            {
+                Application.RequestStop();
+                e.Handled = true;
+            }
+        };
+
         var tableNames = new ObservableCollection<string>(
             tables.Select(t => $"{t.Category} > {t.DisplayName}")
         );
@@ -155,6 +178,8 @@ public class MeaningView : View
             Height = Dim.Fill(3)
         };
         listView.SetSource(tableNames);
+        listView.TabStop = TabBehavior.TabStop;
+        listView.CanFocus = true;
 
         TableInfo? selectedTable = null;
         listView.OpenSelectedItem += (s, e) =>
@@ -162,7 +187,15 @@ public class MeaningView : View
             selectedTable = tables[listView.SelectedItem];
             Application.RequestStop();
         };
-
+        listView.KeyDown += (s, e) =>
+        {
+            if (e.KeyCode == KeyCode.Enter)
+            {
+                selectedTable = tables[listView.SelectedItem];
+                Application.RequestStop();
+                e.Handled = true;
+            }
+        };
         var okButton = new Button { Text = "Select", IsDefault = true };
         okButton.Accepting += (s, e) =>
         {
@@ -177,6 +210,7 @@ public class MeaningView : View
         dialog.AddButton(okButton);
         dialog.AddButton(cancelButton);
 
+        listView.FocusDeepest(NavigationDirection.Forward, TabBehavior.TabStop);
         Application.Run(dialog);
 
         if (selectedTable != null)
@@ -222,6 +256,15 @@ public class MeaningView : View
             Height = Dim.Percent(80)
         };
 
+        dialog.KeyDown += (s, e) =>
+        {
+            if (e.KeyCode == KeyCode.Esc)
+            {
+                Application.RequestStop();
+                e.Handled = true;
+            }
+        };
+
         var tableNames = new ObservableCollection<string>(
             tables.Select(t =>
                 t.IsElement ? $"[Element] {t.Category} > {t.DisplayName}" : $"[Core] {t.DisplayName}"
@@ -236,6 +279,8 @@ public class MeaningView : View
             Height = Dim.Fill(3)
         };
         listView.SetSource(tableNames);
+        listView.TabStop = TabBehavior.TabStop;
+        listView.CanFocus = true;
 
         TableInfo? selectedTable = null;
         listView.OpenSelectedItem += (s, e) =>
@@ -243,7 +288,15 @@ public class MeaningView : View
             selectedTable = tables[listView.SelectedItem];
             Application.RequestStop();
         };
-
+        listView.KeyDown += (s, e) =>
+        {
+            if (e.KeyCode == KeyCode.Enter)
+            {
+                selectedTable = tables[listView.SelectedItem];
+                Application.RequestStop();
+                e.Handled = true;
+            }
+        };
         var okButton = new Button { Text = "Select", IsDefault = true };
         okButton.Accepting += (s, e) =>
         {
@@ -258,6 +311,7 @@ public class MeaningView : View
         dialog.AddButton(okButton);
         dialog.AddButton(cancelButton);
 
+        listView.FocusDeepest(NavigationDirection.Forward, TabBehavior.TabStop);
         Application.Run(dialog);
 
         return selectedTable;
@@ -279,9 +333,19 @@ public class MeaningView : View
             Height = Dim.Percent(80)
         };
 
+        dialog.KeyDown += (s, e) =>
+        {
+            if (e.KeyCode == KeyCode.Esc)
+            {
+                Application.RequestStop();
+                e.Handled = true;
+            }
+        };
+
         var setNames = new ObservableCollection<string>(
             quickSets.Select(q => $"{q.Name} - {q.Description}")
         );
+
         var listView = new ListView
         {
             X = 0,
@@ -290,6 +354,8 @@ public class MeaningView : View
             Height = Dim.Fill(3)
         };
         listView.SetSource(setNames);
+        listView.TabStop = TabBehavior.TabStop;
+        listView.CanFocus = true;
 
         QuickSet? selectedSet = null;
         listView.OpenSelectedItem += (s, e) =>
@@ -297,7 +363,15 @@ public class MeaningView : View
             selectedSet = quickSets[listView.SelectedItem];
             Application.RequestStop();
         };
-
+        listView.KeyDown += (s, e) =>
+        {
+            if (e.KeyCode == KeyCode.Enter)
+            {
+                selectedSet = quickSets[listView.SelectedItem];
+                Application.RequestStop();
+                e.Handled = true;
+            }
+        };
         var okButton = new Button { Text = "Generate", IsDefault = true };
         okButton.Accepting += (s, e) =>
         {
@@ -312,6 +386,7 @@ public class MeaningView : View
         dialog.AddButton(okButton);
         dialog.AddButton(cancelButton);
 
+        listView.FocusDeepest(NavigationDirection.Forward, TabBehavior.TabStop);
         Application.Run(dialog);
 
         if (selectedSet != null)
@@ -442,6 +517,15 @@ public class MeaningView : View
             Title = "Context",
             Width = 60,
             Height = 8
+        };
+
+        dialog.KeyDown += (s, e) =>
+        {
+            if (e.KeyCode == KeyCode.Esc)
+            {
+                Application.RequestStop();
+                e.Handled = true;
+            }
         };
 
         var label = new Label
