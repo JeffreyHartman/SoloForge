@@ -1,6 +1,6 @@
-using Microsoft.Extensions.DependencyInjection;
+using Terminal.Gui;
+using SoloForge.Console.App;
 using SoloForge.Console.Core;
-using SoloForge.Console.Screens;
 using SoloForge.Console.Services;
 
 // Initialize logging first
@@ -8,43 +8,34 @@ AppLogger.Initialize();
 
 try
 {
-    // Configure dependency injection
-    var services = new ServiceCollection();
+    AppLogger.Logger.Information("Starting SoloForge with Terminal.Gui");
 
-    // Register singletons (state persists across screens)
-    services.AddSingleton<Session>();
-    services.AddSingleton(AdventureStateManager.Instance);
-    services.AddSingleton<HistoryService>();
-    services.AddSingleton<CampaignService>();
-    services.AddSingleton(ClipboardService.Instance);
-    services.AddSingleton(TemplateService.Instance);
-    services.AddSingleton<JournalService>();
-
-    // Register screens as transients (new instance each navigation)
-    services.AddTransient<MainMenuScreen>();
-    services.AddTransient<FateCheckScreen>();
-    services.AddTransient<SceneCheckScreen>();
-    services.AddTransient<RandomEventScreen>();
-    services.AddTransient<MeaningScreen>();
-    services.AddTransient<AdventureListScreen>();
-    services.AddTransient<DiceRollScreen>();
-    services.AddTransient<GameManagerScreen>();
-    services.AddTransient<HistoryScreen>();
-
-    var provider = services.BuildServiceProvider();
+    // Initialize services
+    var session = new Session();
+    var stateManager = AdventureStateManager.Instance;
+    var historyService = new HistoryService();
+    var campaignService = new CampaignService(session, stateManager, historyService);
 
     // Initialize campaign service (loads last campaign or creates default)
-    var campaignService = provider.GetRequiredService<CampaignService>();
     campaignService.Initialize();
 
-    AppLogger.Logger.Information("Services initialized, starting main loop");
+    AppLogger.Logger.Information("Services initialized, starting Terminal.Gui application");
 
-    // Main application loop
-    IScreen? currentScreen = provider.GetRequiredService<MainMenuScreen>();
-    while (currentScreen != null)
+    // Initialize Terminal.Gui
+    Application.Init();
+
+    try
     {
-        currentScreen = currentScreen.Run();
+        // Create and run the main application
+        var app = new SoloForgeApp(session, stateManager, historyService, campaignService);
+        Application.Run(app);
     }
+    finally
+    {
+        Application.Shutdown();
+    }
+
+    AppLogger.Logger.Information("Application shutdown complete");
 }
 catch (Exception ex)
 {

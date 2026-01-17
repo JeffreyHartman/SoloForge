@@ -1,0 +1,264 @@
+using Terminal.Gui;
+using SoloForge.Console.Core;
+using SoloForge.Console.Engines.Mythic2e;
+using SoloForge.Console.Models;
+using SoloForge.Console.Services;
+
+namespace SoloForge.Console.Views;
+
+/// <summary>
+/// View for generating random events with focus and action.
+/// </summary>
+public class RandomEventView : View
+{
+    private readonly Session _session;
+    private readonly AdventureStateManager _stateManager;
+    private readonly HistoryService _historyService;
+    private readonly CampaignService _campaignService;
+    private readonly JournalView _journalView;
+
+    private readonly FrameView _focusFrame;
+    private readonly Label _focusLabel;
+    private readonly Label _characterLabel;
+    private readonly FrameView _actionFrame;
+    private readonly Label _actionLabel;
+    private readonly Button _rerollButton;
+    private readonly Button _addNpcButton;
+
+    private RandomEventResult? _lastResult;
+
+    public RandomEventView(
+        Session session,
+        AdventureStateManager stateManager,
+        HistoryService historyService,
+        CampaignService campaignService,
+        JournalView journalView)
+    {
+        _session = session;
+        _stateManager = stateManager;
+        _historyService = historyService;
+        _campaignService = campaignService;
+        _journalView = journalView;
+
+        // Focus frame
+        _focusFrame = new FrameView
+        {
+            Title = "Event Focus",
+            X = Pos.Center(),
+            Y = 1,
+            Width = 40,
+            Height = 5
+        };
+
+        _focusLabel = new Label
+        {
+            X = Pos.Center(),
+            Y = 0,
+            Text = ""
+        };
+
+        _characterLabel = new Label
+        {
+            X = Pos.Center(),
+            Y = 1,
+            Text = ""
+        };
+
+        _focusFrame.Add(_focusLabel, _characterLabel);
+
+        // Action frame
+        _actionFrame = new FrameView
+        {
+            Title = "Event Action",
+            X = Pos.Center(),
+            Y = Pos.Bottom(_focusFrame) + 1,
+            Width = 40,
+            Height = 5
+        };
+
+        _actionLabel = new Label
+        {
+            X = Pos.Center(),
+            Y = 1,
+            Text = ""
+        };
+
+        _actionFrame.Add(_actionLabel);
+
+        // Buttons
+        _rerollButton = new Button
+        {
+            X = Pos.Center() - 15,
+            Y = Pos.Bottom(_actionFrame) + 1,
+            Text = "[R] Re-roll"
+        };
+        _rerollButton.Accepting += (s, e) => GenerateEvent();
+
+        _addNpcButton = new Button
+        {
+            X = Pos.Center() + 5,
+            Y = Pos.Bottom(_actionFrame) + 1,
+            Text = "[A] Add NPC",
+            Visible = false
+        };
+        _addNpcButton.Accepting += (s, e) => AddNpc();
+
+        Add(_focusFrame, _actionFrame, _rerollButton, _addNpcButton);
+
+        // Generate initial event
+        GenerateEvent();
+    }
+
+    private void GenerateEvent()
+    {
+        _lastResult = RandomEvent.Generate();
+
+        // Log the event
+        var eventDetails = _lastResult.SelectedCharacter != null
+            ? $"Character: {_lastResult.SelectedCharacter}"
+            : _lastResult.SelectedThread != null
+                ? $"Thread: {_lastResult.SelectedThread}"
+                : null;
+
+        _historyService.AddEntry(
+            LogType.RandomEvent,
+            $"{_lastResult.EventFocus}: {_lastResult.EventAction}",
+            null,
+            eventDetails
+        );
+        _campaignService.Save();
+
+        // Update journal
+        var entry = _historyService.Entries.LastOrDefault();
+        if (entry != null)
+        {
+            _journalView.AppendEntry(entry);
+        }
+
+        // Display result
+        ShowResult();
+    }
+
+    private void ShowResult()
+    {
+        if (_lastResult == null) return;
+
+        _focusLabel.ColorScheme = new ColorScheme
+        {
+            Normal = new Terminal.Gui.Attribute(Color.Cyan, Color.Black)
+        };
+        _focusLabel.Text = _lastResult.EventFocus;
+
+        // Show character/thread if selected
+        if (_lastResult.SelectedCharacter != null)
+        {
+            _characterLabel.ColorScheme = new ColorScheme
+            {
+                Normal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black)
+            };
+            _characterLabel.Text = _lastResult.SelectedCharacter;
+        }
+        else if (_lastResult.SelectedThread != null)
+        {
+            _characterLabel.ColorScheme = new ColorScheme
+            {
+                Normal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black)
+            };
+            _characterLabel.Text = _lastResult.SelectedThread;
+        }
+        else if (_lastResult.ListWasEmpty)
+        {
+            var listType = RandomEvent.IsNpcFocus(_lastResult.EventFocus) ? "No characters" : "No threads";
+            _characterLabel.ColorScheme = new ColorScheme
+            {
+                Normal = new Terminal.Gui.Attribute(Color.Gray, Color.Black)
+            };
+            _characterLabel.Text = $"({listType} in list)";
+        }
+        else
+        {
+            _characterLabel.Text = "";
+        }
+
+        _actionLabel.ColorScheme = new ColorScheme
+        {
+            Normal = new Terminal.Gui.Attribute(Color.Yellow, Color.Black)
+        };
+        _actionLabel.Text = _lastResult.EventAction;
+
+        // Show Add NPC button if applicable
+        _addNpcButton.Visible = _lastResult.IsNewNpc;
+
+        SetNeedsLayout();
+    }
+
+    private void AddNpc()
+    {
+        var dialog = new Dialog
+        {
+            Title = "Add NPC",
+            Width = 50,
+            Height = 12
+        };
+
+        var nameLabel = new Label
+        {
+            X = 1,
+            Y = 1,
+            Text = "Character Name:"
+        };
+
+        var nameField = new TextField
+        {
+            X = 1,
+            Y = 2,
+            Width = Dim.Fill(2)
+        };
+
+        var descLabel = new Label
+        {
+            X = 1,
+            Y = 4,
+            Text = "Description (optional):"
+        };
+
+        var descField = new TextField
+        {
+            X = 1,
+            Y = 5,
+            Width = Dim.Fill(2)
+        };
+
+        var okButton = new Button
+        {
+            X = Pos.Center() - 10,
+            Y = 7,
+            Text = "Add",
+            IsDefault = true
+        };
+        okButton.Accepting += (s, e) =>
+        {
+            var name = nameField.Text.ToString();
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                var desc = descField.Text.ToString();
+                _stateManager.AddCharacter(name, string.IsNullOrWhiteSpace(desc) ? null : desc);
+                _campaignService.Save();
+            }
+            Application.RequestStop();
+        };
+
+        var cancelButton = new Button
+        {
+            X = Pos.Center() + 5,
+            Y = 7,
+            Text = "Cancel"
+        };
+        cancelButton.Accepting += (s, e) => Application.RequestStop();
+
+        dialog.Add(nameLabel, nameField, descLabel, descField, okButton, cancelButton);
+        nameField.SetFocus();
+
+        Application.Run(dialog);
+    }
+}

@@ -13,7 +13,6 @@ public sealed class CampaignService
     private readonly Session _session;
     private readonly AdventureStateManager _stateManager;
     private readonly HistoryService _historyService;
-    private readonly JournalService _journalService;
     private readonly ILogger _log = AppLogger.ForContext<CampaignService>();
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -37,12 +36,11 @@ public sealed class CampaignService
     /// </summary>
     public string SettingsPath => Path.Combine(SavesDirectory, "settings.json");
 
-    public CampaignService(Session session, AdventureStateManager stateManager, HistoryService historyService, JournalService journalService)
+    public CampaignService(Session session, AdventureStateManager stateManager, HistoryService historyService)
     {
         _session = session;
         _stateManager = stateManager;
         _historyService = historyService;
-        _journalService = journalService;
 
         // Find saves directory relative to app
         SavesDirectory = FindOrCreateSavesDirectory();
@@ -107,7 +105,6 @@ public sealed class CampaignService
         SaveGlobalSettings(settings);
 
         _log.Debug("Campaign saved to {Path}", path);
-        _journalService.SaveIfDirty();
     }
 
     /// <summary>
@@ -156,8 +153,6 @@ public sealed class CampaignService
         {
             Name = name
         };
-
-        _journalService.Load(GetJournalPath(CurrentCampaign.Id));
 
         // Save immediately
         Save();
@@ -240,7 +235,6 @@ public sealed class CampaignService
 
         // Hydrate history
         _historyService.LoadHistory(data.History);
-        _journalService.Load(GetJournalPath(data.Id));
     }
 
     private CampaignData GatherState()
