@@ -1,4 +1,5 @@
 using Spectre.Console;
+using Spectre.Console.Rendering;
 using SoloForge.Console.Core;
 using SoloForge.Console.Models;
 using SoloForge.Console.Services;
@@ -13,8 +14,9 @@ public class GameManagerScreen(
     Session session,
     AdventureStateManager stateManager,
     HistoryService historyService,
-    CampaignService campaignService)
-    : BaseScreen(session, stateManager, historyService, campaignService)
+    CampaignService campaignService,
+    JournalService journalService)
+    : BaseScreen(session, stateManager, historyService, campaignService, journalService)
 {
     public override IScreen? Run()
     {
@@ -22,7 +24,7 @@ public class GameManagerScreen(
         {
             RenderHeader("Game Manager");
 
-            // Show current campaign info
+            var content = new List<IRenderable>();
             var current = CampaignService.CurrentCampaign;
             if (current != null)
             {
@@ -38,8 +40,8 @@ public class GameManagerScreen(
                 infoTable.AddRow("[grey]Last Played[/]", $"[white]{current.LastPlayed:MMM d, yyyy h:mm tt}[/]");
                 infoTable.AddRow("[grey]Entries[/]", $"[aqua]{current.History.Count}[/]");
 
-                AnsiConsole.Write(Align.Center(infoTable));
-                AnsiConsole.WriteLine();
+                content.Add(infoTable);
+                content.Add(new Text(""));
             }
 
             var menuPanel = new Panel(
@@ -57,9 +59,13 @@ public class GameManagerScreen(
             .BorderColor(MythicUi.PrimaryColor)
             .Padding(1, 0);
 
-            AnsiConsole.Write(Align.Center(menuPanel));
+            content.Add(menuPanel);
+
+            RenderSplit(new Rows(content), "Game Manager");
 
             var key = ReadKey();
+            if (JournalService.Focus == JournalFocus.Journal)
+                continue;
             switch (GetKeyChar(key))
             {
                 case 'N':

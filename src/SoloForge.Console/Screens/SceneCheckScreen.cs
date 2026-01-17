@@ -1,4 +1,5 @@
 using Spectre.Console;
+using Spectre.Console.Rendering;
 using SoloForge.Console.Core;
 using SoloForge.Console.Engines.Mythic2e;
 using SoloForge.Console.Models;
@@ -14,8 +15,9 @@ public class SceneCheckScreen(
     Session session,
     AdventureStateManager stateManager,
     HistoryService historyService,
-    CampaignService campaignService)
-    : BaseScreen(session, stateManager, historyService, campaignService)
+    CampaignService campaignService,
+    JournalService journalService)
+    : BaseScreen(session, stateManager, historyService, campaignService, journalService)
 {
     public override IScreen? Run()
     {
@@ -44,16 +46,14 @@ public class SceneCheckScreen(
         CampaignService.Save();
 
         // Display results
-        RenderHeader("Scene Check");
+        var content = new List<IRenderable>();
 
-        // Show context if provided
         if (!string.IsNullOrEmpty(context))
         {
-            AnsiConsole.Write(Align.Center(new Markup($"[italic grey]\"{context}\"[/]")));
-            AnsiConsole.WriteLine();
+            content.Add(new Markup($"[italic grey]\"{context}\"[/]"));
+            content.Add(new Text(""));
         }
 
-        // Color-code the result
         var (resultColor, borderColor) = result.Result switch
         {
             "Normal Scene" => ("green", MythicUi.SuccessColor),
@@ -67,20 +67,16 @@ public class SceneCheckScreen(
             "Result",
             borderColor
         );
-        AnsiConsole.Write(Align.Center(resultPanel));
-        AnsiConsole.WriteLine();
+        content.Add(resultPanel);
+        content.Add(new Text(""));
 
         var detailsTable = MythicUi.CreateDetailsTable();
         detailsTable.AddRow("[grey]Chaos Factor[/]", $"[white]{Session.Chaos}[/]");
         detailsTable.AddRow("[grey]Roll[/]", $"[white]{result.Roll}[/]");
+        content.Add(detailsTable);
 
-        AnsiConsole.Write(Align.Center(detailsTable));
-
-        // Show scene adjustment if present
         if (result.SceneAdjustment != null)
         {
-            AnsiConsole.WriteLine();
-
             var adjustmentPanel = new Panel(
                 new Align(
                     new Markup($"[bold gold1]{result.SceneAdjustment}[/]"),
@@ -94,14 +90,12 @@ public class SceneCheckScreen(
             .Padding(2, 1);
             adjustmentPanel.Width = MythicUi.ResultPanelWidth;
 
-            AnsiConsole.Write(Align.Center(adjustmentPanel));
+            content.Add(new Text(""));
+            content.Add(adjustmentPanel);
         }
 
-        // Show random event if present
         if (result.RandomEvent != null)
         {
-            AnsiConsole.WriteLine();
-
             // Log the random event
             HistoryService.AddEntry(
                 LogType.RandomEvent,
@@ -123,10 +117,28 @@ public class SceneCheckScreen(
             .Padding(2, 1);
             eventPanel.Width = MythicUi.ResultPanelWidth;
 
-            AnsiConsole.Write(Align.Center(eventPanel));
+            content.Add(new Text(""));
+            content.Add(eventPanel);
         }
 
-        WaitForKeyWithCopyHint();
-        return null;
+        content.Add(new Text(""));
+        content.Add(new Markup($"[grey]{FormatShortcut("C", "grey")} Copy  Press any key to continue...[/]"));
+
+        while (true)
+        {
+            RenderSplit(new Rows(content), "Scene Check");
+            var key = ReadKey();
+
+            if (JournalService.Focus == JournalFocus.Journal)
+                continue;
+
+            if (GetKeyChar(key) == 'C')
+            {
+                CopyLastEntryToClipboard();
+                continue;
+            }
+
+            return null;
+        }
     }
 }

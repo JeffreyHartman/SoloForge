@@ -15,8 +15,9 @@ public class MainMenuScreen(
     AdventureStateManager stateManager,
     HistoryService historyService,
     CampaignService campaignService,
+    JournalService journalService,
     IServiceProvider serviceProvider)
-    : BaseScreen(session, stateManager, historyService, campaignService)
+    : BaseScreen(session, stateManager, historyService, campaignService, journalService)
 {
     private readonly IServiceProvider _serviceProvider = serviceProvider;
 
@@ -24,10 +25,11 @@ public class MainMenuScreen(
     {
         while (true)
         {
-            MythicUi.Clear();
             RenderMainMenu();
 
             var key = ReadKey();
+            if (JournalService.Focus == JournalFocus.Journal)
+                continue;
             var shouldExit = HandleInput(key);
 
             if (shouldExit)
@@ -37,23 +39,10 @@ public class MainMenuScreen(
 
     private void RenderMainMenu()
     {
-        var layout = new Layout("Root")
-            .SplitRows(
-                new Layout("Title").Size(8),
-                new Layout("Content"),
-                new Layout("Footer").Size(2)
-            );
+        var footer = "[grey]Press a highlighted key or number to select an option | [yellow]+[/]/[yellow]-[/] Chaos[/]";
+        var container = Align.Center(BuildContentContainer(), VerticalAlignment.Middle);
 
-        var title = new FigletText("SoloForge").Color(MythicUi.AccentColor);
-        layout["Title"].Update(Align.Center(title, VerticalAlignment.Middle));
-
-        var container = BuildContentContainer();
-        layout["Content"].Update(Align.Center(container, VerticalAlignment.Middle));
-
-        var footer = new Markup($"[grey]Press a highlighted key or number to select an option | [yellow]+[/]/[yellow]-[/] Chaos[/]");
-        layout["Footer"].Update(Align.Center(footer, VerticalAlignment.Top));
-
-        AnsiConsole.Write(layout);
+        RenderSplit(container, "SoloForge", footer);
     }
 
     private IRenderable BuildContentContainer()

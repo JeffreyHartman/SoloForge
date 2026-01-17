@@ -18,6 +18,7 @@ try
     services.AddSingleton<CampaignService>();
     services.AddSingleton(ClipboardService.Instance);
     services.AddSingleton(TemplateService.Instance);
+    services.AddSingleton<JournalService>();
 
     // Register screens as transients (new instance each navigation)
     services.AddTransient<MainMenuScreen>();

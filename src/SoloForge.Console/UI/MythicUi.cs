@@ -16,6 +16,10 @@ public static class MythicUi
     public const int SessionPanelWidth = 32;
     public const int MenuPanelWidth = 38;
     public const int ListColumnWidth = 30;
+    public const int JournalMinWidth = 42;
+    public const int JournalMaxWidth = 80;
+    public const int SplitGapWidth = 2;
+    public const int FooterHeight = 2;
 
     // === Theme Colors ===
     public static Color PrimaryColor => Color.Cyan1;
@@ -136,6 +140,75 @@ public static class MythicUi
             .BorderColor(PrimaryColor)
             .AddColumn(new TableColumn($"[bold cyan]{col1Header}[/]").Centered().Width(col1Width))
             .AddColumn(new TableColumn($"[bold cyan]{col2Header}[/]").Centered().Width(col2Width));
+    }
+
+    public static Layout BuildSplitLayout(IRenderable leftContent, JournalService journal, string title, int chaos, int characters, int threads, string? campaignName, string? footerText = null)
+    {
+        var windowWidth = Math.Max(System.Console.WindowWidth, 80);
+        var windowHeight = Math.Max(System.Console.WindowHeight, 24);
+        var leftWidth = Math.Max(40, windowWidth / 2 - SplitGapWidth - 1);
+        var rightWidth = Math.Clamp(windowWidth - leftWidth - SplitGapWidth, JournalMinWidth, JournalMaxWidth);
+        leftWidth = Math.Max(leftWidth, windowWidth - rightWidth - SplitGapWidth);
+
+        var headerHeight = SettingsService.Instance.Features.ShowSubpageTitles ? 9 : 4;
+        var contentHeight = Math.Max(6, windowHeight - headerHeight - FooterHeight);
+
+        journal.SetViewportSize(rightWidth - 4, contentHeight - 4);
+
+        var layout = new Layout("Root")
+            .SplitRows(
+                new Layout("Header").Size(headerHeight),
+                new Layout("Content"),
+                new Layout("Footer").Size(FooterHeight)
+            );
+
+        var header = new Rows(
+            new IRenderable[]
+            {
+                new Align(new FigletText(title).Color(AccentColor), HorizontalAlignment.Center),
+                CreateSessionTable(title, chaos, characters, threads, campaignName)
+            }
+        );
+        layout["Header"].Update(Align.Center(header));
+
+        var journalPanel = BuildJournalPanel(journal, rightWidth, contentHeight);
+        var grid = new Grid();
+        grid.AddColumn(new GridColumn().Width(leftWidth));
+        grid.AddColumn(new GridColumn().Width(SplitGapWidth));
+        grid.AddColumn(new GridColumn().Width(rightWidth));
+        grid.AddRow(leftContent, new Text(""), journalPanel);
+
+        layout["Content"].Update(grid);
+
+        var footerLine = footerText ?? string.Empty;
+        layout["Footer"].Update(new Markup(footerLine));
+
+        return layout;
+    }
+
+    public static Panel BuildJournalPanel(JournalService journal, int width, int height)
+    {
+        var lines = journal.GetVisibleLines();
+        var content = new Markup(string.Join("\n", lines.Select(Markup.Escape)));
+
+        var panel = new Panel(content)
+            .Header($"[bold cyan]{Markup.Escape(journal.GetHeaderLabel())}[/]")
+            .HeaderAlignment(Justify.Left)
+            .Border(BoxBorder.Rounded)
+            .BorderColor(journal.Focus == JournalFocus.Journal ? AccentColor : MutedColor)
+            .Padding(1, 0);
+        panel.Width = width;
+        panel.Height = height;
+        return panel;
+    }
+
+    public static void RenderSplitScreen(IRenderable leftContent, JournalService journal, string title, int chaos, int characters, int threads, string? campaignName, string? footerText = null)
+    {
+        Clear();
+
+        var layout = BuildSplitLayout(leftContent, journal, title, chaos, characters, threads, campaignName, footerText);
+        AnsiConsole.Write(layout);
+        RenderQuickRollLine(null);
     }
 
     /// <summary>

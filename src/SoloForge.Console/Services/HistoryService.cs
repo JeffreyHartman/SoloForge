@@ -8,6 +8,12 @@ namespace SoloForge.Console.Services;
 public sealed class HistoryService
 {
     private readonly List<LogEntry> _entries = [];
+    private readonly JournalService _journalService;
+
+    public HistoryService(JournalService journalService)
+    {
+        _journalService = journalService;
+    }
 
     /// <summary>
     /// All history entries in chronological order.
@@ -32,6 +38,10 @@ public sealed class HistoryService
             Details = details
         };
         _entries.Add(entry);
+        if (entry.Type != LogType.DiceRoll)
+        {
+            _journalService.AppendEntry(entry);
+        }
         return entry;
     }
 

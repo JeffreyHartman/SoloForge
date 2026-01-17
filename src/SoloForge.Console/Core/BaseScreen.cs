@@ -1,5 +1,6 @@
 using Serilog;
 using Spectre.Console;
+using Spectre.Console.Rendering;
 using SoloForge.Console.Models;
 using SoloForge.Console.Services;
 using SoloForge.Console.UI;
@@ -17,12 +18,14 @@ public abstract class BaseScreen(
     Session session,
     AdventureStateManager stateManager,
     HistoryService historyService,
-    CampaignService campaignService) : IScreen
+    CampaignService campaignService,
+    JournalService journalService) : IScreen
 {
     protected Session Session { get; } = session;
     protected AdventureStateManager StateManager { get; } = stateManager;
     protected HistoryService HistoryService { get; } = historyService;
     protected CampaignService CampaignService { get; } = campaignService;
+    protected JournalService JournalService { get; } = journalService;
 
     /// <summary>
     /// Runs the screen logic. Must be implemented by derived classes.
@@ -41,6 +44,32 @@ public abstract class BaseScreen(
             StateManager.CharacterCount,
             StateManager.ActiveThreadCount,
             CampaignService.CurrentCampaign?.Name
+        );
+
+        MythicUi.RenderQuickRollLine(Session.LastQuickRoll);
+    }
+
+    protected void RenderSplit(IRenderable leftContent, string title, string? footerText = null)
+    {
+        JournalService.SetRenderState(
+            leftContent,
+            title,
+            Session.Chaos,
+            StateManager.CharacterCount,
+            StateManager.ActiveThreadCount,
+            CampaignService.CurrentCampaign?.Name,
+            footerText
+        );
+
+        MythicUi.RenderSplitScreen(
+            leftContent,
+            JournalService,
+            title,
+            Session.Chaos,
+            StateManager.CharacterCount,
+            StateManager.ActiveThreadCount,
+            CampaignService.CurrentCampaign?.Name,
+            footerText
         );
 
         MythicUi.RenderQuickRollLine(Session.LastQuickRoll);
@@ -98,6 +127,32 @@ public abstract class BaseScreen(
         while (true)
         {
             var key = System.Console.ReadKey(intercept: true);
+
+            if (key.Key == ConsoleKey.Tab)
+            {
+                JournalService.SetFocus(JournalService.Focus == JournalFocus.Left
+                    ? JournalFocus.Journal
+                    : JournalFocus.Left);
+                return key;
+            }
+
+            if (JournalService.Focus == JournalFocus.Journal)
+            {
+                if (key.Modifiers.HasFlag(ConsoleModifiers.Alt) &&
+                    char.ToUpperInvariant(key.KeyChar) == 'R')
+                {
+                    TriggerQuickRoll();
+                    continue;
+                }
+
+                JournalService.HandleKey(key);
+                if (JournalService.TryGetRenderState(out var left, out var title, out var chaos, out var characters, out var threads, out var campaignName, out var footer))
+                {
+                    MythicUi.RenderSplitScreen(left!, JournalService, title!, chaos, characters, threads, campaignName, footer);
+                    MythicUi.RenderQuickRollLine(Session.LastQuickRoll);
+                }
+                continue;
+            }
 
             // Check for Alt+C (copy last entry to clipboard)
             if (key.Modifiers.HasFlag(ConsoleModifiers.Alt) &&

@@ -1,4 +1,5 @@
 using Spectre.Console;
+using Spectre.Console.Rendering;
 using SoloForge.Console.Core;
 using SoloForge.Console.Models;
 using SoloForge.Console.Services;
@@ -13,14 +14,15 @@ public class DiceRollScreen(
     Session session,
     AdventureStateManager stateManager,
     HistoryService historyService,
-    CampaignService campaignService)
-    : BaseScreen(session, stateManager, historyService, campaignService)
+    CampaignService campaignService,
+    JournalService journalService)
+    : BaseScreen(session, stateManager, historyService, campaignService, journalService)
 {
     public override IScreen? Run()
     {
         while (true)
         {
-            RenderHeader("Dice Roller");
+            RenderSplit(new Markup("[bold cyan]Enter dice expression (e.g., 2d6+1 or 1d%):[/]"), "Dice Roller");
 
             if (!TryPromptDiceExpression("[bold cyan]Enter dice expression (e.g., 2d6+1 or 1d%):[/]", out var expression))
             {
@@ -34,7 +36,7 @@ public class DiceRollScreen(
             HistoryService.AddEntry(LogType.DiceRoll, result.Total.ToString(), expression!.ToDisplayString(), breakdown);
             CampaignService.Save();
 
-            RenderHeader("Dice Roller");
+            var content = new List<IRenderable>();
 
             var panel = new Panel(new Markup($"[bold gold1]{Markup.Escape(summary)}[/]"))
                 .Header("[bold cyan]Result[/]")
@@ -44,18 +46,23 @@ public class DiceRollScreen(
                 .Padding(1, 0);
             panel.Width = Math.Min(MythicUi.ResultPanelWidth, 38);
 
-            AnsiConsole.Write(Align.Center(panel));
-            AnsiConsole.WriteLine();
+            content.Add(panel);
 
             if (!string.IsNullOrWhiteSpace(breakdown))
             {
-                AnsiConsole.Write(Align.Center(new Markup($"[grey]{Markup.Escape(breakdown)}[/]")));
-                AnsiConsole.WriteLine();
+                content.Add(new Text(""));
+                content.Add(new Markup($"[grey]{Markup.Escape(breakdown)}[/]"));
             }
 
-            AnsiConsole.MarkupLine($"[grey]{FormatShortcut("R", "grey")} Roll Again  {FormatShortcut("B", "grey")} Back[/]");
+            content.Add(new Text(""));
+            content.Add(new Markup($"[grey]{FormatShortcut("R", "grey")} Roll Again  {FormatShortcut("B", "grey")} Back[/]"));
+
+            RenderSplit(new Rows(content), "Dice Roller");
 
             var key = ReadKey();
+            if (JournalService.Focus == JournalFocus.Journal)
+                continue;
+
             switch (GetKeyChar(key))
             {
                 case 'R':

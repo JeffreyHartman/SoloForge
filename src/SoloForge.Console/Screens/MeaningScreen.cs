@@ -1,5 +1,6 @@
 using Serilog;
 using Spectre.Console;
+using Spectre.Console.Rendering;
 using SoloForge.Console.Core;
 using SoloForge.Console.Engines.Mythic2e;
 using SoloForge.Console.Models;
@@ -15,8 +16,9 @@ public class MeaningScreen(
     Session session,
     AdventureStateManager stateManager,
     HistoryService historyService,
-    CampaignService campaignService)
-    : BaseScreen(session, stateManager, historyService, campaignService)
+    CampaignService campaignService,
+    JournalService journalService)
+    : BaseScreen(session, stateManager, historyService, campaignService, journalService)
 {
     private readonly ILogger _log = AppLogger.ForContext<MeaningScreen>();
     public override IScreen? Run()
@@ -42,9 +44,12 @@ public class MeaningScreen(
             .BorderColor(MythicUi.PrimaryColor)
             .Padding(1, 0);
 
-            AnsiConsole.Write(Align.Center(menuPanel));
+            RenderSplit(Align.Center(menuPanel), "Discovering Meaning");
 
             var key = ReadKey();
+            if (JournalService.Focus == JournalFocus.Journal)
+                continue;
+
             switch (GetKeyChar(key))
             {
                 case 'A':
@@ -95,13 +100,12 @@ public class MeaningScreen(
     {
         while (true)
         {
-            RenderHeader("Meaning Result");
+            var content = new List<IRenderable>();
 
-            // Show context if provided
             if (!string.IsNullOrEmpty(context))
             {
-                AnsiConsole.Write(Align.Center(new Markup($"[italic grey]\"{context}\"[/]")));
-                AnsiConsole.WriteLine();
+                content.Add(new Markup($"[italic grey]\"{context}\"[/]"));
+                content.Add(new Text(""));
             }
 
             var panel = new Panel(
@@ -117,19 +121,23 @@ public class MeaningScreen(
             .Padding(2, 1);
             panel.Width = MythicUi.ResultPanelWidth;
 
-            AnsiConsole.Write(Align.Center(panel));
-            AnsiConsole.WriteLine();
+            content.Add(panel);
+            content.Add(new Text(""));
 
             var table = MythicUi.CreateKeyValueTable();
             table.AddRow("[grey]Word 1:[/]", $"[white]{result.Word1}[/]");
             table.AddRow("[grey]Word 2:[/]", $"[white]{result.Word2}[/]");
 
-            AnsiConsole.Write(Align.Center(table));
-            AnsiConsole.WriteLine();
+            content.Add(table);
+            content.Add(new Text(""));
+            content.Add(new Markup($"[grey]{FormatShortcut("C", "grey")} Copy  {FormatShortcut("R", "grey")} Re-roll  {FormatShortcut("N", "grey")} New Roll  {FormatShortcut("B", "grey")} Back[/]"));
 
-            AnsiConsole.MarkupLine($"[grey]{FormatShortcut("C", "grey")} Copy  {FormatShortcut("R", "grey")} Re-roll  {FormatShortcut("N", "grey")} New Roll  {FormatShortcut("B", "grey")} Back[/]");
+            RenderSplit(new Rows(content), "Meaning Result");
 
             var key = ReadKey();
+            if (JournalService.Focus == JournalFocus.Journal)
+                continue;
+
             switch (GetKeyChar(key))
             {
                 case 'C':
@@ -168,12 +176,12 @@ public class MeaningScreen(
 
         if (tables.Count == 0)
         {
-            AnsiConsole.MarkupLine("[red]No element tables found in data/elements/[/]");
+            RenderSplit(new Markup("[red]No element tables found in data/elements/[/]"), "Element Tables");
             WaitForKey();
             return;
         }
 
-        RenderHeader("Element Tables");
+        RenderSplit(new Markup("[bold cyan]Select an element table:[/]"), "Element Tables");
 
         // Prompt for context
         var context = PromptForContext("What are you looking for? (optional):");
@@ -212,7 +220,7 @@ public class MeaningScreen(
         // Prompt for context
         var context = PromptForContext("What are you combining meanings for? (optional):");
 
-        AnsiConsole.MarkupLine("[bold cyan]Select first table:[/]");
+        RenderSplit(new Markup("[bold cyan]Select first table:[/]"), "Fusion Roll");
         var table1 = AnsiConsole.Prompt(
             new SelectionPrompt<TableInfo>()
                 .HighlightStyle(new Style(MythicUi.AccentColor))
@@ -223,11 +231,15 @@ public class MeaningScreen(
                 .UseConverter(t => t.IsElement ? $"[cyan]{t.Category}[/] > {t.DisplayName}" : $"[yellow]Core[/] > {t.DisplayName}")
         );
 
-        RenderHeader("Fusion Roll");
-
-        AnsiConsole.MarkupLine($"[grey]First table:[/] [gold1]{table1.DisplayName}[/]");
-        AnsiConsole.WriteLine();
-        AnsiConsole.MarkupLine("[bold cyan]Select second table:[/]");
+        var fusionHeader = new Rows(
+            new IRenderable[]
+            {
+                new Markup($"[grey]First table:[/] [gold1]{table1.DisplayName}[/]"),
+                new Text(""),
+                new Markup("[bold cyan]Select second table:[/]")
+            }
+        );
+        RenderSplit(fusionHeader, "Fusion Roll");
 
         var table2 = AnsiConsole.Prompt(
             new SelectionPrompt<TableInfo>()
@@ -259,12 +271,12 @@ public class MeaningScreen(
 
         if (quickSets.Count == 0)
         {
-            AnsiConsole.MarkupLine("[red]No quick sets found. Check data/quicksets.json[/]");
+            RenderSplit(new Markup("[red]No quick sets found. Check data/quicksets.json[/]"), "Quick Sets");
             WaitForKey();
             return;
         }
 
-        RenderHeader("Quick Sets");
+        RenderSplit(new Markup("[bold cyan]Select a Quick Set:[/]"), "Quick Sets");
 
         var selectedSet = AnsiConsole.Prompt(
             new SelectionPrompt<QuickSet>()
@@ -286,57 +298,68 @@ public class MeaningScreen(
 
         while (true)
         {
-            if (needsGenerate)
-            {
-                RenderHeader(quickSet.Name);
-                historyWritten = false;
-
-                try
+                if (needsGenerate)
                 {
-                    result = QuickSetService.Instance.Generate(quickSet);
+                    RenderHeader(quickSet.Name);
+                    historyWritten = false;
 
-                    var table = new Table()
-                        .Border(TableBorder.Rounded)
-                        .BorderColor(MythicUi.AccentColor)
-                        .Title($"[bold gold1]{Markup.Escape(quickSet.Name)}[/]")
-                        .AddColumn(new TableColumn("[bold cyan]Attribute[/]").Width(14))
-                        .AddColumn(new TableColumn("[bold cyan]Result[/]"));
-
-                    foreach (var stepResult in result.Results)
+                    try
                     {
-                        table.AddRow(
-                            $"[yellow]{Markup.Escape(stepResult.Label)}[/]",
-                            $"[white]{Markup.Escape(stepResult.Combined)}[/]"
+                        result = QuickSetService.Instance.Generate(quickSet);
+
+                        var table = new Table()
+                            .Border(TableBorder.Rounded)
+                            .BorderColor(MythicUi.AccentColor)
+                            .Title($"[bold gold1]{Markup.Escape(quickSet.Name)}[/]")
+                            .AddColumn(new TableColumn("[bold cyan]Attribute[/]").Width(14))
+                            .AddColumn(new TableColumn("[bold cyan]Result[/]"));
+
+                        foreach (var stepResult in result.Results)
+                        {
+                            table.AddRow(
+                                $"[yellow]{Markup.Escape(stepResult.Label)}[/]",
+                                $"[white]{Markup.Escape(stepResult.Combined)}[/]"
+                            );
+                        }
+
+                        var content = new List<IRenderable>
+                        {
+                            table,
+                            new Text(""),
+                            new Markup($"[grey]{FormatShortcut("C", "grey")} Copy  {FormatShortcut("R", "grey")} Generate New  {FormatShortcut("B", "grey")} Back[/]")
+                        };
+
+                        // Only log after successful display
+                        HistoryService.AddEntry(
+                            LogType.Meaning,
+                            $"{quickSet.Name} Generated",
+                            null,
+                            result.ToDisplayDetails()
                         );
+                        CampaignService.Save();
+                        historyWritten = true;
+
+                        RenderSplit(new Rows(content), quickSet.Name);
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.Error(ex, "Failed to generate or display quick set '{Name}'", quickSet.Name);
+                        var content = new List<IRenderable>
+                        {
+                            new Markup($"[red]Error generating quick set: {Markup.Escape(ex.Message)}[/]"),
+                            new Text(""),
+                            new Markup($"[grey]{FormatShortcut("R", "grey")} Try Again  {FormatShortcut("B", "grey")} Back[/]")
+                        };
+                        RenderSplit(new Rows(content), quickSet.Name);
                     }
 
-                    AnsiConsole.Write(Align.Center(table));
-                    AnsiConsole.WriteLine();
-
-                    // Only log after successful display
-                    HistoryService.AddEntry(
-                        LogType.Meaning,
-                        $"{quickSet.Name} Generated",
-                        null,
-                        result.ToDisplayDetails()
-                    );
-                    CampaignService.Save();
-                    historyWritten = true;
-
-                    AnsiConsole.MarkupLine($"[grey]{FormatShortcut("C", "grey")} Copy  {FormatShortcut("R", "grey")} Generate New  {FormatShortcut("B", "grey")} Back[/]");
+                    needsGenerate = false;
                 }
-                catch (Exception ex)
-                {
-                    _log.Error(ex, "Failed to generate or display quick set '{Name}'", quickSet.Name);
-                    AnsiConsole.MarkupLine($"[red]Error generating quick set: {Markup.Escape(ex.Message)}[/]");
-                    AnsiConsole.WriteLine();
-                    AnsiConsole.MarkupLine($"[grey]{FormatShortcut("R", "grey")} Try Again  {FormatShortcut("B", "grey")} Back[/]");
-                }
-
-                needsGenerate = false;
-            }
 
             var key = ReadKey();
+            if (JournalService.Focus == JournalFocus.Journal)
+                continue;
+
             switch (GetKeyChar(key))
             {
                 case 'C':
@@ -349,6 +372,7 @@ public class MeaningScreen(
                 default:
                     return;
             }
+
         }
     }
 }

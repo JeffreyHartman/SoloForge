@@ -13,11 +13,11 @@ public class HistoryScreen(
     Session session,
     AdventureStateManager stateManager,
     HistoryService historyService,
-    CampaignService campaignService)
-    : BaseScreen(session, stateManager, historyService, campaignService)
+    CampaignService campaignService,
+    JournalService journalService)
+    : BaseScreen(session, stateManager, historyService, campaignService, journalService)
 {
     private const int PageSize = 15;
-    private const int NarrativePageSize = 10;
     private const int ContextTruncateLength = 50;
 
     private LogType? _filter;
@@ -28,7 +28,7 @@ public class HistoryScreen(
 
         while (true)
         {
-            RenderHeader("Journal");
+            RenderSplit(new Markup("[grey]Use the right pane for journaling. Tab to focus.[/]"), "Journal");
 
             var entries = GetFilteredEntries();
 
@@ -36,6 +36,8 @@ public class HistoryScreen(
             {
                 RenderEmptyState();
                 var emptyKey = ReadKey();
+                if (JournalService.Focus == JournalFocus.Journal)
+                    continue;
                 switch (GetKeyChar(emptyKey))
                 {
                     case 'F':
@@ -60,9 +62,9 @@ public class HistoryScreen(
             // Build selection choices with navigation options
             var choices = new List<JournalChoice>
             {
-                new(JournalChoiceType.ReadMode, "📖 Narrative Read Mode"),
                 new(JournalChoiceType.Filter, _filter.HasValue ? "🔍 Change Filter" : "🔍 Filter by Type"),
             };
+
 
             if (_filter.HasValue)
             {
@@ -84,6 +86,8 @@ public class HistoryScreen(
                 choices.Add(new JournalChoice(JournalChoiceType.Entry, entry));
             }
 
+            RenderSplit(new Markup("[bold cyan]Journal Entries[/]"), "Journal");
+
             var selected = AnsiConsole.Prompt(
                 new SelectionPrompt<JournalChoice>()
                     .Title($"[bold cyan]Journal Entries[/] [grey]({entries.Count} entries)[/]")
@@ -97,9 +101,6 @@ public class HistoryScreen(
 
             switch (selected.Type)
             {
-                case JournalChoiceType.ReadMode:
-                    ShowNarrativeMode(entries);
-                    break;
                 case JournalChoiceType.Filter:
                     PromptFilter();
                     break;
@@ -233,6 +234,8 @@ public class HistoryScreen(
             AnsiConsole.MarkupLine($"[grey]{string.Join("  ", navParts)}[/]");
 
             var key = ReadKey();
+            if (JournalService.Focus == JournalFocus.Journal)
+                continue;
             switch (GetKeyChar(key))
             {
                 case 'C':
@@ -247,81 +250,6 @@ public class HistoryScreen(
                     // Next = newer = lower index
                     if (currentIndex > 0)
                         currentIndex--;
-                    break;
-                case 'B':
-                case 'Q':
-                    return;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Shows entries as a linear narrative/chat log for easy reading.
-    /// </summary>
-    private void ShowNarrativeMode(List<LogEntry> allEntries)
-    {
-        // For narrative mode, show oldest first (chronological order)
-        var chronological = allEntries.AsEnumerable().Reverse().ToList();
-        var totalPages = (int)Math.Ceiling(chronological.Count / (double)NarrativePageSize);
-        var currentPage = totalPages - 1; // Start at the last page (most recent)
-
-        while (true)
-        {
-            RenderHeader("Journal - Narrative Mode");
-
-            if (_filter.HasValue)
-            {
-                AnsiConsole.MarkupLine($"[grey]Filtered by:[/] [{GetTypeColor(_filter.Value)}]{_filter.Value}[/]\n");
-            }
-
-            var pageEntries = chronological
-                .Skip(currentPage * NarrativePageSize)
-                .Take(NarrativePageSize)
-                .ToList();
-
-            DateTime? lastDate = null;
-
-            foreach (var entry in pageEntries)
-            {
-                // Date separator
-                if (lastDate == null || entry.Timestamp.Date != lastDate.Value.Date)
-                {
-                    AnsiConsole.WriteLine();
-                    AnsiConsole.Write(new Rule($"[grey]{entry.Timestamp:dddd, MMMM dd, yyyy}[/]").RuleStyle("grey dim").LeftJustified());
-                    AnsiConsole.WriteLine();
-                    lastDate = entry.Timestamp.Date;
-                }
-
-                RenderNarrativeEntry(entry);
-            }
-
-            AnsiConsole.WriteLine();
-
-            // Navigation
-            var navParts = new List<string>();
-
-            if (currentPage > 0)
-                navParts.Add($"{FormatShortcut("P", "grey")} Previous Page");
-
-            if (currentPage < totalPages - 1)
-                navParts.Add($"{FormatShortcut("N", "grey")} Next Page");
-
-            navParts.Add($"{FormatShortcut("B", "grey")} Back to List");
-
-            var pageInfo = $"[grey]Page {currentPage + 1} of {totalPages}[/]";
-            AnsiConsole.MarkupLine(pageInfo);
-            AnsiConsole.MarkupLine($"[grey]{string.Join("  ", navParts)}[/]");
-
-            var key = ReadKey();
-            switch (GetKeyChar(key))
-            {
-                case 'P':
-                    if (currentPage > 0)
-                        currentPage--;
-                    break;
-                case 'N':
-                    if (currentPage < totalPages - 1)
-                        currentPage++;
                     break;
                 case 'B':
                 case 'Q':
@@ -458,7 +386,6 @@ public class HistoryScreen(
     {
         Entry,
         Info,
-        ReadMode,
         Filter,
         ClearFilter,
         Back,

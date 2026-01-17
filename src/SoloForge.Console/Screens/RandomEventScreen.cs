@@ -1,4 +1,5 @@
 using Spectre.Console;
+using Spectre.Console.Rendering;
 using SoloForge.Console.Core;
 using SoloForge.Console.Engines.Mythic2e;
 using SoloForge.Console.Models;
@@ -14,8 +15,9 @@ public class RandomEventScreen(
     Session session,
     AdventureStateManager stateManager,
     HistoryService historyService,
-    CampaignService campaignService)
-    : BaseScreen(session, stateManager, historyService, campaignService)
+    CampaignService campaignService,
+    JournalService journalService)
+    : BaseScreen(session, stateManager, historyService, campaignService, journalService)
 {
     public override IScreen? Run()
     {
@@ -69,9 +71,6 @@ public class RandomEventScreen(
             .Padding(2, 1);
             focusPanel.Width = MythicUi.ResultPanelWidth;
 
-            AnsiConsole.Write(Align.Center(focusPanel));
-            AnsiConsole.WriteLine();
-
             var actionPanel = new Panel(
                 new Align(
                     new Markup($"[bold gold1]{result.EventAction}[/]"),
@@ -85,19 +84,28 @@ public class RandomEventScreen(
             .Padding(2, 1);
             actionPanel.Width = MythicUi.ResultPanelWidth;
 
-            AnsiConsole.Write(Align.Center(actionPanel));
-            AnsiConsole.WriteLine();
-
-            // Build options string
             var options = $"[grey]{FormatShortcut("C", "grey")} Copy  {FormatShortcut("R", "grey")} Re-roll  {FormatShortcut("B", "grey")} Back";
             if (result.IsNewNpc)
             {
                 options += $"  {FormatShortcut("A", "grey")} Add NPC";
             }
             options += "[/]";
-            AnsiConsole.MarkupLine(options);
+
+            var content = new List<IRenderable>
+            {
+                focusPanel,
+                new Text(""),
+                actionPanel,
+                new Text(""),
+                new Markup(options)
+            };
+
+            RenderSplit(new Rows(content), "Random Event");
 
             var key = ReadKey();
+            if (JournalService.Focus == JournalFocus.Journal)
+                continue;
+
             switch (GetKeyChar(key))
             {
                 case 'C':

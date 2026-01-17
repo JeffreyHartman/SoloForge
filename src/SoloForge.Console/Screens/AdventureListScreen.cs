@@ -1,4 +1,5 @@
 using Spectre.Console;
+using Spectre.Console.Rendering;
 using SoloForge.Console.Core;
 using SoloForge.Console.Models;
 using SoloForge.Console.Services;
@@ -13,8 +14,9 @@ public class AdventureListScreen(
     Session session,
     AdventureStateManager stateManager,
     HistoryService historyService,
-    CampaignService campaignService)
-    : BaseScreen(session, stateManager, historyService, campaignService)
+    CampaignService campaignService,
+    JournalService journalService)
+    : BaseScreen(session, stateManager, historyService, campaignService, journalService)
 {
     public override IScreen? Run()
     {
@@ -75,14 +77,15 @@ public class AdventureListScreen(
                 .AddColumn(new GridColumn().Width(MythicUi.ListColumnWidth));
             listsGrid.AddRow(charactersPanel, new Text(""), threadsPanel);
 
-            AnsiConsole.Write(Align.Center(listsGrid));
-            AnsiConsole.WriteLine();
+            var content = new List<IRenderable>
+            {
+                listsGrid
+            };
 
-            // Show closed threads count if any
             if (StateManager.ClosedThreadCount > 0)
             {
-                AnsiConsole.Write(Align.Center(new Markup($"[grey]Closed threads: {StateManager.ClosedThreadCount}[/]")));
-                AnsiConsole.WriteLine();
+                content.Add(new Text(""));
+                content.Add(new Markup($"[grey]Closed threads: {StateManager.ClosedThreadCount}[/]"));
             }
 
             var menuPanel = new Panel(
@@ -102,9 +105,14 @@ public class AdventureListScreen(
             .BorderColor(MythicUi.PrimaryColor)
             .Padding(1, 0);
 
-            AnsiConsole.Write(Align.Center(menuPanel));
+            content.Add(new Text(""));
+            content.Add(menuPanel);
+
+            RenderSplit(new Rows(content), "Adventure Lists");
 
             var key = ReadKey();
+            if (JournalService.Focus == JournalFocus.Journal)
+                continue;
             var keyChar = GetKeyChar(key);
 
             // Handle number keys for viewing characters (1-9)
