@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Terminal.Gui;
+using SoloForge.Console.App;
 using SoloForge.Console.Core;
 using SoloForge.Console.Engines.Mythic2e;
 using SoloForge.Console.Models;
@@ -228,21 +229,14 @@ public class FateCheckView : View
     {
         if (_lastResult == null) return;
 
-        var resultColor = _lastResult.Result.Contains("Yes") ? Color.Green : Color.Red;
-        _resultLabel.ColorScheme = new ColorScheme
-        {
-            Normal = new Terminal.Gui.Attribute(resultColor, Color.Black)
-        };
+        _resultLabel.ColorScheme = UiThemes.Instance.ForFateResult(_lastResult.Result);
         _resultLabel.Text = $">>> {_lastResult.Result} <<<";
 
         _detailsLabel.Text = $"Odds: {odds.GetDisplayName()}  |  Roll: {_lastResult.Roll}  |  Chaos: {_session.Chaos}";
 
         if (_lastEvent != null)
         {
-            _eventLabel.ColorScheme = new ColorScheme
-            {
-                Normal = new Terminal.Gui.Attribute(Color.Yellow, Color.Black)
-            };
+            _eventLabel.ColorScheme = UiThemes.Instance.Warning;
             _eventLabel.Text = $"RANDOM EVENT: {_lastEvent.EventFocus}\n{_lastEvent.EventAction}";
         }
         else

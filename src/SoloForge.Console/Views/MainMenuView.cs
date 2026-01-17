@@ -40,7 +40,8 @@ public class MainMenuView : View
             X = Pos.Center(),
             Y = 1,
             Width = 35,
-            Height = 10
+            Height = 10,
+            ColorScheme = UiThemes.Instance.Default
         };
 
         var sessionInfo = new Label
@@ -53,7 +54,8 @@ public class MainMenuView : View
                    $"Chaos:    {_session.Chaos}\n" +
                    $"─────────────────────\n" +
                    $"Characters: {_stateManager.CharacterCount}\n" +
-                   $"Threads:    {_stateManager.ActiveThreadCount}"
+                   $"Threads:    {_stateManager.ActiveThreadCount}",
+            ColorScheme = UiThemes.Instance.Primary
         };
         sessionFrame.Add(sessionInfo);
 
@@ -94,7 +96,8 @@ public class MainMenuView : View
                     X = 1,
                     Y = y,
                     Text = label,
-                    CanFocus = false
+                    CanFocus = false,
+                    ColorScheme = UiThemes.Instance.Muted
                 };
                 menuFrame.Add(sep);
             }

@@ -1,4 +1,5 @@
 using Terminal.Gui;
+using SoloForge.Console.App;
 using SoloForge.Console.Core;
 using SoloForge.Console.Engines.Mythic2e;
 using SoloForge.Console.Models;
@@ -303,28 +304,22 @@ public class SceneCheckView : View
     {
         if (_lastResult == null) return;
 
-        var (resultColor, resultText) = _lastResult.Result switch
+        var resultText = _lastResult.Result switch
         {
-            "Normal Scene" => (Color.Green, ">>> Normal Scene <<<"),
-            "Altered Scene!" => (Color.Yellow, ">>> Altered Scene! <<<"),
-            "Interrupt Scene!" => (Color.Red, ">>> Interrupt Scene! <<<"),
-            _ => (Color.White, $">>> {_lastResult.Result} <<<")
+            "Normal Scene" => ">>> Normal Scene <<<",
+            "Altered Scene!" => ">>> Altered Scene! <<<",
+            "Interrupt Scene!" => ">>> Interrupt Scene! <<<",
+            _ => $">>> {_lastResult.Result} <<<"
         };
 
-        _resultLabel.ColorScheme = new ColorScheme
-        {
-            Normal = new Terminal.Gui.Attribute(resultColor, Color.Black)
-        };
+        _resultLabel.ColorScheme = UiThemes.Instance.ForSceneResult(_lastResult.Result);
         _resultLabel.Text = resultText;
 
         _detailsLabel.Text = $"Roll: {_lastResult.Roll}  |  Chaos: {_session.Chaos}";
 
         if (_lastResult.SceneAdjustment != null)
         {
-            _adjustmentLabel.ColorScheme = new ColorScheme
-            {
-                Normal = new Terminal.Gui.Attribute(Color.Yellow, Color.Black)
-            };
+            _adjustmentLabel.ColorScheme = UiThemes.Instance.Warning;
             _adjustmentLabel.Text = $"Adjustment: {_lastResult.SceneAdjustment}";
         }
         else
@@ -334,10 +329,7 @@ public class SceneCheckView : View
 
         if (_lastResult.RandomEvent != null)
         {
-            _eventLabel.ColorScheme = new ColorScheme
-            {
-                Normal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Black)
-            };
+            _eventLabel.ColorScheme = UiThemes.Instance.Accent;
             _eventLabel.Text = $"RANDOM EVENT: {_lastResult.RandomEvent.EventFocus}\n{_lastResult.RandomEvent.EventAction}";
         }
         else

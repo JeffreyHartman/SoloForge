@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Terminal.Gui;
+using SoloForge.Console.App;
 using SoloForge.Console.Core;
 using SoloForge.Console.Engines.Mythic2e;
 using SoloForge.Console.Models;
@@ -497,10 +498,7 @@ public class MeaningView : View
         }
 
         // Update display
-        _resultLabel.ColorScheme = new ColorScheme
-        {
-            Normal = new Terminal.Gui.Attribute(Color.Yellow, Color.Black)
-        };
+        _resultLabel.ColorScheme = UiThemes.Instance.Accent;
         _resultLabel.Text = result.Combined;
 
         _wordsLabel.Text = $"Word 1: {result.Word1}\nWord 2: {result.Word2}";

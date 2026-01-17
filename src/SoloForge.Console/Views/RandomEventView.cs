@@ -1,4 +1,5 @@
 using Terminal.Gui;
+using SoloForge.Console.App;
 using SoloForge.Console.Core;
 using SoloForge.Console.Engines.Mythic2e;
 using SoloForge.Console.Models;
@@ -165,36 +166,24 @@ public class RandomEventView : View
     {
         if (_lastResult == null) return;
 
-        _focusLabel.ColorScheme = new ColorScheme
-        {
-            Normal = new Terminal.Gui.Attribute(Color.Cyan, Color.Black)
-        };
+        _focusLabel.ColorScheme = UiThemes.Instance.Primary;
         _focusLabel.Text = _lastResult.EventFocus;
 
         // Show character/thread if selected
         if (_lastResult.SelectedCharacter != null)
         {
-            _characterLabel.ColorScheme = new ColorScheme
-            {
-                Normal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black)
-            };
+            _characterLabel.ColorScheme = UiThemes.Instance.Primary;
             _characterLabel.Text = _lastResult.SelectedCharacter;
         }
         else if (_lastResult.SelectedThread != null)
         {
-            _characterLabel.ColorScheme = new ColorScheme
-            {
-                Normal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Black)
-            };
+            _characterLabel.ColorScheme = UiThemes.Instance.Primary;
             _characterLabel.Text = _lastResult.SelectedThread;
         }
         else if (_lastResult.ListWasEmpty)
         {
             var listType = RandomEvent.IsNpcFocus(_lastResult.EventFocus) ? "No characters" : "No threads";
-            _characterLabel.ColorScheme = new ColorScheme
-            {
-                Normal = new Terminal.Gui.Attribute(Color.Gray, Color.Black)
-            };
+            _characterLabel.ColorScheme = UiThemes.Instance.Muted;
             _characterLabel.Text = $"({listType} in list)";
         }
         else
@@ -202,10 +191,7 @@ public class RandomEventView : View
             _characterLabel.Text = "";
         }
 
-        _actionLabel.ColorScheme = new ColorScheme
-        {
-            Normal = new Terminal.Gui.Attribute(Color.Yellow, Color.Black)
-        };
+        _actionLabel.ColorScheme = UiThemes.Instance.Accent;
         _actionLabel.Text = _lastResult.EventAction;
 
         // Show Add NPC button if applicable
@@ -256,10 +242,7 @@ public class RandomEventView : View
             X = 1,
             Y = 7,
             Text = "",
-            ColorScheme = new ColorScheme
-            {
-                Normal = new Terminal.Gui.Attribute(Color.Red, Color.Black)
-            },
+            ColorScheme = UiThemes.Instance.Error,
             Visible = false
         };
 

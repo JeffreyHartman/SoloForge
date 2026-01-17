@@ -1,4 +1,5 @@
 using Terminal.Gui;
+using SoloForge.Console.App;
 using SoloForge.Console.Models;
 using SoloForge.Console.Services;
 
@@ -178,10 +179,7 @@ public class DiceRollerView : View
         }
 
         // Display result
-        _resultLabel.ColorScheme = new ColorScheme
-        {
-            Normal = new Terminal.Gui.Attribute(Color.Yellow, Color.Black)
-        };
+        _resultLabel.ColorScheme = UiThemes.Instance.Accent;
         _resultLabel.Text = $">>> {summary} <<<";
 
         _breakdownLabel.Text = string.IsNullOrWhiteSpace(breakdown) ? "" : breakdown;

@@ -30,7 +30,8 @@ public class GameManagerView : View
             X = Pos.Center(),
             Y = 1,
             Width = 50,
-            Height = 8
+            Height = 8,
+            ColorScheme = UiThemes.Instance.Default
         };
 
         _infoLabel = new Label
@@ -38,7 +39,8 @@ public class GameManagerView : View
             X = 1,
             Y = 0,
             Width = Dim.Fill(),
-            Height = Dim.Fill()
+            Height = Dim.Fill(),
+            ColorScheme = UiThemes.Instance.Primary
         };
         infoFrame.Add(_infoLabel);
 

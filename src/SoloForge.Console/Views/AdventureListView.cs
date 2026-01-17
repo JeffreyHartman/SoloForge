@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using Terminal.Gui;
+using SoloForge.Console.App;
 using SoloForge.Console.Services;
 
 namespace SoloForge.Console.Views;
@@ -27,7 +28,8 @@ public class AdventureListView : View
             X = 0,
             Y = 0,
             Width = Dim.Percent(50),
-            Height = Dim.Fill(4)
+            Height = Dim.Fill(4),
+            ColorScheme = UiThemes.Instance.Default
         };
 
         _characterList = new ListView
@@ -57,7 +59,8 @@ public class AdventureListView : View
             X = Pos.Right(charactersFrame),
             Y = 0,
             Width = Dim.Fill(),
-            Height = Dim.Fill(4)
+            Height = Dim.Fill(4),
+            ColorScheme = UiThemes.Instance.Default
         };
 
         _threadList = new ListView

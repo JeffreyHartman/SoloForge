@@ -40,7 +40,7 @@ public class SoloForgeApp : Toplevel
         _campaignService = campaignService;
 
         Title = "SoloForge - Mythic GME 2e";
-        ColorScheme = CreateColorScheme();
+        ColorScheme = UiThemes.Instance.Default;
 
         // Create session info bar at top
         _sessionInfoBar = new SessionInfoBar(session, stateManager, campaignService)
@@ -410,15 +410,4 @@ public class SoloForgeApp : Toplevel
         _journalView.Refresh();
     }
 
-    private static ColorScheme CreateColorScheme()
-    {
-        return new ColorScheme
-        {
-            Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
-            Focus = new Terminal.Gui.Attribute(Color.Black, Color.Cyan),
-            HotNormal = new Terminal.Gui.Attribute(Color.Cyan, Color.Black),
-            HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.Cyan),
-            Disabled = new Terminal.Gui.Attribute(Color.Gray, Color.Black)
-        };
-    }
 }

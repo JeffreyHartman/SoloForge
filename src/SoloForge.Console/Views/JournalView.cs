@@ -1,4 +1,5 @@
 using Terminal.Gui;
+using SoloForge.Console.App;
 using SoloForge.Console.Models;
 using SoloForge.Console.Services;
 
@@ -34,13 +35,7 @@ public class JournalView : View
             ReadOnly = false,
             WordWrap = true,
             CanFocus = true,
-            ColorScheme = new ColorScheme
-            {
-                Normal = new Terminal.Gui.Attribute(Color.White, Color.Black),
-                Focus = new Terminal.Gui.Attribute(Color.White, Color.DarkGray),
-                HotNormal = new Terminal.Gui.Attribute(Color.Cyan, Color.Black),
-                HotFocus = new Terminal.Gui.Attribute(Color.Cyan, Color.DarkGray)
-            }
+            ColorScheme = UiThemes.Instance.Default
         };
 
         // Load journal content when campaign is available
