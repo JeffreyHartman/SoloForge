@@ -29,7 +29,7 @@ public class AdventureListView : View
             Y = 0,
             Width = Dim.Percent(50),
             Height = Dim.Fill(4),
-            ColorScheme = UiThemes.Instance.Default
+            ColorScheme = UiThemes.Instance.ActiveDefault
         };
 
         _characterList = new ListView
@@ -60,7 +60,7 @@ public class AdventureListView : View
             Y = 0,
             Width = Dim.Fill(),
             Height = Dim.Fill(4),
-            ColorScheme = UiThemes.Instance.Default
+            ColorScheme = UiThemes.Instance.ActiveDefault
         };
 
         _threadList = new ListView

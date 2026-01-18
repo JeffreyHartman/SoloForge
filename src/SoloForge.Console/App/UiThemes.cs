@@ -133,6 +133,143 @@ public sealed class UiThemes
         Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Black)
     };
 
+    // ============================================================
+    // Classic Blue Theme (90s DOS aesthetic)
+    // ============================================================
+
+    /// <summary>
+    /// Classic Blue default scheme (White on Blue).
+    /// </summary>
+    public ColorScheme ClassicBlueDefault { get; } = new ColorScheme
+    {
+        Normal = new Terminal.Gui.Attribute(Color.White, Color.Blue),
+        Focus = new Terminal.Gui.Attribute(Color.Black, Color.Cyan),
+        HotNormal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Blue),
+        HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
+        Disabled = new Terminal.Gui.Attribute(Color.Gray, Color.Blue)
+    };
+
+    /// <summary>
+    /// Classic Blue menu bar scheme (White on DarkGray for contrast).
+    /// </summary>
+    public ColorScheme ClassicBlueMenu { get; } = new ColorScheme
+    {
+        Normal = new Terminal.Gui.Attribute(Color.White, Color.DarkGray),
+        Focus = new Terminal.Gui.Attribute(Color.Black, Color.Cyan),
+        HotNormal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.DarkGray),
+        HotFocus = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Cyan),
+        Disabled = new Terminal.Gui.Attribute(Color.Gray, Color.DarkGray)
+    };
+
+    /// <summary>
+    /// Classic Blue success scheme (BrightGreen on Blue).
+    /// </summary>
+    public ColorScheme ClassicBlueSuccess { get; } = new ColorScheme
+    {
+        Normal = new Terminal.Gui.Attribute(Color.BrightGreen, Color.Blue),
+        Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightGreen),
+        HotNormal = new Terminal.Gui.Attribute(Color.Green, Color.Blue),
+        HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.Green),
+        Disabled = new Terminal.Gui.Attribute(Color.Gray, Color.Blue)
+    };
+
+    /// <summary>
+    /// Classic Blue failure scheme (BrightRed on Blue).
+    /// </summary>
+    public ColorScheme ClassicBlueFailure { get; } = new ColorScheme
+    {
+        Normal = new Terminal.Gui.Attribute(Color.BrightRed, Color.Blue),
+        Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightRed),
+        HotNormal = new Terminal.Gui.Attribute(Color.Red, Color.Blue),
+        HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.Red),
+        Disabled = new Terminal.Gui.Attribute(Color.Gray, Color.Blue)
+    };
+
+    /// <summary>
+    /// Classic Blue accent scheme (BrightYellow/Gold on Blue).
+    /// </summary>
+    public ColorScheme ClassicBlueAccent { get; } = new ColorScheme
+    {
+        Normal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Blue),
+        Focus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
+        HotNormal = new Terminal.Gui.Attribute(Color.Yellow, Color.Blue),
+        HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.Yellow),
+        Disabled = new Terminal.Gui.Attribute(Color.Gray, Color.Blue)
+    };
+
+    /// <summary>
+    /// Classic Blue warning scheme (Yellow on Blue).
+    /// </summary>
+    public ColorScheme ClassicBlueWarning { get; } = new ColorScheme
+    {
+        Normal = new Terminal.Gui.Attribute(Color.Yellow, Color.Blue),
+        Focus = new Terminal.Gui.Attribute(Color.Black, Color.Yellow),
+        HotNormal = new Terminal.Gui.Attribute(Color.BrightYellow, Color.Blue),
+        HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightYellow),
+        Disabled = new Terminal.Gui.Attribute(Color.Gray, Color.Blue)
+    };
+
+    /// <summary>
+    /// Classic Blue muted scheme (Gray on Blue).
+    /// </summary>
+    public ColorScheme ClassicBlueMuted { get; } = new ColorScheme
+    {
+        Normal = new Terminal.Gui.Attribute(Color.Gray, Color.Blue),
+        Focus = new Terminal.Gui.Attribute(Color.Black, Color.Gray),
+        HotNormal = new Terminal.Gui.Attribute(Color.White, Color.Blue),
+        HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.White),
+        Disabled = new Terminal.Gui.Attribute(Color.DarkGray, Color.Blue)
+    };
+
+    /// <summary>
+    /// Classic Blue primary scheme (Cyan on Blue).
+    /// </summary>
+    public ColorScheme ClassicBluePrimary { get; } = new ColorScheme
+    {
+        Normal = new Terminal.Gui.Attribute(Color.Cyan, Color.Blue),
+        Focus = new Terminal.Gui.Attribute(Color.Black, Color.Cyan),
+        HotNormal = new Terminal.Gui.Attribute(Color.BrightCyan, Color.Blue),
+        HotFocus = new Terminal.Gui.Attribute(Color.Black, Color.BrightCyan),
+        Disabled = new Terminal.Gui.Attribute(Color.Gray, Color.Blue)
+    };
+
+    // ============================================================
+    // Theme Selection
+    // ============================================================
+
+    /// <summary>
+    /// Whether to use Classic Blue theme (true) or Dark theme (false).
+    /// </summary>
+    public bool UseClassicBlue { get; set; } = true;
+
+    /// <summary>Active default scheme based on current theme.</summary>
+    public ColorScheme ActiveDefault => UseClassicBlue ? ClassicBlueDefault : Default;
+
+    /// <summary>Active success scheme based on current theme.</summary>
+    public ColorScheme ActiveSuccess => UseClassicBlue ? ClassicBlueSuccess : Success;
+
+    /// <summary>Active failure scheme based on current theme.</summary>
+    public ColorScheme ActiveFailure => UseClassicBlue ? ClassicBlueFailure : Failure;
+
+    /// <summary>Active accent scheme based on current theme.</summary>
+    public ColorScheme ActiveAccent => UseClassicBlue ? ClassicBlueAccent : Accent;
+
+    /// <summary>Active warning scheme based on current theme.</summary>
+    public ColorScheme ActiveWarning => UseClassicBlue ? ClassicBlueWarning : Warning;
+
+    /// <summary>Active muted scheme based on current theme.</summary>
+    public ColorScheme ActiveMuted => UseClassicBlue ? ClassicBlueMuted : Muted;
+
+    /// <summary>Active primary scheme based on current theme.</summary>
+    public ColorScheme ActivePrimary => UseClassicBlue ? ClassicBluePrimary : Primary;
+
+    /// <summary>Active menu scheme based on current theme.</summary>
+    public ColorScheme ActiveMenu => UseClassicBlue ? ClassicBlueMenu : Default;
+
+    // ============================================================
+    // Helper Methods
+    // ============================================================
+
     /// <summary>
     /// Returns the appropriate ColorScheme for a fate check result.
     /// </summary>

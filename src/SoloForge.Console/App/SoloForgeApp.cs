@@ -19,14 +19,16 @@ public class SoloForgeApp : Toplevel
     private readonly CampaignService _campaignService;
     private readonly ILogger _log = AppLogger.ForContext<SoloForgeApp>();
 
+    private readonly MenuBar _menuBar;
+    private readonly CampaignInfoPanel _campaignInfoPanel;
     private readonly FrameView _contentFrame;
+    private readonly LiveLogPanel _liveLogPanel;
     private readonly FrameView _journalFrame;
     private readonly JournalView _journalView;
-    private readonly SessionInfoBar _sessionInfoBar;
-    private readonly Label _statusBar;
+    private readonly StatusBar _statusBar;
 
     private View? _currentContentView;
-    private bool _journalVisible = true;
+    private bool _journalVisible = false; // Start with Live Log visible
 
     public SoloForgeApp(
         Session session,
@@ -40,39 +42,92 @@ public class SoloForgeApp : Toplevel
         _campaignService = campaignService;
 
         Title = "SoloForge - Mythic GME 2e";
-        ColorScheme = UiThemes.Instance.Default;
+        ColorScheme = UiThemes.Instance.ActiveDefault;
 
-        // Create session info bar at top
-        _sessionInfoBar = new SessionInfoBar(session, stateManager, campaignService)
+        // Create native MenuBar
+        _menuBar = new MenuBar
         {
-            X = 0,
-            Y = 0,
-            Width = Dim.Fill(),
-            Height = 1
+            Menus =
+            [
+                new MenuBarItem("_File",
+                [
+                    new MenuItem("_New Campaign", "", () => CreateCampaign()),
+                    new MenuItem("_Switch Campaign", "", () => SwitchCampaign()),
+                    null!, // separator
+                    new MenuItem("_Quit", "", () => RequestQuit(), shortcutKey: Key.Q.WithAlt)
+                ]),
+                new MenuBarItem("_Engine",
+                [
+                    new MenuItem("_Fate Check", "", ShowFateCheck, shortcutKey: Key.F.WithAlt),
+                    new MenuItem("_Random Event", "", ShowRandomEvent, shortcutKey: Key.R.WithAlt),
+                    new MenuItem("_Scene Check", "", ShowSceneCheck, shortcutKey: Key.S.WithAlt)
+                ]),
+                new MenuBarItem("_Meaning",
+                [
+                    new MenuItem("_Action", "Quick roll action meaning", () => QuickMeaning("Action")),
+                    new MenuItem("_Description", "Quick roll description meaning", () => QuickMeaning("Description")),
+                    null!, // separator
+                    new MenuItem("_Element Tables...", "", ShowMeaning, shortcutKey: Key.M.WithAlt)
+                ]),
+                new MenuBarItem("_Tracking",
+                [
+                    new MenuItem("Adventure _Lists", "", ShowAdventureLists, shortcutKey: Key.L.WithAlt),
+                    new MenuItem("_Journal", "Toggle journal pane", ToggleJournal, shortcutKey: Key.J.WithAlt)
+                ]),
+                new MenuBarItem("T_ools",
+                [
+                    new MenuItem("_Dice Roller", "", ShowDiceRoller, shortcutKey: Key.D.WithAlt),
+                    null!, // separator
+                    new MenuItem("_Game Manager", "", ShowGameManager, shortcutKey: Key.G.WithAlt)
+                ])
+            ],
+            ColorScheme = UiThemes.Instance.ActiveMenu
         };
 
-        // Create content frame (left pane)
+        // Create 3-column layout below MenuBar
+        // Left: Campaign Info Panel (20%)
+        _campaignInfoPanel = new CampaignInfoPanel(session, stateManager, campaignService)
+        {
+            X = 0,
+            Y = Pos.Bottom(_menuBar),
+            Width = Dim.Percent(20),
+            Height = Dim.Fill(1)
+        };
+
+        // Center: Content/Workspace Frame (50%)
         _contentFrame = new FrameView
         {
             Title = "Main Menu",
-            X = 0,
-            Y = 1,
-            Width = Dim.Percent(60),
+            X = Pos.Right(_campaignInfoPanel),
+            Y = Pos.Bottom(_menuBar),
+            Width = Dim.Percent(50),
             Height = Dim.Fill(1),
-            ColorScheme = ColorScheme,
+            BorderStyle = LineStyle.Double,
+            ColorScheme = UiThemes.Instance.ActiveDefault,
             CanFocus = true
         };
 
-        // Create journal frame (right pane)
+        // Right: Live Log Panel (30%)
+        _liveLogPanel = new LiveLogPanel(historyService)
+        {
+            X = Pos.Right(_contentFrame),
+            Y = Pos.Bottom(_menuBar),
+            Width = Dim.Fill(),
+            Height = Dim.Fill(1)
+        };
+
+        // Create journal frame (hidden by default, overlays live log when visible)
         _journalFrame = new FrameView
         {
             Title = "Journal",
             X = Pos.Right(_contentFrame),
-            Y = 1,
+            Y = Pos.Bottom(_menuBar),
             Width = Dim.Fill(),
             Height = Dim.Fill(1),
-            ColorScheme = ColorScheme,
-            CanFocus = true
+            BorderStyle = LineStyle.Double,
+            ColorScheme = UiThemes.Instance.ActiveDefault,
+            CanFocus = true,
+            Visible = false
         };
 
         // Create journal view
@@ -86,28 +141,35 @@ public class SoloForgeApp : Toplevel
         };
         _journalFrame.Add(_journalView);
 
-        // Create status bar at bottom
-        _statusBar = new Label
+        // Create native StatusBar at bottom
+        _statusBar = new StatusBar
         {
-            X = 0,
-            Y = Pos.AnchorEnd(1),
-            Width = Dim.Fill(),
-            Height = 1,
-            Text = "Alt: F=Fate R=Random S=Scene M=Meaning L=Lists D=Dice G=Game J=Journal | +/- Chaos | Esc=Menu | Tab=Focus"
+            Visible = true,
+            ColorScheme = UiThemes.Instance.ActiveMenu
         };
+        _statusBar.Add(
+            new Shortcut { Title = "Fate", Key = Key.F.WithAlt, Action = ShowFateCheck },
+            new Shortcut { Title = "Random", Key = Key.R.WithAlt, Action = ShowRandomEvent },
+            new Shortcut { Title = "Scene", Key = Key.S.WithAlt, Action = ShowSceneCheck },
+            new Shortcut { Title = "Meaning", Key = Key.M.WithAlt, Action = ShowMeaning },
+            new Shortcut { Title = "Lists", Key = Key.L.WithAlt, Action = ShowAdventureLists },
+            new Shortcut { Title = "Journal", Key = Key.J.WithAlt, Action = ToggleJournal },
+            new Shortcut { Title = "Chaos+", Key = Key.D0.WithShift, Action = IncreaseChaos },
+            new Shortcut { Title = "Chaos-", Key = (Key)'-', Action = DecreaseChaos }
+        );
 
-        Add(_sessionInfoBar, _contentFrame, _journalFrame, _statusBar);
+        Add(_menuBar, _campaignInfoPanel, _contentFrame, _liveLogPanel, _journalFrame, _statusBar);
 
         // Show main menu initially
         ShowMainMenu();
 
-        // Set up keyboard shortcuts
+        // Set up remaining keyboard shortcuts
         SetupKeyBindings();
     }
 
     private void SetupKeyBindings()
     {
-        // Global key bindings - all navigation uses Alt modifier
+        // Simplified key bindings - MenuBar handles Alt+key shortcuts
         Application.KeyDown += (s, e) =>
         {
             if (Application.Top != this)
@@ -115,93 +177,16 @@ public class SoloForgeApp : Toplevel
                 return;
             }
 
-            // Check for Alt modifier for navigation shortcuts
-            var hasAlt = e.KeyCode.HasFlag(KeyCode.AltMask);
             var baseKey = e.KeyCode & ~KeyCode.AltMask & ~KeyCode.ShiftMask & ~KeyCode.CtrlMask;
             var focused = Application.Top?.Focused;
             var inTextField = focused is TextField || focused is TextView;
-            var isTab = baseKey == KeyCode.Tab;
-            var isEscape = baseKey == KeyCode.Esc;
-            var isChaosIncrease = baseKey == (KeyCode)'+' ||
-                baseKey == (KeyCode)'=' && e.KeyCode.HasFlag(KeyCode.ShiftMask);
-            var isChaosDecrease = baseKey == (KeyCode)'-';
-            var isChaosKey = isChaosIncrease || isChaosDecrease;
 
-            if (!hasAlt && !isTab && !isEscape && !isChaosKey && focused is ListView)
-            {
-                return;
-            }
-
-            if (hasAlt)
-            {
-                switch (baseKey)
-                {
-                    case KeyCode.J:
-                        ToggleJournal();
-                        e.Handled = true;
-                        return;
-                    case KeyCode.F:
-                        ShowFateCheck();
-                        e.Handled = true;
-                        return;
-                    case KeyCode.R:
-                        ShowRandomEvent();
-                        e.Handled = true;
-                        return;
-                    case KeyCode.S:
-                        ShowSceneCheck();
-                        e.Handled = true;
-                        return;
-                    case KeyCode.M:
-                        ShowMeaning();
-                        e.Handled = true;
-                        return;
-                    case KeyCode.L:
-                        ShowAdventureLists();
-                        e.Handled = true;
-                        return;
-                    case KeyCode.D:
-                        ShowDiceRoller();
-                        e.Handled = true;
-                        return;
-                    case KeyCode.G:
-                        ShowGameManager();
-                        e.Handled = true;
-                        return;
-                    case KeyCode.Q:
-                        RequestQuit();
-                        e.Handled = true;
-                        return;
-                }
-            }
-
-            // Escape returns to main menu
-            if (baseKey == KeyCode.Esc)
+            // Escape returns to main menu (unless in a dialog)
+            if (baseKey == KeyCode.Esc && !inTextField)
             {
                 ShowMainMenu();
                 e.Handled = true;
                 return;
-            }
-
-            if (!inTextField)
-            {
-                // Handle + key (Shift+= on US keyboards, or numpad +)
-                if (isChaosIncrease)
-                {
-                    _session.Chaos++;
-                    _sessionInfoBar.Refresh();
-                    e.Handled = true;
-                    return;
-                }
-
-                // Handle - key
-                if (isChaosDecrease)
-                {
-                    _session.Chaos--;
-                    _sessionInfoBar.Refresh();
-                    e.Handled = true;
-                    return;
-                }
             }
 
             // Tab to switch focus between content and journal
@@ -222,19 +207,194 @@ public class SoloForgeApp : Toplevel
         };
     }
 
+    private void IncreaseChaos()
+    {
+        _session.Chaos++;
+        _campaignInfoPanel.Refresh();
+    }
+
+    private void DecreaseChaos()
+    {
+        _session.Chaos--;
+        _campaignInfoPanel.Refresh();
+    }
+
+    private void CreateCampaign()
+    {
+        var dialog = new Dialog
+        {
+            Title = "New Campaign",
+            Width = 50,
+            Height = 10
+        };
+
+        var nameLabel = new Label
+        {
+            X = 1,
+            Y = 1,
+            Text = "Campaign Name:"
+        };
+
+        var nameField = new TextField
+        {
+            X = 1,
+            Y = 2,
+            Width = Dim.Fill(2)
+        };
+
+        var okButton = new Button { Text = "Create", IsDefault = true };
+        okButton.Accepting += (s, e) =>
+        {
+            var name = nameField.Text.ToString();
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                _campaignService.CreateNew(name);
+                _journalView.ReloadForCampaign();
+                RefreshSessionInfo();
+            }
+            Application.RequestStop();
+        };
+
+        var cancelButton = new Button { Text = "Cancel" };
+        cancelButton.Accepting += (s, e) => Application.RequestStop();
+
+        dialog.Add(nameLabel, nameField);
+        dialog.AddButton(okButton);
+        dialog.AddButton(cancelButton);
+        nameField.SetFocus();
+
+        Application.Run(dialog);
+    }
+
+    private void SwitchCampaign()
+    {
+        var campaigns = _campaignService.ListCampaigns().ToList();
+
+        if (campaigns.Count == 0)
+        {
+            MessageBox.Query("Switch Campaign", "No campaigns found.", "OK");
+            return;
+        }
+
+        if (campaigns.Count == 1)
+        {
+            MessageBox.Query("Switch Campaign", "Only one campaign exists. Create another to switch.", "OK");
+            return;
+        }
+
+        var dialog = new Dialog
+        {
+            Title = "Switch Campaign",
+            Width = Dim.Percent(70),
+            Height = Dim.Percent(60)
+        };
+
+        dialog.KeyDown += (s, e) =>
+        {
+            if (e.KeyCode == KeyCode.Esc)
+            {
+                Application.RequestStop();
+                e.Handled = true;
+            }
+        };
+
+        var campaignNames = new System.Collections.ObjectModel.ObservableCollection<string>(
+            campaigns.Select(c =>
+            {
+                var current = _campaignService.CurrentCampaign?.Id == c.Id ? " (current)" : "";
+                return $"{c.Name}{current} - {c.LastPlayed:MMM d}";
+            }));
+
+        var listView = new ListView
+        {
+            X = 0,
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = Dim.Fill(3)
+        };
+        listView.SetSource(campaignNames);
+
+        Models.CampaignData? selected = null;
+        listView.OpenSelectedItem += (s, e) =>
+        {
+            selected = campaigns[listView.SelectedItem];
+            Application.RequestStop();
+        };
+
+        var okButton = new Button { Text = "Switch", IsDefault = true };
+        okButton.Accepting += (s, e) =>
+        {
+            selected = campaigns[listView.SelectedItem];
+            Application.RequestStop();
+        };
+
+        var cancelButton = new Button { Text = "Cancel" };
+        cancelButton.Accepting += (s, e) => Application.RequestStop();
+
+        dialog.Add(listView);
+        dialog.AddButton(okButton);
+        dialog.AddButton(cancelButton);
+
+        Application.Run(dialog);
+
+        if (selected != null && selected.Id != _campaignService.CurrentCampaign?.Id)
+        {
+            _campaignService.Load(selected.Id);
+            _journalView.ReloadForCampaign();
+            RefreshSessionInfo();
+        }
+    }
+
+    private void QuickMeaning(string tableType)
+    {
+        var tableService = TableService.Instance;
+        var tables = tableService.AvailableTables
+            .Where(t => t.DisplayName.Contains(tableType, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (tables.Count == 0)
+        {
+            MessageBox.Query("Quick Meaning", $"No {tableType} tables found.", "OK");
+            return;
+        }
+
+        // Find the primary table (exact match or first containing)
+        var primaryTable = tables.FirstOrDefault(t =>
+            t.DisplayName.Equals(tableType, StringComparison.OrdinalIgnoreCase)) ?? tables[0];
+
+        var result1 = tableService.GetRandomWord(primaryTable.Id);
+        var result2 = tableService.GetRandomWord(primaryTable.Id);
+
+        var resultText = $"{result1} + {result2}";
+        var entry = _historyService.AddEntry(
+            Models.LogType.Meaning,
+            resultText,
+            context: $"{tableType} Quick Roll",
+            details: $"Table: {primaryTable.DisplayName}"
+        );
+
+        _journalView.AppendEntry(entry);
+        _campaignService.Save();
+
+        MessageBox.Query($"{tableType} Meaning", resultText, "OK");
+    }
+
     private void ToggleJournal()
     {
         _journalVisible = !_journalVisible;
 
         if (_journalVisible)
         {
-            _contentFrame.Width = Dim.Percent(60);
+            // Show journal, hide live log
+            _liveLogPanel.Visible = false;
             _journalFrame.Visible = true;
         }
         else
         {
-            _contentFrame.Width = Dim.Fill();
+            // Show live log, hide journal
             _journalFrame.Visible = false;
+            _liveLogPanel.Visible = true;
+            _liveLogPanel.Refresh();
         }
 
         SetNeedsLayout();
@@ -402,7 +562,8 @@ public class SoloForgeApp : Toplevel
 
     public void RefreshSessionInfo()
     {
-        _sessionInfoBar.Refresh();
+        _campaignInfoPanel.Refresh();
+        _liveLogPanel.Refresh();
     }
 
     public void RefreshJournal()

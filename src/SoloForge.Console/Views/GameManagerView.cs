@@ -31,7 +31,7 @@ public class GameManagerView : View
             Y = 1,
             Width = 50,
             Height = 8,
-            ColorScheme = UiThemes.Instance.Default
+            ColorScheme = UiThemes.Instance.ActiveDefault
         };
 
         _infoLabel = new Label
@@ -40,7 +40,7 @@ public class GameManagerView : View
             Y = 0,
             Width = Dim.Fill(),
             Height = Dim.Fill(),
-            ColorScheme = UiThemes.Instance.Primary
+            ColorScheme = UiThemes.Instance.ActivePrimary
         };
         infoFrame.Add(_infoLabel);
 

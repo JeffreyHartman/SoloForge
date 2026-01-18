@@ -179,7 +179,7 @@ public class DiceRollerView : View
         }
 
         // Display result
-        _resultLabel.ColorScheme = UiThemes.Instance.Accent;
+        _resultLabel.ColorScheme = UiThemes.Instance.ActiveAccent;
         _resultLabel.Text = $">>> {summary} <<<";
 
         _breakdownLabel.Text = string.IsNullOrWhiteSpace(breakdown) ? "" : breakdown;

@@ -6,7 +6,8 @@ using SoloForge.Console.Services;
 namespace SoloForge.Console.Views;
 
 /// <summary>
-/// Main menu view displaying session info and navigation options.
+/// Welcome dashboard showing quick reference and tips.
+/// Navigation is now handled by the native MenuBar.
 /// </summary>
 public class MainMenuView : View
 {
@@ -31,99 +32,75 @@ public class MainMenuView : View
 
     private void BuildUI()
     {
-        var campaignName = _campaignService.CurrentCampaign?.Name ?? "No Campaign";
+        ColorScheme = UiThemes.Instance.ActiveDefault;
 
-        // Session info panel
-        var sessionFrame = new FrameView
+        // Welcome header
+        var welcomeLabel = new Label
         {
-            Title = "Session",
             X = Pos.Center(),
             Y = 1,
-            Width = 35,
-            Height = 10,
-            ColorScheme = UiThemes.Instance.Default
+            Text = "Welcome to SoloForge",
+            ColorScheme = UiThemes.Instance.ActiveAccent
         };
 
-        var sessionInfo = new Label
+        var subtitleLabel = new Label
+        {
+            X = Pos.Center(),
+            Y = 2,
+            Text = "Mythic Game Master Emulator 2e",
+            ColorScheme = UiThemes.Instance.ActivePrimary
+        };
+
+        // Quick reference frame
+        var quickRefFrame = new FrameView
+        {
+            Title = "Quick Reference",
+            X = Pos.Center(),
+            Y = 4,
+            Width = 45,
+            Height = 12,
+            ColorScheme = UiThemes.Instance.ActiveDefault
+        };
+
+        var shortcuts = new Label
         {
             X = 1,
             Y = 0,
-            Text = $"Campaign: {campaignName}\n" +
-                   $"Engine:   {_session.Engine}\n" +
-                   $"Theme:    {_session.Theme}\n" +
-                   $"Chaos:    {_session.Chaos}\n" +
-                   $"─────────────────────\n" +
-                   $"Characters: {_stateManager.CharacterCount}\n" +
-                   $"Threads:    {_stateManager.ActiveThreadCount}",
-            ColorScheme = UiThemes.Instance.Primary
+            Text = "Keyboard Shortcuts:\n\n" +
+                   "  Alt+F  Fate Check      Alt+R  Random Event\n" +
+                   "  Alt+S  Scene Check     Alt+M  Meaning Tables\n" +
+                   "  Alt+L  Adventure Lists Alt+D  Dice Roller\n" +
+                   "  Alt+J  Toggle Journal  Alt+Q  Quit\n\n" +
+                   "  +/-    Adjust Chaos Factor\n" +
+                   "  Esc    Return to this screen",
+            ColorScheme = UiThemes.Instance.ActiveDefault
         };
-        sessionFrame.Add(sessionInfo);
+        quickRefFrame.Add(shortcuts);
 
-        // Menu buttons
-        var menuFrame = new FrameView
+        // Tips frame
+        var tipsFrame = new FrameView
         {
-            Title = "Actions",
+            Title = "Getting Started",
             X = Pos.Center(),
-            Y = Pos.Bottom(sessionFrame) + 1,
-            Width = 35,
-            Height = 14,
-            CanFocus = true
+            Y = Pos.Bottom(quickRefFrame) + 1,
+            Width = 45,
+            Height = 8,
+            ColorScheme = UiThemes.Instance.ActiveDefault
         };
 
-        var y = 0;
-        var buttons = new (string label, Action? action)[]
+        var tips = new Label
         {
-            ("Fate Check", () => _app.ShowFateCheck()),
-            ("Random Event", () => _app.ShowRandomEvent()),
-            ("Scene Check", () => _app.ShowSceneCheck()),
-            ("Discovering Meaning", () => _app.ShowMeaning()),
-            ("Adventure Lists", () => _app.ShowAdventureLists()),
-            ("Dice Roller", () => _app.ShowDiceRoller()),
-            ("─────────────────────────", null),
-            ("Game Manager", () => _app.ShowGameManager()),
-            ("─────────────────────────", null),
-            ("Quit", () => Application.RequestStop())
+            X = 1,
+            Y = 0,
+            Text = "1. Add characters and threads (Alt+L)\n" +
+                   "2. Start a scene with Scene Check (Alt+S)\n" +
+                   "3. Ask questions with Fate Check (Alt+F)\n" +
+                   "4. Generate ideas with Meaning (Alt+M)\n" +
+                   "5. Record everything in the Journal (Alt+J)",
+            ColorScheme = UiThemes.Instance.ActiveMuted
         };
+        tipsFrame.Add(tips);
 
-        Button? firstButton = null;
-        foreach (var (label, action) in buttons)
-        {
-            if (action == null)
-            {
-                // Separator
-                var sep = new Label
-                {
-                    X = 1,
-                    Y = y,
-                    Text = label,
-                    CanFocus = false,
-                    ColorScheme = UiThemes.Instance.Muted
-                };
-                menuFrame.Add(sep);
-            }
-            else
-            {
-            var btn = new Button
-            {
-                X = 1,
-                Y = y,
-                Text = label,
-                CanFocus = true
-            };
-
-                btn.Accepting += (s, e) => action();
-                menuFrame.Add(btn);
-                firstButton ??= btn;
-            }
-            y++;
-        }
-
-        Add(sessionFrame, menuFrame);
-
-        // Set focus to first button
-        if (firstButton != null)
-        {
-            firstButton.FocusDeepest(NavigationDirection.Forward, TabBehavior.TabStop);
-        }
+        Add(welcomeLabel, subtitleLabel, quickRefFrame, tipsFrame);
     }
 }

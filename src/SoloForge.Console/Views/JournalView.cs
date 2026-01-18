@@ -35,7 +35,7 @@ public class JournalView : View
             ReadOnly = false,
             WordWrap = true,
             CanFocus = true,
-            ColorScheme = UiThemes.Instance.Default
+            ColorScheme = UiThemes.Instance.ActiveDefault
         };
 
         // Load journal content when campaign is available

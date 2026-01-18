@@ -312,14 +312,20 @@ public class SceneCheckView : View
             _ => $">>> {_lastResult.Result} <<<"
         };
 
-        _resultLabel.ColorScheme = UiThemes.Instance.ForSceneResult(_lastResult.Result);
+        _resultLabel.ColorScheme = _lastResult.Result switch
+        {
+            "Normal Scene" => UiThemes.Instance.ActiveSuccess,
+            "Altered Scene!" => UiThemes.Instance.ActiveWarning,
+            "Interrupt Scene!" => UiThemes.Instance.ActiveFailure,
+            _ => UiThemes.Instance.ActiveDefault
+        };
         _resultLabel.Text = resultText;
 
         _detailsLabel.Text = $"Roll: {_lastResult.Roll}  |  Chaos: {_session.Chaos}";
 
         if (_lastResult.SceneAdjustment != null)
         {
-            _adjustmentLabel.ColorScheme = UiThemes.Instance.Warning;
+            _adjustmentLabel.ColorScheme = UiThemes.Instance.ActiveWarning;
             _adjustmentLabel.Text = $"Adjustment: {_lastResult.SceneAdjustment}";
         }
         else
@@ -329,7 +335,7 @@ public class SceneCheckView : View
 
         if (_lastResult.RandomEvent != null)
         {
-            _eventLabel.ColorScheme = UiThemes.Instance.Accent;
+            _eventLabel.ColorScheme = UiThemes.Instance.ActiveAccent;
             _eventLabel.Text = $"RANDOM EVENT: {_lastResult.RandomEvent.EventFocus}\n{_lastResult.RandomEvent.EventAction}";
         }
         else

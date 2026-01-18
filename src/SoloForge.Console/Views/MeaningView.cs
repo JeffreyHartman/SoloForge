@@ -498,7 +498,7 @@ public class MeaningView : View
         }
 
         // Update display
-        _resultLabel.ColorScheme = UiThemes.Instance.Accent;
+        _resultLabel.ColorScheme = UiThemes.Instance.ActiveAccent;
         _resultLabel.Text = result.Combined;
 
         _wordsLabel.Text = $"Word 1: {result.Word1}\nWord 2: {result.Word2}";

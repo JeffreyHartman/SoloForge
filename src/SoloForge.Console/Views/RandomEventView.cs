@@ -166,24 +166,24 @@ public class RandomEventView : View
     {
         if (_lastResult == null) return;
 
-        _focusLabel.ColorScheme = UiThemes.Instance.Primary;
+        _focusLabel.ColorScheme = UiThemes.Instance.ActivePrimary;
         _focusLabel.Text = _lastResult.EventFocus;
 
         // Show character/thread if selected
         if (_lastResult.SelectedCharacter != null)
         {
-            _characterLabel.ColorScheme = UiThemes.Instance.Primary;
+            _characterLabel.ColorScheme = UiThemes.Instance.ActivePrimary;
             _characterLabel.Text = _lastResult.SelectedCharacter;
         }
         else if (_lastResult.SelectedThread != null)
         {
-            _characterLabel.ColorScheme = UiThemes.Instance.Primary;
+            _characterLabel.ColorScheme = UiThemes.Instance.ActivePrimary;
             _characterLabel.Text = _lastResult.SelectedThread;
         }
         else if (_lastResult.ListWasEmpty)
         {
             var listType = RandomEvent.IsNpcFocus(_lastResult.EventFocus) ? "No characters" : "No threads";
-            _characterLabel.ColorScheme = UiThemes.Instance.Muted;
+            _characterLabel.ColorScheme = UiThemes.Instance.ActiveMuted;
             _characterLabel.Text = $"({listType} in list)";
         }
         else
@@ -191,7 +191,7 @@ public class RandomEventView : View
             _characterLabel.Text = "";
         }
 
-        _actionLabel.ColorScheme = UiThemes.Instance.Accent;
+        _actionLabel.ColorScheme = UiThemes.Instance.ActiveAccent;
         _actionLabel.Text = _lastResult.EventAction;
 
         // Show Add NPC button if applicable

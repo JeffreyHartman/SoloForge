@@ -229,14 +229,15 @@ public class FateCheckView : View
     {
         if (_lastResult == null) return;
 
-        _resultLabel.ColorScheme = UiThemes.Instance.ForFateResult(_lastResult.Result);
+        _resultLabel.ColorScheme = _lastResult.Result.Contains("Yes")
+            ? UiThemes.Instance.ActiveSuccess : UiThemes.Instance.ActiveFailure;
         _resultLabel.Text = $">>> {_lastResult.Result} <<<";
 
         _detailsLabel.Text = $"Odds: {odds.GetDisplayName()}  |  Roll: {_lastResult.Roll}  |  Chaos: {_session.Chaos}";
 
         if (_lastEvent != null)
         {
-            _eventLabel.ColorScheme = UiThemes.Instance.Warning;
+            _eventLabel.ColorScheme = UiThemes.Instance.ActiveWarning;
             _eventLabel.Text = $"RANDOM EVENT: {_lastEvent.EventFocus}\n{_lastEvent.EventAction}";
         }
         else
