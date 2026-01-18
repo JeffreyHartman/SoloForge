@@ -44,6 +44,10 @@ public class LiveLogPanel : FrameView
 
     public void Refresh()
     {
+        // Update ColorSchemes for theme changes
+        ColorScheme = UiThemes.Instance.ActiveDefault;
+        _listView.ColorScheme = UiThemes.Instance.ActiveDefault;
+
         _entries.Clear();
 
         var recentEntries = _historyService.GetRecent(MaxEntries).Reverse().ToList();

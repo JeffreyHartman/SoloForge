@@ -1,0 +1,339 @@
+{
+  "themes": [
+    {
+      "name": "Classic Blue",
+      "description": "White on Blue - TurboPascal 5 style",
+      "default": {
+        "normal": { "foreground": "White", "background": "Blue" },
+        "focus": { "foreground": "Black", "background": "Cyan" },
+        "hotNormal": { "foreground": "BrightCyan", "background": "Blue" },
+        "hotFocus": { "foreground": "Black", "background": "BrightCyan" },
+        "disabled": { "foreground": "Gray", "background": "Blue" }
+      },
+      "menu": {
+        "normal": { "foreground": "White", "background": "DarkGray" },
+        "focus": { "foreground": "Black", "background": "Cyan" },
+        "hotNormal": { "foreground": "BrightYellow", "background": "DarkGray" },
+        "hotFocus": { "foreground": "BrightYellow", "background": "Cyan" },
+        "disabled": { "foreground": "Gray", "background": "DarkGray" }
+      },
+      "primary": {
+        "normal": { "foreground": "Cyan", "background": "Blue" },
+        "focus": { "foreground": "Black", "background": "Cyan" },
+        "hotNormal": { "foreground": "BrightCyan", "background": "Blue" },
+        "hotFocus": { "foreground": "Black", "background": "BrightCyan" },
+        "disabled": { "foreground": "Gray", "background": "Blue" }
+      },
+      "accent": {
+        "normal": { "foreground": "BrightYellow", "background": "Blue" },
+        "focus": { "foreground": "Black", "background": "BrightYellow" },
+        "hotNormal": { "foreground": "Yellow", "background": "Blue" },
+        "hotFocus": { "foreground": "Black", "background": "Yellow" },
+        "disabled": { "foreground": "Gray", "background": "Blue" }
+      },
+      "success": {
+        "normal": { "foreground": "BrightGreen", "background": "Blue" },
+        "focus": { "foreground": "Black", "background": "BrightGreen" },
+        "hotNormal": { "foreground": "Green", "background": "Blue" },
+        "hotFocus": { "foreground": "Black", "background": "Green" },
+        "disabled": { "foreground": "Gray", "background": "Blue" }
+      },
+      "failure": {
+        "normal": { "foreground": "BrightRed", "background": "Blue" },
+        "focus": { "foreground": "Black", "background": "BrightRed" },
+        "hotNormal": { "foreground": "Red", "background": "Blue" },
+        "hotFocus": { "foreground": "Black", "background": "Red" },
+        "disabled": { "foreground": "Gray", "background": "Blue" }
+      },
+      "warning": {
+        "normal": { "foreground": "Yellow", "background": "Blue" },
+        "focus": { "foreground": "Black", "background": "Yellow" },
+        "hotNormal": { "foreground": "BrightYellow", "background": "Blue" },
+        "hotFocus": { "foreground": "Black", "background": "BrightYellow" },
+        "disabled": { "foreground": "Gray", "background": "Blue" }
+      },
+      "muted": {
+        "normal": { "foreground": "Gray", "background": "Blue" },
+        "focus": { "foreground": "Black", "background": "Gray" },
+        "hotNormal": { "foreground": "White", "background": "Blue" },
+        "hotFocus": { "foreground": "Black", "background": "White" },
+        "disabled": { "foreground": "DarkGray", "background": "Blue" }
+      },
+      "error": {
+        "normal": { "foreground": "BrightRed", "background": "Blue" },
+        "focus": { "foreground": "White", "background": "Red" },
+        "hotNormal": { "foreground": "Red", "background": "Blue" },
+        "hotFocus": { "foreground": "White", "background": "BrightRed" },
+        "disabled": { "foreground": "Gray", "background": "Blue" }
+      }
+    },
+    {
+      "name": "Hot Dog Stand",
+      "description": "Yellow and Red - A bold classic",
+      "default": {
+        "normal": { "foreground": "Black", "background": "BrightYellow" },
+        "focus": { "foreground": "White", "background": "Red" },
+        "hotNormal": { "foreground": "Red", "background": "BrightYellow" },
+        "hotFocus": { "foreground": "BrightYellow", "background": "Red" },
+        "disabled": { "foreground": "DarkGray", "background": "BrightYellow" }
+      },
+      "menu": {
+        "normal": { "foreground": "White", "background": "Red" },
+        "focus": { "foreground": "Red", "background": "BrightYellow" },
+        "hotNormal": { "foreground": "BrightYellow", "background": "Red" },
+        "hotFocus": { "foreground": "Red", "background": "BrightYellow" },
+        "disabled": { "foreground": "DarkGray", "background": "Red" }
+      },
+      "primary": {
+        "normal": { "foreground": "Red", "background": "BrightYellow" },
+        "focus": { "foreground": "BrightYellow", "background": "Red" },
+        "hotNormal": { "foreground": "BrightRed", "background": "BrightYellow" },
+        "hotFocus": { "foreground": "White", "background": "Red" },
+        "disabled": { "foreground": "DarkGray", "background": "BrightYellow" }
+      },
+      "accent": {
+        "normal": { "foreground": "White", "background": "Red" },
+        "focus": { "foreground": "Red", "background": "White" },
+        "hotNormal": { "foreground": "BrightYellow", "background": "Red" },
+        "hotFocus": { "foreground": "Red", "background": "BrightYellow" },
+        "disabled": { "foreground": "DarkGray", "background": "Red" }
+      },
+      "success": {
+        "normal": { "foreground": "Green", "background": "BrightYellow" },
+        "focus": { "foreground": "White", "background": "Green" },
+        "hotNormal": { "foreground": "BrightGreen", "background": "BrightYellow" },
+        "hotFocus": { "foreground": "Black", "background": "BrightGreen" },
+        "disabled": { "foreground": "DarkGray", "background": "BrightYellow" }
+      },
+      "failure": {
+        "normal": { "foreground": "BrightRed", "background": "BrightYellow" },
+        "focus": { "foreground": "White", "background": "BrightRed" },
+        "hotNormal": { "foreground": "Red", "background": "BrightYellow" },
+        "hotFocus": { "foreground": "BrightYellow", "background": "Red" },
+        "disabled": { "foreground": "DarkGray", "background": "BrightYellow" }
+      },
+      "warning": {
+        "normal": { "foreground": "Black", "background": "BrightYellow" },
+        "focus": { "foreground": "BrightYellow", "background": "Black" },
+        "hotNormal": { "foreground": "DarkGray", "background": "BrightYellow" },
+        "hotFocus": { "foreground": "White", "background": "Black" },
+        "disabled": { "foreground": "Gray", "background": "BrightYellow" }
+      },
+      "muted": {
+        "normal": { "foreground": "DarkGray", "background": "BrightYellow" },
+        "focus": { "foreground": "BrightYellow", "background": "DarkGray" },
+        "hotNormal": { "foreground": "Gray", "background": "BrightYellow" },
+        "hotFocus": { "foreground": "White", "background": "DarkGray" },
+        "disabled": { "foreground": "Gray", "background": "BrightYellow" }
+      },
+      "error": {
+        "normal": { "foreground": "White", "background": "Red" },
+        "focus": { "foreground": "Red", "background": "White" },
+        "hotNormal": { "foreground": "BrightYellow", "background": "Red" },
+        "hotFocus": { "foreground": "Red", "background": "BrightYellow" },
+        "disabled": { "foreground": "DarkGray", "background": "Red" }
+      }
+    },
+    {
+      "name": "Amber Phosphor",
+      "description": "Black on Amber - Classic CRT terminal",
+      "default": {
+        "normal": { "foreground": "BrightYellow", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "BrightYellow" },
+        "hotNormal": { "foreground": "Yellow", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "Yellow" },
+        "disabled": { "foreground": "DarkGray", "background": "Black" }
+      },
+      "menu": {
+        "normal": { "foreground": "Black", "background": "BrightYellow" },
+        "focus": { "foreground": "BrightYellow", "background": "DarkGray" },
+        "hotNormal": { "foreground": "DarkGray", "background": "BrightYellow" },
+        "hotFocus": { "foreground": "White", "background": "DarkGray" },
+        "disabled": { "foreground": "Gray", "background": "BrightYellow" }
+      },
+      "primary": {
+        "normal": { "foreground": "Yellow", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "Yellow" },
+        "hotNormal": { "foreground": "BrightYellow", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "BrightYellow" },
+        "disabled": { "foreground": "DarkGray", "background": "Black" }
+      },
+      "accent": {
+        "normal": { "foreground": "White", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "White" },
+        "hotNormal": { "foreground": "BrightYellow", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "BrightYellow" },
+        "disabled": { "foreground": "DarkGray", "background": "Black" }
+      },
+      "success": {
+        "normal": { "foreground": "BrightYellow", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "BrightYellow" },
+        "hotNormal": { "foreground": "Yellow", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "Yellow" },
+        "disabled": { "foreground": "DarkGray", "background": "Black" }
+      },
+      "failure": {
+        "normal": { "foreground": "Yellow", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "Yellow" },
+        "hotNormal": { "foreground": "DarkGray", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "DarkGray" },
+        "disabled": { "foreground": "DarkGray", "background": "Black" }
+      },
+      "warning": {
+        "normal": { "foreground": "White", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "White" },
+        "hotNormal": { "foreground": "BrightYellow", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "BrightYellow" },
+        "disabled": { "foreground": "DarkGray", "background": "Black" }
+      },
+      "muted": {
+        "normal": { "foreground": "Yellow", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "Yellow" },
+        "hotNormal": { "foreground": "BrightYellow", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "BrightYellow" },
+        "disabled": { "foreground": "DarkGray", "background": "Black" }
+      },
+      "error": {
+        "normal": { "foreground": "White", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "White" },
+        "hotNormal": { "foreground": "BrightYellow", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "BrightYellow" },
+        "disabled": { "foreground": "DarkGray", "background": "Black" }
+      }
+    },
+    {
+      "name": "Green Phosphor",
+      "description": "Black on Green - Classic mainframe terminal",
+      "default": {
+        "normal": { "foreground": "BrightGreen", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "BrightGreen" },
+        "hotNormal": { "foreground": "Green", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "Green" },
+        "disabled": { "foreground": "DarkGray", "background": "Black" }
+      },
+      "menu": {
+        "normal": { "foreground": "Black", "background": "BrightGreen" },
+        "focus": { "foreground": "BrightGreen", "background": "DarkGray" },
+        "hotNormal": { "foreground": "DarkGray", "background": "BrightGreen" },
+        "hotFocus": { "foreground": "White", "background": "DarkGray" },
+        "disabled": { "foreground": "Gray", "background": "BrightGreen" }
+      },
+      "primary": {
+        "normal": { "foreground": "Green", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "Green" },
+        "hotNormal": { "foreground": "BrightGreen", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "BrightGreen" },
+        "disabled": { "foreground": "DarkGray", "background": "Black" }
+      },
+      "accent": {
+        "normal": { "foreground": "White", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "White" },
+        "hotNormal": { "foreground": "BrightGreen", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "BrightGreen" },
+        "disabled": { "foreground": "DarkGray", "background": "Black" }
+      },
+      "success": {
+        "normal": { "foreground": "BrightGreen", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "BrightGreen" },
+        "hotNormal": { "foreground": "Green", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "Green" },
+        "disabled": { "foreground": "DarkGray", "background": "Black" }
+      },
+      "failure": {
+        "normal": { "foreground": "Green", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "Green" },
+        "hotNormal": { "foreground": "DarkGray", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "DarkGray" },
+        "disabled": { "foreground": "DarkGray", "background": "Black" }
+      },
+      "warning": {
+        "normal": { "foreground": "White", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "White" },
+        "hotNormal": { "foreground": "BrightGreen", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "BrightGreen" },
+        "disabled": { "foreground": "DarkGray", "background": "Black" }
+      },
+      "muted": {
+        "normal": { "foreground": "Green", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "Green" },
+        "hotNormal": { "foreground": "BrightGreen", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "BrightGreen" },
+        "disabled": { "foreground": "DarkGray", "background": "Black" }
+      },
+      "error": {
+        "normal": { "foreground": "White", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "White" },
+        "hotNormal": { "foreground": "BrightGreen", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "BrightGreen" },
+        "disabled": { "foreground": "DarkGray", "background": "Black" }
+      }
+    },
+    {
+      "name": "Dark Mode",
+      "description": "White on Black - Modern dark theme",
+      "default": {
+        "normal": { "foreground": "White", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "Cyan" },
+        "hotNormal": { "foreground": "Cyan", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "Cyan" },
+        "disabled": { "foreground": "Gray", "background": "Black" }
+      },
+      "menu": {
+        "normal": { "foreground": "White", "background": "DarkGray" },
+        "focus": { "foreground": "Black", "background": "Cyan" },
+        "hotNormal": { "foreground": "Cyan", "background": "DarkGray" },
+        "hotFocus": { "foreground": "Black", "background": "Cyan" },
+        "disabled": { "foreground": "Gray", "background": "DarkGray" }
+      },
+      "primary": {
+        "normal": { "foreground": "Cyan", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "Cyan" },
+        "hotNormal": { "foreground": "BrightCyan", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "BrightCyan" },
+        "disabled": { "foreground": "Gray", "background": "Black" }
+      },
+      "accent": {
+        "normal": { "foreground": "BrightYellow", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "BrightYellow" },
+        "hotNormal": { "foreground": "Yellow", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "Yellow" },
+        "disabled": { "foreground": "Gray", "background": "Black" }
+      },
+      "success": {
+        "normal": { "foreground": "Green", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "Green" },
+        "hotNormal": { "foreground": "BrightGreen", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "BrightGreen" },
+        "disabled": { "foreground": "Gray", "background": "Black" }
+      },
+      "failure": {
+        "normal": { "foreground": "Red", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "Red" },
+        "hotNormal": { "foreground": "BrightRed", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "BrightRed" },
+        "disabled": { "foreground": "Gray", "background": "Black" }
+      },
+      "warning": {
+        "normal": { "foreground": "Yellow", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "Yellow" },
+        "hotNormal": { "foreground": "BrightYellow", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "BrightYellow" },
+        "disabled": { "foreground": "Gray", "background": "Black" }
+      },
+      "muted": {
+        "normal": { "foreground": "Gray", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "Gray" },
+        "hotNormal": { "foreground": "White", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "White" },
+        "disabled": { "foreground": "DarkGray", "background": "Black" }
+      },
+      "error": {
+        "normal": { "foreground": "BrightRed", "background": "Black" },
+        "focus": { "foreground": "Black", "background": "BrightRed" },
+        "hotNormal": { "foreground": "Red", "background": "Black" },
+        "hotFocus": { "foreground": "Black", "background": "Red" },
+        "disabled": { "foreground": "Gray", "background": "Black" }
+      }
+    }
+  ]
+}

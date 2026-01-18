@@ -147,12 +147,33 @@ public class CampaignInfoPanel : FrameView
         var campaign = _campaignService.CurrentCampaign;
         var chaos = _session.Chaos;
 
+        // Update ColorScheme for the panel itself (for theme changes)
+        ColorScheme = UiThemes.Instance.ActiveDefault;
+
         _campaignValue.Text = campaign?.Name ?? "No Campaign";
+        _campaignValue.ColorScheme = UiThemes.Instance.ActiveAccent;
+
         _chaosValue.Text = chaos.ToString();
         _chaosValue.ColorScheme = UiThemes.Instance.ForChaos(chaos);
+
         _engineValue.Text = _session.Engine;
+        _engineValue.ColorScheme = UiThemes.Instance.ActivePrimary;
+
         _charactersValue.Text = _stateManager.CharacterCount.ToString();
+        _charactersValue.ColorScheme = UiThemes.Instance.ActiveDefault;
+
         _threadsValue.Text = _stateManager.ActiveThreadCount.ToString();
+        _threadsValue.ColorScheme = UiThemes.Instance.ActiveDefault;
+
+        // Update all static labels' color schemes
+        foreach (var child in Subviews)
+        {
+            if (child is Label label && label != _campaignValue && label != _chaosValue &&
+                label != _engineValue && label != _charactersValue && label != _threadsValue)
+            {
+                label.ColorScheme = UiThemes.Instance.ActiveMuted;
+            }
+        }
 
         SetNeedsLayout();
     }

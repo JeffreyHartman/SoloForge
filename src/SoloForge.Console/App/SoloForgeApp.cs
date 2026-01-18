@@ -79,10 +79,14 @@ public class SoloForgeApp : Toplevel
                     new MenuItem("_Dice Roller", "", ShowDiceRoller, shortcutKey: Key.D.WithAlt),
                     null!, // separator
                     new MenuItem("_Game Manager", "", ShowGameManager, shortcutKey: Key.G.WithAlt)
-                ])
+                ]),
+                new MenuBarItem("_Themes", BuildThemeMenuItems())
             ],
             ColorScheme = UiThemes.Instance.ActiveMenu
         };
+
+        // Subscribe to theme changes
+        UiThemes.Instance.ThemeChanged += OnThemeChanged;
 
         // Create 3-column layout below MenuBar
         // Left: Campaign Info Panel (20%)
@@ -209,13 +213,15 @@ public class SoloForgeApp : Toplevel
 
     private void IncreaseChaos()
     {
-        _session.Chaos++;
+        var newValue = _session.Chaos + 1;
+        _session.Chaos = Math.Clamp(newValue, 1, 9);
         _campaignInfoPanel.Refresh();
     }
 
     private void DecreaseChaos()
     {
-        _session.Chaos--;
+        var newValue = _session.Chaos - 1;
+        _session.Chaos = Math.Clamp(newValue, 1, 9);
         _campaignInfoPanel.Refresh();
     }
 
@@ -317,15 +323,21 @@ public class SoloForgeApp : Toplevel
         Models.CampaignData? selected = null;
         listView.OpenSelectedItem += (s, e) =>
         {
-            selected = campaigns[listView.SelectedItem];
-            Application.RequestStop();
+            if (listView.SelectedItem >= 0 && listView.SelectedItem < campaigns.Count)
+            {
+                selected = campaigns[listView.SelectedItem];
+                Application.RequestStop();
+            }
         };
 
         var okButton = new Button { Text = "Switch", IsDefault = true };
         okButton.Accepting += (s, e) =>
         {
-            selected = campaigns[listView.SelectedItem];
-            Application.RequestStop();
+            if (listView.SelectedItem >= 0 && listView.SelectedItem < campaigns.Count)
+            {
+                selected = campaigns[listView.SelectedItem];
+                Application.RequestStop();
+            }
         };
 
         var cancelButton = new Button { Text = "Cancel" };
@@ -569,6 +581,62 @@ public class SoloForgeApp : Toplevel
     public void RefreshJournal()
     {
         _journalView.Refresh();
+    }
+
+    private MenuItem[] BuildThemeMenuItems()
+    {
+        var items = new List<MenuItem>();
+
+        // Add theme selection items
+        foreach (var themeName in ThemeService.Instance.AvailableThemes)
+        {
+            var name = themeName; // Capture for closure
+            var isActive = themeName == ThemeService.Instance.ActiveThemeName;
+            var marker = isActive ? "● " : "  ";
+            items.Add(new MenuItem($"{marker}{themeName}", "", () => SelectTheme(name)));
+        }
+
+        return items.ToArray();
+    }
+
+    private void SelectTheme(string themeName)
+    {
+        if (UiThemes.Instance.ApplyTheme(themeName))
+        {
+            _log.Information("Theme changed to: {ThemeName}", themeName);
+            RebuildThemeMenu();
+        }
+    }
+
+    private void RebuildThemeMenu()
+    {
+        // Find and update the Themes menu
+        var themesMenu = _menuBar.Menus.FirstOrDefault(m => m.Title.ToString()?.Contains("Themes") == true);
+        if (themesMenu != null)
+        {
+            themesMenu.Children = BuildThemeMenuItems();
+        }
+    }
+
+    private void OnThemeChanged()
+    {
+        // Update color schemes on all UI components
+        Application.Invoke(() =>
+        {
+            ColorScheme = UiThemes.Instance.ActiveDefault;
+            _menuBar.ColorScheme = UiThemes.Instance.ActiveMenu;
+            _contentFrame.ColorScheme = UiThemes.Instance.ActiveDefault;
+            _journalFrame.ColorScheme = UiThemes.Instance.ActiveDefault;
+            _journalView.ColorScheme = UiThemes.Instance.ActiveDefault;
+            _statusBar.ColorScheme = UiThemes.Instance.ActiveMenu;
+            _campaignInfoPanel.Refresh();
+            _liveLogPanel.Refresh();
+
+            // Rebuild content view to apply new theme colors
+            ShowMainMenu();
+
+            this.SetNeedsLayout();
+        });
     }
 
 }

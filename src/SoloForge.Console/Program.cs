@@ -10,6 +10,10 @@ try
 {
     AppLogger.Logger.Information("Starting SoloForge with Terminal.Gui");
 
+    // Load theme settings early (before UI initialization)
+    ThemeService.Instance.LoadSettings();
+    AppLogger.Logger.Information("Theme loaded: {ThemeName}", ThemeService.Instance.ActiveThemeName);
+
     // Initialize services
     var session = new Session();
     var stateManager = AdventureStateManager.Instance;
