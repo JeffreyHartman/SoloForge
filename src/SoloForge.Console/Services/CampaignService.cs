@@ -191,19 +191,36 @@ public sealed class CampaignService
             if (Path.GetFileName(file) == "settings.json")
                 continue;
 
+            var fileName = Path.GetFileNameWithoutExtension(file);
+            if (!Guid.TryParse(fileName, out var fileId))
+            {
+                _log.Warning("Skipping campaign file with non-guid name: {Path}", file);
+                continue;
+            }
+
             CampaignData? data = null;
             try
             {
                 var json = File.ReadAllText(file);
                 data = JsonSerializer.Deserialize<CampaignData>(json, JsonOptions);
             }
-            catch
+            catch (Exception ex)
             {
-                // Skip corrupt files
+                _log.Warning(ex, "Skipping corrupt campaign file: {Path}", file);
             }
 
-            if (data != null)
-                yield return data;
+            if (data == null)
+                continue;
+
+            if (data.Id != fileId)
+            {
+                // If the JSON payload has an ID mismatch vs the filename, prefer the filename.
+                // Otherwise campaign switching will try to load a file that does not exist.
+                _log.Warning("Campaign ID mismatch. Using filename ID. File={Path} JsonId={JsonId} FileId={FileId}", file, data.Id, fileId);
+                data = data with { Id = fileId };
+            }
+
+            yield return data;
         }
     }
 

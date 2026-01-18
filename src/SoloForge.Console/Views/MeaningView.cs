@@ -5,6 +5,7 @@ using SoloForge.Console.Core;
 using SoloForge.Console.Engines.Mythic2e;
 using SoloForge.Console.Models;
 using SoloForge.Console.Services;
+using SoloForge.Console.Views.Components;
 
 namespace SoloForge.Console.Views;
 
@@ -16,7 +17,7 @@ public class MeaningView : View
     private readonly Session _session;
     private readonly HistoryService _historyService;
     private readonly CampaignService _campaignService;
-    private readonly JournalView _journalView;
+    private readonly JournalPanel _journalPanel;
 
     private readonly FrameView _menuFrame;
     private readonly FrameView _resultFrame;
@@ -32,12 +33,12 @@ public class MeaningView : View
         Session session,
         HistoryService historyService,
         CampaignService campaignService,
-        JournalView journalView)
+        JournalPanel journalPanel)
     {
         _session = session;
         _historyService = historyService;
         _campaignService = campaignService;
-        _journalView = journalView;
+        _journalPanel = journalPanel;
 
         // Menu frame
         _menuFrame = new FrameView
@@ -413,7 +414,7 @@ public class MeaningView : View
             var entry = _historyService.Entries.LastOrDefault();
             if (entry != null)
             {
-                _journalView.AppendEntry(entry);
+                _journalPanel.AppendEntry(entry);
             }
 
             // Build result text
@@ -494,7 +495,7 @@ public class MeaningView : View
         var entry = _historyService.Entries.LastOrDefault();
         if (entry != null)
         {
-            _journalView.AppendEntry(entry);
+            _journalPanel.AppendEntry(entry);
         }
 
         // Update display

@@ -4,6 +4,7 @@ using SoloForge.Console.Core;
 using SoloForge.Console.Engines.Mythic2e;
 using SoloForge.Console.Models;
 using SoloForge.Console.Services;
+using SoloForge.Console.Views.Components;
 
 namespace SoloForge.Console.Views;
 
@@ -16,7 +17,7 @@ public class RandomEventView : View
     private readonly AdventureStateManager _stateManager;
     private readonly HistoryService _historyService;
     private readonly CampaignService _campaignService;
-    private readonly JournalView _journalView;
+    private readonly JournalPanel _journalPanel;
 
     private readonly FrameView _focusFrame;
     private readonly Label _focusLabel;
@@ -33,13 +34,13 @@ public class RandomEventView : View
         AdventureStateManager stateManager,
         HistoryService historyService,
         CampaignService campaignService,
-        JournalView journalView)
+        JournalPanel journalPanel)
     {
         _session = session;
         _stateManager = stateManager;
         _historyService = historyService;
         _campaignService = campaignService;
-        _journalView = journalView;
+        _journalPanel = journalPanel;
 
         // Focus frame
         _focusFrame = new FrameView
@@ -155,7 +156,7 @@ public class RandomEventView : View
         var entry = _historyService.Entries.LastOrDefault();
         if (entry != null)
         {
-            _journalView.AppendEntry(entry);
+            _journalPanel.AppendEntry(entry);
         }
 
         // Display result

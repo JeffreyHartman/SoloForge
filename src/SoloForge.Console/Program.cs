@@ -19,6 +19,7 @@ try
     var stateManager = AdventureStateManager.Instance;
     var historyService = new HistoryService();
     var campaignService = new CampaignService(session, stateManager, historyService);
+    var journalService = new JournalService(campaignService.GetJournalPath, TemplateService.Instance);
 
     // Initialize campaign service (loads last campaign or creates default)
     campaignService.Initialize();
@@ -31,7 +32,7 @@ try
     try
     {
         // Create and run the main application
-        var app = new SoloForgeApp(session, stateManager, historyService, campaignService);
+        var app = new SoloForgeApp(session, stateManager, historyService, campaignService, journalService);
         Application.Run(app);
     }
     finally

@@ -5,6 +5,7 @@ using SoloForge.Console.Core;
 using SoloForge.Console.Engines.Mythic2e;
 using SoloForge.Console.Models;
 using SoloForge.Console.Services;
+using SoloForge.Console.Views.Components;
 
 namespace SoloForge.Console.Views;
 
@@ -16,7 +17,7 @@ public class FateCheckView : View
     private readonly Session _session;
     private readonly HistoryService _historyService;
     private readonly CampaignService _campaignService;
-    private readonly JournalView _journalView;
+    private readonly JournalPanel _journalPanel;
 
     private readonly TextField _questionField;
     private readonly ListView _oddsList;
@@ -34,12 +35,12 @@ public class FateCheckView : View
         Session session,
         HistoryService historyService,
         CampaignService campaignService,
-        JournalView journalView)
+        JournalPanel journalPanel)
     {
         _session = session;
         _historyService = historyService;
         _campaignService = campaignService;
-        _journalView = journalView;
+        _journalPanel = journalPanel;
 
         // Question input
         var questionLabel = new Label
@@ -197,7 +198,7 @@ public class FateCheckView : View
         var fateEntry = _historyService.Entries.LastOrDefault();
         if (fateEntry != null)
         {
-            _journalView.AppendEntry(fateEntry);
+            _journalPanel.AppendEntry(fateEntry);
         }
 
         // Check for random event
@@ -215,7 +216,7 @@ public class FateCheckView : View
             var eventEntry = _historyService.Entries.LastOrDefault();
             if (eventEntry != null)
             {
-                _journalView.AppendEntry(eventEntry);
+                _journalPanel.AppendEntry(eventEntry);
             }
         }
 

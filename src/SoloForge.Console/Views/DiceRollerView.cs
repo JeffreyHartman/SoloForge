@@ -2,6 +2,7 @@ using Terminal.Gui;
 using SoloForge.Console.App;
 using SoloForge.Console.Models;
 using SoloForge.Console.Services;
+using SoloForge.Console.Views.Components;
 
 namespace SoloForge.Console.Views;
 
@@ -12,7 +13,7 @@ public class DiceRollerView : View
 {
     private readonly HistoryService _historyService;
     private readonly CampaignService _campaignService;
-    private readonly JournalView _journalView;
+    private readonly JournalPanel _journalPanel;
 
     private readonly TextField _expressionField;
     private readonly FrameView _resultFrame;
@@ -25,11 +26,11 @@ public class DiceRollerView : View
     public DiceRollerView(
         HistoryService historyService,
         CampaignService campaignService,
-        JournalView journalView)
+        JournalPanel journalPanel)
     {
         _historyService = historyService;
         _campaignService = campaignService;
-        _journalView = journalView;
+        _journalPanel = journalPanel;
 
         // Expression input
         var inputLabel = new Label
@@ -175,7 +176,7 @@ public class DiceRollerView : View
         var entry = _historyService.Entries.LastOrDefault();
         if (entry != null)
         {
-            _journalView.AppendEntry(entry);
+            _journalPanel.AppendEntry(entry);
         }
 
         // Display result

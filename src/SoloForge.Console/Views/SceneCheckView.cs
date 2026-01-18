@@ -4,6 +4,7 @@ using SoloForge.Console.Core;
 using SoloForge.Console.Engines.Mythic2e;
 using SoloForge.Console.Models;
 using SoloForge.Console.Services;
+using SoloForge.Console.Views.Components;
 
 namespace SoloForge.Console.Views;
 
@@ -15,7 +16,7 @@ public class SceneCheckView : View
     private readonly Session _session;
     private readonly HistoryService _historyService;
     private readonly CampaignService _campaignService;
-    private readonly JournalView _journalView;
+    private readonly JournalPanel _journalPanel;
 
     private readonly TextField _contextField;
     private readonly Label _chaosLabel;
@@ -33,12 +34,12 @@ public class SceneCheckView : View
         Session session,
         HistoryService historyService,
         CampaignService campaignService,
-        JournalView journalView)
+        JournalPanel journalPanel)
     {
         _session = session;
         _historyService = historyService;
         _campaignService = campaignService;
-        _journalView = journalView;
+        _journalPanel = journalPanel;
 
         // Context input
         var contextLabel = new Label
@@ -275,7 +276,7 @@ public class SceneCheckView : View
         var sceneEntry = _historyService.Entries.LastOrDefault();
         if (sceneEntry != null)
         {
-            _journalView.AppendEntry(sceneEntry);
+            _journalPanel.AppendEntry(sceneEntry);
         }
 
         // Log and append random event if triggered
@@ -290,7 +291,7 @@ public class SceneCheckView : View
             var eventEntry = _historyService.Entries.LastOrDefault();
             if (eventEntry != null)
             {
-                _journalView.AppendEntry(eventEntry);
+                _journalPanel.AppendEntry(eventEntry);
             }
         }
 

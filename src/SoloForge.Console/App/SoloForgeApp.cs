@@ -7,6 +7,30 @@ using SoloForge.Console.Views.Components;
 
 namespace SoloForge.Console.App;
 
+internal static class ViewHierarchy
+{
+    public static bool IsInHierarchy(View root, View? candidate)
+    {
+        if (candidate == null)
+        {
+            return false;
+        }
+
+        var current = candidate;
+        while (current != null)
+        {
+            if (ReferenceEquals(current, root))
+            {
+                return true;
+            }
+
+            current = current.SuperView;
+        }
+
+        return false;
+    }
+}
+
 /// <summary>
 /// Main application window for SoloForge using Terminal.Gui.
 /// Manages the split-pane layout with swappable content views and persistent journal.
@@ -23,8 +47,7 @@ public class SoloForgeApp : Toplevel
     private readonly CampaignInfoPanel _campaignInfoPanel;
     private readonly FrameView _contentFrame;
     private readonly LiveLogPanel _liveLogPanel;
-    private readonly FrameView _journalFrame;
-    private readonly JournalView _journalView;
+    private readonly JournalPanel _journalPanel;
     private readonly StatusBar _statusBar;
 
     private View? _currentContentView;
@@ -34,7 +57,8 @@ public class SoloForgeApp : Toplevel
         Session session,
         AdventureStateManager stateManager,
         HistoryService historyService,
-        CampaignService campaignService)
+        CampaignService campaignService,
+        JournalService journalService)
     {
         _session = session;
         _stateManager = stateManager;
@@ -120,31 +144,14 @@ public class SoloForgeApp : Toplevel
             Height = Dim.Fill(1)
         };
 
-        // Create journal frame (hidden by default, overlays live log when visible)
-        _journalFrame = new FrameView
+        // Journal panel (hidden by default, overlays live log when visible)
+        _journalPanel = new JournalPanel(campaignService, journalService)
         {
-            Title = "Journal",
             X = Pos.Right(_contentFrame),
             Y = Pos.Bottom(_menuBar),
             Width = Dim.Fill(),
-            Height = Dim.Fill(1),
-            BorderStyle = LineStyle.Double,
-            ColorScheme = UiThemes.Instance.ActiveDefault,
-            CanFocus = true,
-            Visible = false
+            Height = Dim.Fill(1)
         };
-
-        // Create journal view
-        _journalView = new JournalView(historyService, campaignService)
-        {
-            X = 0,
-            Y = 0,
-            Width = Dim.Fill(),
-            Height = Dim.Fill(),
-            CanFocus = true
-        };
-        _journalFrame.Add(_journalView);
-
         // Create native StatusBar at bottom
         _statusBar = new StatusBar
         {
@@ -162,7 +169,7 @@ public class SoloForgeApp : Toplevel
             new Shortcut { Title = "Chaos-", Key = (Key)'-', Action = DecreaseChaos }
         );
 
-        Add(_menuBar, _campaignInfoPanel, _contentFrame, _liveLogPanel, _journalFrame, _statusBar);
+        Add(_menuBar, _campaignInfoPanel, _contentFrame, _liveLogPanel, _journalPanel, _statusBar);
 
         // Show main menu initially
         ShowMainMenu();
@@ -255,7 +262,7 @@ public class SoloForgeApp : Toplevel
             if (!string.IsNullOrWhiteSpace(name))
             {
                 _campaignService.CreateNew(name);
-                _journalView.ReloadForCampaign();
+                _journalPanel.ReloadForCampaign();
                 RefreshSessionInfo();
             }
             Application.RequestStop();
@@ -351,9 +358,26 @@ public class SoloForgeApp : Toplevel
 
         if (selected != null && selected.Id != _campaignService.CurrentCampaign?.Id)
         {
-            _campaignService.Load(selected.Id);
-            _journalView.ReloadForCampaign();
-            RefreshSessionInfo();
+            try
+            {
+                _campaignService.Load(selected.Id);
+                _journalPanel.ReloadForCampaign();
+                RefreshSessionInfo();
+            }
+            catch (FileNotFoundException)
+            {
+                MessageBox.ErrorQuery(
+                    "Campaign Not Found",
+                    "That campaign save file is missing. It may have been deleted or renamed outside of SoloForge.",
+                    "OK");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.ErrorQuery(
+                    "Switch Failed",
+                    $"Failed to switch campaigns: {ex.Message}",
+                    "OK");
+            }
         }
     }
 
@@ -385,7 +409,7 @@ public class SoloForgeApp : Toplevel
             details: $"Table: {primaryTable.DisplayName}"
         );
 
-        _journalView.AppendEntry(entry);
+        _journalPanel.AppendEntry(entry);
         _campaignService.Save();
 
         MessageBox.Query($"{tableType} Meaning", resultText, "OK");
@@ -399,12 +423,12 @@ public class SoloForgeApp : Toplevel
         {
             // Show journal, hide live log
             _liveLogPanel.Visible = false;
-            _journalFrame.Visible = true;
+            _journalPanel.Visible = true;
         }
         else
         {
             // Show live log, hide journal
-            _journalFrame.Visible = false;
+            _journalPanel.Visible = false;
             _liveLogPanel.Visible = true;
             _liveLogPanel.Refresh();
         }
@@ -419,7 +443,7 @@ public class SoloForgeApp : Toplevel
             return false;
         }
 
-        if (_journalFrame.Visible == false || _contentFrame.Visible == false)
+        if (_journalPanel.Visible == false || _contentFrame.Visible == false)
         {
             return false;
         }
@@ -430,8 +454,8 @@ public class SoloForgeApp : Toplevel
             return false;
         }
 
-        var inContent = ApplicationNavigation.IsInHierarchy(_contentFrame, focused);
-        var inJournal = ApplicationNavigation.IsInHierarchy(_journalFrame, focused);
+        var inContent = ViewHierarchy.IsInHierarchy(_contentFrame, focused);
+        var inJournal = ViewHierarchy.IsInHierarchy(_journalPanel, focused);
         if (!inContent && !inJournal)
         {
             return false;
@@ -443,14 +467,14 @@ public class SoloForgeApp : Toplevel
             return false;
         }
 
-        var target = _journalView.HasFocus ? _currentContentView : _journalView;
+        var target = _journalPanel.HasFocus ? _currentContentView : _journalPanel;
         if (!inContent && inJournal && _currentContentView != null)
         {
             target = _currentContentView;
         }
         else if (inContent && !inJournal)
         {
-            target = _journalView;
+            target = _journalPanel;
         }
         if (target == null)
         {
@@ -523,25 +547,25 @@ public class SoloForgeApp : Toplevel
 
     public void ShowFateCheck()
     {
-        var view = new FateCheckView(_session, _historyService, _campaignService, _journalView);
+        var view = new FateCheckView(_session, _historyService, _campaignService, _journalPanel);
         SetContentView(view, "Fate Check");
     }
 
     public void ShowSceneCheck()
     {
-        var view = new SceneCheckView(_session, _historyService, _campaignService, _journalView);
+        var view = new SceneCheckView(_session, _historyService, _campaignService, _journalPanel);
         SetContentView(view, "Scene Check");
     }
 
     public void ShowRandomEvent()
     {
-        var view = new RandomEventView(_session, _stateManager, _historyService, _campaignService, _journalView);
+        var view = new RandomEventView(_session, _stateManager, _historyService, _campaignService, _journalPanel);
         SetContentView(view, "Random Event");
     }
 
     public void ShowMeaning()
     {
-        var view = new MeaningView(_session, _historyService, _campaignService, _journalView);
+        var view = new MeaningView(_session, _historyService, _campaignService, _journalPanel);
         SetContentView(view, "Discovering Meaning");
     }
 
@@ -553,13 +577,13 @@ public class SoloForgeApp : Toplevel
 
     public void ShowDiceRoller()
     {
-        var view = new DiceRollerView(_historyService, _campaignService, _journalView);
+        var view = new DiceRollerView(_historyService, _campaignService, _journalPanel);
         SetContentView(view, "Dice Roller");
     }
 
     public void ShowGameManager()
     {
-        var view = new GameManagerView(_campaignService, _journalView, this);
+        var view = new GameManagerView(_campaignService, _journalPanel, this);
         SetContentView(view, "Game Manager");
     }
 
@@ -580,7 +604,7 @@ public class SoloForgeApp : Toplevel
 
     public void RefreshJournal()
     {
-        _journalView.Refresh();
+        _journalPanel.ReloadForCampaign();
     }
 
     private MenuItem[] BuildThemeMenuItems()
@@ -626,8 +650,7 @@ public class SoloForgeApp : Toplevel
             ColorScheme = UiThemes.Instance.ActiveDefault;
             _menuBar.ColorScheme = UiThemes.Instance.ActiveMenu;
             _contentFrame.ColorScheme = UiThemes.Instance.ActiveDefault;
-            _journalFrame.ColorScheme = UiThemes.Instance.ActiveDefault;
-            _journalView.ColorScheme = UiThemes.Instance.ActiveDefault;
+            _journalPanel.ApplyTheme();
             _statusBar.ColorScheme = UiThemes.Instance.ActiveMenu;
             _campaignInfoPanel.Refresh();
             _liveLogPanel.Refresh();

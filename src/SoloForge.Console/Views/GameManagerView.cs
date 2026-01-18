@@ -3,6 +3,7 @@ using Terminal.Gui;
 using SoloForge.Console.App;
 using SoloForge.Console.Models;
 using SoloForge.Console.Services;
+using SoloForge.Console.Views.Components;
 
 namespace SoloForge.Console.Views;
 
@@ -12,15 +13,15 @@ namespace SoloForge.Console.Views;
 public class GameManagerView : View
 {
     private readonly CampaignService _campaignService;
-    private readonly JournalView _journalView;
+    private readonly JournalPanel _journalPanel;
     private readonly SoloForgeApp _app;
 
     private readonly Label _infoLabel;
 
-    public GameManagerView(CampaignService campaignService, JournalView journalView, SoloForgeApp app)
+    public GameManagerView(CampaignService campaignService, JournalPanel journalPanel, SoloForgeApp app)
     {
         _campaignService = campaignService;
-        _journalView = journalView;
+        _journalPanel = journalPanel;
         _app = app;
 
         // Current campaign info
@@ -159,7 +160,7 @@ public class GameManagerView : View
             if (!string.IsNullOrWhiteSpace(name))
             {
                 _campaignService.CreateNew(name);
-                _journalView.ReloadForCampaign();
+                _journalPanel.ReloadForCampaign();
                 _app.RefreshSessionInfo();
                 RefreshInfo();
             }
@@ -249,10 +250,28 @@ public class GameManagerView : View
 
         if (selected != null && selected.Id != _campaignService.CurrentCampaign?.Id)
         {
-            _campaignService.Load(selected.Id);
-            _journalView.ReloadForCampaign();
-            _app.RefreshSessionInfo();
-            RefreshInfo();
+            try
+            {
+                _campaignService.Load(selected.Id);
+                _journalPanel.ReloadForCampaign();
+                _app.RefreshSessionInfo();
+                RefreshInfo();
+            }
+            catch (FileNotFoundException)
+            {
+                MessageBox.ErrorQuery(
+                    "Campaign Not Found",
+                    "That campaign save file is missing. It may have been deleted or renamed outside of SoloForge.",
+                    "OK");
+                RefreshInfo();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.ErrorQuery(
+                    "Switch Failed",
+                    $"Failed to switch campaigns: {ex.Message}",
+                    "OK");
+            }
         }
     }
 
@@ -347,7 +366,7 @@ public class GameManagerView : View
                     {
                         _campaignService.CreateNew("Default Campaign");
                     }
-                    _journalView.ReloadForCampaign();
+                    _journalPanel.ReloadForCampaign();
                 }
 
                 _app.RefreshSessionInfo();
