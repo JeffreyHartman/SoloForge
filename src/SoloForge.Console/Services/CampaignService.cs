@@ -37,13 +37,22 @@ public sealed class CampaignService
     public string SettingsPath => Path.Combine(SavesDirectory, "settings.json");
 
     public CampaignService(Session session, AdventureStateManager stateManager, HistoryService historyService)
+        : this(session, stateManager, historyService, null)
+    {
+    }
+
+    public CampaignService(Session session, AdventureStateManager stateManager, HistoryService historyService, string? savesDirectory)
     {
         _session = session;
         _stateManager = stateManager;
         _historyService = historyService;
 
         // Find saves directory relative to app
-        SavesDirectory = FindOrCreateSavesDirectory();
+        SavesDirectory = string.IsNullOrWhiteSpace(savesDirectory)
+            ? FindOrCreateSavesDirectory()
+            : savesDirectory;
+
+        Directory.CreateDirectory(SavesDirectory);
         _log.Debug("CampaignService initialized with saves directory: {Path}", SavesDirectory);
     }
 

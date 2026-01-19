@@ -1,5 +1,7 @@
 using SoloForge.Console.Models;
 
+using SoloForge.Console.Services;
+
 namespace SoloForge.Console.Engines.Mythic2e;
 
 /// <summary>
@@ -39,6 +41,11 @@ public static class FateCheck
     /// </summary>
     public static FateCheckResult PerformCheck(int chaosFactor, Odds odds)
     {
+        return PerformCheck(chaosFactor, odds, SharedRng.Instance);
+    }
+
+    public static FateCheckResult PerformCheck(int chaosFactor, Odds odds, IRng rng)
+    {
         // Validate inputs
         if (chaosFactor < 1 || chaosFactor > 9)
             throw new ArgumentException("Chaos factor must be between 1 and 9", nameof(chaosFactor));
@@ -46,8 +53,11 @@ public static class FateCheck
         if (!Enum.IsDefined(typeof(Odds), odds))
             throw new ArgumentException("Invalid odds value", nameof(odds));
 
+        if (rng == null)
+            throw new ArgumentNullException(nameof(rng));
+
         // Roll d100 (1-100)
-        int roll = Random.Shared.Next(1, 101);
+        int roll = rng.Next(1, 101);
 
         // Get thresholds from fate chart
         int oddsIndex = (int)odds;

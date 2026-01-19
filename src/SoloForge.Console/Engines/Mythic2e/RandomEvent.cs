@@ -8,6 +8,8 @@ namespace SoloForge.Console.Engines.Mythic2e;
 /// </summary>
 public static class RandomEvent
 {
+    private static readonly ITableWordSource _defaultWordSource = new TableServiceWordSource();
+
     /// <summary>
     /// Event Focus table mapping d100 rolls to event types.
     /// </summary>
@@ -53,9 +55,22 @@ public static class RandomEvent
     /// </summary>
     public static RandomEventResult Generate()
     {
-        var eventFocus = GenerateEventFocus();
-        var eventAction = GenerateAction();
-        var state = AdventureStateManager.Instance;
+        return Generate(AdventureStateManager.Instance.State, SharedRng.Instance, _defaultWordSource);
+    }
+
+    public static RandomEventResult Generate(AdventureState state, IRng rng, ITableWordSource wordSource)
+    {
+        if (state == null)
+            throw new ArgumentNullException(nameof(state));
+
+        if (rng == null)
+            throw new ArgumentNullException(nameof(rng));
+
+        if (wordSource == null)
+            throw new ArgumentNullException(nameof(wordSource));
+
+        var eventFocus = GenerateEventFocus(rng);
+        var eventAction = GenerateAction(wordSource);
 
         string? selectedCharacter = null;
         string? selectedThread = null;
@@ -65,7 +80,7 @@ public static class RandomEvent
         // Handle NPC-related focus types
         if (NpcFocusTypes.Contains(eventFocus))
         {
-            var character = state.State.GetRandomCharacter();
+            var character = GetRandomCharacter(state, rng);
             if (character != null)
             {
                 selectedCharacter = character.Name;
@@ -79,7 +94,7 @@ public static class RandomEvent
         // Handle Thread-related focus types
         if (ThreadFocusTypes.Contains(eventFocus))
         {
-            var thread = state.State.GetRandomThread();
+            var thread = GetRandomThread(state, rng);
             if (thread != null)
             {
                 selectedThread = thread.Name;
@@ -105,7 +120,15 @@ public static class RandomEvent
     /// </summary>
     public static string GenerateEventFocus()
     {
-        int roll = Random.Shared.Next(1, 101);
+        return GenerateEventFocus(SharedRng.Instance);
+    }
+
+    public static string GenerateEventFocus(IRng rng)
+    {
+        if (rng == null)
+            throw new ArgumentNullException(nameof(rng));
+
+        int roll = rng.Next(1, 101);
 
         foreach (var (range, focus) in EventFocusTable)
         {
@@ -123,7 +146,15 @@ public static class RandomEvent
     /// </summary>
     public static string GenerateAction()
     {
-        return TableService.Instance.GetFusionPair("action1", "action2");
+        return GenerateAction(_defaultWordSource);
+    }
+
+    public static string GenerateAction(ITableWordSource wordSource)
+    {
+        if (wordSource == null)
+            throw new ArgumentNullException(nameof(wordSource));
+
+        return wordSource.GetFusionPair("action1", "action2");
     }
 
     /// <summary>
@@ -135,4 +166,26 @@ public static class RandomEvent
     /// Checks if the given focus type is Thread-related.
     /// </summary>
     public static bool IsThreadFocus(string focus) => ThreadFocusTypes.Contains(focus);
+
+    private static Character? GetRandomCharacter(AdventureState state, IRng rng)
+    {
+        if (state.Characters.Count == 0)
+        {
+            return null;
+        }
+
+        var index = rng.Next(0, state.Characters.Count);
+        return state.Characters[index];
+    }
+
+    private static PlotThread? GetRandomThread(AdventureState state, IRng rng)
+    {
+        if (state.ActiveThreads.Count == 0)
+        {
+            return null;
+        }
+
+        var index = rng.Next(0, state.ActiveThreads.Count);
+        return state.ActiveThreads[index];
+    }
 }

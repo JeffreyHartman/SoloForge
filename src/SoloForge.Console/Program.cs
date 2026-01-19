@@ -19,7 +19,7 @@ try
     var stateManager = AdventureStateManager.Instance;
     var historyService = new HistoryService();
     var campaignService = new CampaignService(session, stateManager, historyService);
-    var journalService = new JournalService(campaignService.GetJournalPath, TemplateService.Instance);
+    var journalService = new JournalService(campaignService.GetJournalPath, new TemplateServiceRenderer());
 
     // Initialize campaign service (loads last campaign or creates default)
     campaignService.Initialize();

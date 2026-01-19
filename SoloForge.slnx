@@ -2,4 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/SoloForge.Console/SoloForge.Console.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SoloForge.Console.Tests/SoloForge.Console.Tests.csproj" />
+  </Folder>
 </Solution>

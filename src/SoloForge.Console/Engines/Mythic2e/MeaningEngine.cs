@@ -8,6 +8,8 @@ namespace SoloForge.Console.Engines.Mythic2e;
 /// </summary>
 public static class MeaningEngine
 {
+    private static readonly ITableWordSource _defaultWordSource = new TableServiceWordSource();
+
     /// <summary>
     /// NPC profile attributes and their corresponding element table IDs.
     /// </summary>
@@ -37,8 +39,16 @@ public static class MeaningEngine
     /// </summary>
     public static MeaningResult GenerateAction()
     {
-        var word1 = TableService.Instance.GetRandomWord("action1");
-        var word2 = TableService.Instance.GetRandomWord("action2");
+        return GenerateAction(_defaultWordSource);
+    }
+
+    public static MeaningResult GenerateAction(ITableWordSource wordSource)
+    {
+        if (wordSource == null)
+            throw new ArgumentNullException(nameof(wordSource));
+
+        var word1 = wordSource.GetRandomWord("action1");
+        var word2 = wordSource.GetRandomWord("action2");
         return new MeaningResult("Action", word1, word2);
     }
 
@@ -47,8 +57,16 @@ public static class MeaningEngine
     /// </summary>
     public static MeaningResult GenerateDescription()
     {
-        var word1 = TableService.Instance.GetRandomWord("descriptor1");
-        var word2 = TableService.Instance.GetRandomWord("descriptor2");
+        return GenerateDescription(_defaultWordSource);
+    }
+
+    public static MeaningResult GenerateDescription(ITableWordSource wordSource)
+    {
+        if (wordSource == null)
+            throw new ArgumentNullException(nameof(wordSource));
+
+        var word1 = wordSource.GetRandomWord("descriptor1");
+        var word2 = wordSource.GetRandomWord("descriptor2");
         return new MeaningResult("Description", word1, word2);
     }
 
@@ -57,10 +75,18 @@ public static class MeaningEngine
     /// </summary>
     public static MeaningResult GenerateFromTable(string tableId, string? displayName = null)
     {
-        var table = TableService.Instance.FindTable(tableId);
+        return GenerateFromTable(_defaultWordSource, tableId, displayName);
+    }
+
+    public static MeaningResult GenerateFromTable(ITableWordSource wordSource, string tableId, string? displayName = null)
+    {
+        if (wordSource == null)
+            throw new ArgumentNullException(nameof(wordSource));
+
+        var table = wordSource.FindTable(tableId);
         var name = displayName ?? table?.DisplayName ?? tableId;
-        var word1 = TableService.Instance.GetRandomWord(tableId);
-        var word2 = TableService.Instance.GetRandomWord(tableId);
+        var word1 = wordSource.GetRandomWord(tableId);
+        var word2 = wordSource.GetRandomWord(tableId);
         return new MeaningResult(name, word1, word2);
     }
 
@@ -69,11 +95,19 @@ public static class MeaningEngine
     /// </summary>
     public static MeaningResult GenerateFusion(string tableId1, string tableId2)
     {
-        var table1 = TableService.Instance.FindTable(tableId1);
-        var table2 = TableService.Instance.FindTable(tableId2);
+        return GenerateFusion(_defaultWordSource, tableId1, tableId2);
+    }
+
+    public static MeaningResult GenerateFusion(ITableWordSource wordSource, string tableId1, string tableId2)
+    {
+        if (wordSource == null)
+            throw new ArgumentNullException(nameof(wordSource));
+
+        var table1 = wordSource.FindTable(tableId1);
+        var table2 = wordSource.FindTable(tableId2);
         var name = $"{table1?.DisplayName ?? tableId1} + {table2?.DisplayName ?? tableId2}";
-        var word1 = TableService.Instance.GetRandomWord(tableId1);
-        var word2 = TableService.Instance.GetRandomWord(tableId2);
+        var word1 = wordSource.GetRandomWord(tableId1);
+        var word2 = wordSource.GetRandomWord(tableId2);
         return new MeaningResult(name, word1, word2, IsFusion: true);
     }
 
@@ -86,7 +120,7 @@ public static class MeaningEngine
 
         foreach (var (attribute, tableId) in NpcProfileTables)
         {
-            attributes[attribute] = GenerateFromTable(tableId, attribute);
+            attributes[attribute] = GenerateFromTable(_defaultWordSource, tableId, attribute);
         }
 
         return new NpcProfile(attributes);

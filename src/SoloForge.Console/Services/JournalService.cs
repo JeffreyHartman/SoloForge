@@ -6,13 +6,13 @@ namespace SoloForge.Console.Services;
 public sealed class JournalService
 {
     private readonly Func<Guid, string> _journalPathResolver;
-    private readonly TemplateService _templateService;
+    private readonly ITemplateRenderer _templateRenderer;
     private readonly ILogger _log = AppLogger.ForContext<JournalService>();
 
-    public JournalService(Func<Guid, string> journalPathResolver, TemplateService templateService)
+    public JournalService(Func<Guid, string> journalPathResolver, ITemplateRenderer templateRenderer)
     {
         _journalPathResolver = journalPathResolver ?? throw new ArgumentNullException(nameof(journalPathResolver));
-        _templateService = templateService ?? throw new ArgumentNullException(nameof(templateService));
+        _templateRenderer = templateRenderer ?? throw new ArgumentNullException(nameof(templateRenderer));
     }
 
     public string LoadOrCreate(Guid campaignId, string campaignName)
@@ -56,7 +56,7 @@ public sealed class JournalService
         }
     }
 
-    public string ToMarkdown(LogEntry entry) => _templateService.ToMarkdown(entry);
+    public string ToMarkdown(LogEntry entry) => _templateRenderer.ToMarkdown(entry);
 
     public string AppendEntryToText(string currentText, LogEntry entry)
     {
