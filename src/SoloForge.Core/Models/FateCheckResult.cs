@@ -8,4 +8,3 @@ public record FateCheckResult(
     string Result,
     bool RandomEventTriggered
 );
-

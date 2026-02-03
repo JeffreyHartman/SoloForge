@@ -1,6 +1,8 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/SoloForge.Api/SoloForge.Api.csproj" />
     <Project Path="src/SoloForge.Console/SoloForge.Console.csproj" />
+    <Project Path="src/SoloForge.Core/SoloForge.Core.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/SoloForge.Console.Tests/SoloForge.Console.Tests.csproj" />

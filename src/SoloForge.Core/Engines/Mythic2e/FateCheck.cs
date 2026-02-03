@@ -99,4 +99,3 @@ public static class FateCheck
         return tens <= chaosFactor;
     }
 }
-
