@@ -1,778 +1,678 @@
-using System.Net;
-using System.Text;
 using System.Text.Json;
+
+using Microsoft.AspNetCore.Http.Json;
 
 using SoloForge.Console.Core;
 using SoloForge.Console.Engines.Mythic2e;
 using SoloForge.Console.Models;
 using SoloForge.Console.Services;
 
-var jsonOptions = new JsonSerializerOptions
-{
-    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-    PropertyNameCaseInsensitive = true,
-    WriteIndented = true
-};
-
 AppLogger.Initialize();
 
-var session = new Session();
-var stateManager = AdventureStateManager.Instance;
-var historyService = new HistoryService();
-var campaignService = new CampaignService(session, stateManager, historyService);
-var journalService = new JournalService(campaignService.GetJournalPath, new TemplateServiceRenderer());
+var builder = WebApplication.CreateBuilder(args);
+
+ConfigureUrls(builder);
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy
+            .SetIsOriginAllowed(_ => true)
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+    options.SerializerOptions.PropertyNameCaseInsensitive = true;
+    options.SerializerOptions.WriteIndented = true;
+});
+
+builder.Services.AddSingleton<Session>();
+builder.Services.AddSingleton(_ => AdventureStateManager.Instance);
+builder.Services.AddSingleton<HistoryService>();
+builder.Services.AddSingleton<CampaignService>();
+builder.Services.AddSingleton<JournalService>(sp =>
+{
+    var campaignService = sp.GetRequiredService<CampaignService>();
+    return new JournalService(campaignService.GetJournalPath, new TemplateServiceRenderer());
+});
+
+var app = builder.Build();
+
+app.Lifetime.ApplicationStopping.Register(AppLogger.Shutdown);
+
+app.UseCors();
+
+app.Use(async (context, next) =>
+{
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        if (context.Response.HasStarted)
+        {
+            throw;
+        }
+
+        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        await context.Response.WriteAsJsonAsync(new { error = "Unhandled server error", detail = ex.Message });
+    }
+});
+
+app.MapMethods("/{**path}", ["OPTIONS"], () => Results.NoContent());
+
+var campaignService = app.Services.GetRequiredService<CampaignService>();
+var journalService = app.Services.GetRequiredService<JournalService>();
+var historyService = app.Services.GetRequiredService<HistoryService>();
+var session = app.Services.GetRequiredService<Session>();
+var stateManager = app.Services.GetRequiredService<AdventureStateManager>();
 
 campaignService.Initialize();
 
-var urlPrefix = Environment.GetEnvironmentVariable("SOLOFORGE_API_URL") ?? "http://localhost:5137/";
-if (!urlPrefix.EndsWith("/", StringComparison.Ordinal))
+app.Lifetime.ApplicationStarted.Register(() =>
 {
-    urlPrefix += "/";
-}
+    var urls = app.Urls.Count > 0 ? string.Join(", ", app.Urls) : "http://localhost:5137";
+    Console.WriteLine($"SoloForge API listening on {urls}");
+    Console.WriteLine("Press Ctrl+C to stop.");
+});
 
-using var listener = new HttpListener();
-listener.Prefixes.Add(urlPrefix);
-listener.Start();
-
-Console.WriteLine($"SoloForge API listening on {urlPrefix}");
-Console.WriteLine("Press Ctrl+C to stop.");
-
-using var cts = new CancellationTokenSource();
-Console.CancelKeyPress += (_, e) =>
+app.MapGet("/", () => Results.Json(new
 {
-    e.Cancel = true;
-    cts.Cancel();
-};
-
-await RunAsync(listener, cts.Token);
-
-async Task RunAsync(HttpListener httpListener, CancellationToken cancellationToken)
-{
-    while (!cancellationToken.IsCancellationRequested)
+    name = "SoloForge API",
+    version = "0.1",
+    endpoints = new[]
     {
-        HttpListenerContext context;
-        try
-        {
-            context = await httpListener.GetContextAsync();
-        }
-        catch (HttpListenerException) when (cancellationToken.IsCancellationRequested)
-        {
-            return;
-        }
-        catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
-        {
-            return;
-        }
-
-        try
-        {
-            await HandleRequestAsync(context);
-        }
-        catch (Exception ex)
-        {
-            try
-            {
-                await WriteJsonAsync(context.Response, 500, new { error = "Unhandled server error", detail = ex.Message });
-            }
-            catch
-            {
-                // Best effort.
-            }
-        }
-        finally
-        {
-            try
-            {
-                context.Response.OutputStream.Close();
-            }
-            catch
-            {
-                // Ignore.
-            }
-        }
+        "/api/health",
+        "/api/state",
+        "/api/campaigns",
+        "/api/campaigns/{id}/load",
+        "/api/fate-check",
+        "/api/scene-check",
+        "/api/random-event",
+        "/api/dice-roll",
+        "/api/meaning/action",
+        "/api/meaning/description",
+        "/api/meaning/table",
+        "/api/meaning/fusion",
+        "/api/tables",
+        "/api/quick-sets",
+        "/api/quick-sets/generate",
+        "/api/journal",
+        "/api/history",
+        "/api/adventure"
     }
-}
+}));
 
-async Task HandleRequestAsync(HttpListenerContext context)
+app.MapGet("/api/health", () => Results.Json(new { status = "ok" }));
+
+app.MapGet("/api/state", () => Results.Json(BuildStateResponse(session, campaignService, stateManager, historyService)));
+
+app.MapGet("/api/tables", () =>
 {
-    var req = context.Request;
-    var res = context.Response;
+    var tables = TableService.Instance.AvailableTables
+        .Select(t => new
+        {
+            id = t.Id,
+            displayName = t.DisplayName,
+            isElement = t.IsElement,
+            category = t.Category
+        })
+        .ToList();
 
-    AddCorsHeaders(req, res);
-    if (req.HttpMethod.Equals("OPTIONS", StringComparison.OrdinalIgnoreCase))
+    return Results.Json(tables);
+});
+
+app.MapGet("/api/quick-sets", () => Results.Json(QuickSetService.Instance.QuickSets));
+
+app.MapPost("/api/quick-sets/generate", async (HttpRequest request, CancellationToken cancellationToken) =>
+{
+    var body = await ReadBodyAsync<GenerateQuickSetRequest>(request, cancellationToken);
+    var id = body?.Id?.Trim();
+    if (string.IsNullOrWhiteSpace(id))
     {
-        res.StatusCode = 204;
-        return;
+        return Results.Json(new { error = "id is required" }, statusCode: StatusCodes.Status400BadRequest);
     }
 
-    var path = (req.Url?.AbsolutePath ?? "/").TrimEnd('/');
-    if (path.Length == 0)
+    var quickSet = QuickSetService.Instance.QuickSets.FirstOrDefault(q =>
+        q.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+
+    if (quickSet == null)
     {
-        path = "/";
+        return Results.Json(new { error = "quick set not found" }, statusCode: StatusCodes.Status404NotFound);
     }
 
-    var method = req.HttpMethod.ToUpperInvariant();
-    var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+    var result = QuickSetService.Instance.Generate(quickSet);
 
-    // GET /
-    if (method == "GET" && path == "/")
+    var entry = historyService.AddEntry(
+        LogType.Meaning,
+        $"{quickSet.Name} Generated",
+        string.IsNullOrWhiteSpace(body?.Context) ? null : body!.Context!.Trim(),
+        result.ToDisplayDetails()
+    );
+    AppendEntryToJournal(entry, campaignService, journalService);
+    campaignService.Save();
+
+    return Results.Json(result);
+});
+
+app.MapGet("/api/themes", () =>
+{
+    var themesPath = FindThemesJsonPath();
+    if (themesPath == null || !File.Exists(themesPath))
     {
-        await WriteJsonAsync(res, 200, new
+        return Results.Json(new { error = "themes.json not found" }, statusCode: StatusCodes.Status404NotFound);
+    }
+
+    ThemeCollection? collection = null;
+    try
+    {
+        var json = File.ReadAllText(themesPath);
+        collection = JsonSerializer.Deserialize<ThemeCollection>(json, new JsonSerializerOptions
         {
-            name = "SoloForge API",
-            version = "0.1",
-            endpoints = new[]
-            {
-                "/api/health",
-                "/api/state",
-                "/api/campaigns",
-                "/api/campaigns/{id}/load",
-                "/api/fate-check",
-                "/api/scene-check",
-                "/api/random-event",
-                "/api/dice-roll",
-                "/api/meaning/action",
-                "/api/meaning/description",
-                "/api/meaning/table",
-                "/api/meaning/fusion",
-                "/api/tables",
-                "/api/quick-sets",
-                "/api/quick-sets/generate",
-                "/api/journal",
-                "/api/history",
-                "/api/adventure"
-            }
+            PropertyNameCaseInsensitive = true
         });
-        return;
+    }
+    catch
+    {
+        // Ignore.
     }
 
-    // GET /api/health
-    if (method == "GET" && path == "/api/health")
-    {
-        await WriteJsonAsync(res, 200, new { status = "ok" });
-        return;
-    }
+    var themes = collection?.Themes
+        .Select(t => new { name = t.Name, description = t.Description })
+        .OrderBy(t => t.name)
+        .ToList() ?? [];
 
-    // GET /api/state
-    if (method == "GET" && path == "/api/state")
-    {
-        await WriteJsonAsync(res, 200, BuildStateResponse());
-        return;
-    }
+    return Results.Json(themes);
+});
 
-    // GET /api/tables
-    if (segments is ["api", "tables"] && method == "GET")
-    {
-        var tables = TableService.Instance.AvailableTables
-            .Select(t => new
-            {
-                id = t.Id,
-                displayName = t.DisplayName,
-                isElement = t.IsElement,
-                category = t.Category
-            })
-            .ToList();
-
-        await WriteJsonAsync(res, 200, tables);
-        return;
-    }
-
-    // GET /api/quick-sets
-    if (segments is ["api", "quick-sets"] && method == "GET")
-    {
-        await WriteJsonAsync(res, 200, QuickSetService.Instance.QuickSets);
-        return;
-    }
-
-    // POST /api/quick-sets/generate
-    if (segments is ["api", "quick-sets", "generate"] && method == "POST")
-    {
-        var body = await ReadJsonAsync<GenerateQuickSetRequest>(req);
-        var id = body?.Id?.Trim();
-        if (string.IsNullOrWhiteSpace(id))
+app.MapGet("/api/campaigns", () =>
+{
+    var campaigns = campaignService.ListCampaigns()
+        .Select(c => new
         {
-            await WriteJsonAsync(res, 400, new { error = "id is required" });
-            return;
-        }
+            id = c.Id,
+            name = c.Name,
+            createdAt = c.CreatedAt,
+            lastPlayed = c.LastPlayed,
+            chaos = c.Chaos,
+            engine = c.Engine,
+            theme = c.Theme,
+            characterCount = c.Characters.Count,
+            activeThreadCount = c.ActiveThreads.Count,
+            closedThreadCount = c.ClosedThreads.Count,
+            historyCount = c.History.Count
+        })
+        .OrderByDescending(c => c.lastPlayed)
+        .ToList();
 
-        var quickSet = QuickSetService.Instance.QuickSets.FirstOrDefault(q =>
-            q.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
+    return Results.Json(campaigns);
+});
 
-        if (quickSet == null)
+app.MapPost("/api/campaigns", async (HttpRequest request, CancellationToken cancellationToken) =>
+{
+    var body = await ReadBodyAsync<CreateCampaignRequest>(request, cancellationToken);
+    var name = body?.Name?.Trim();
+    if (string.IsNullOrWhiteSpace(name))
+    {
+        return Results.Json(new { error = "name is required" }, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    campaignService.CreateNew(name);
+    EnsureJournalExistsForCurrentCampaign(campaignService, journalService);
+
+    return Results.Json(
+        BuildStateResponse(session, campaignService, stateManager, historyService),
+        statusCode: StatusCodes.Status201Created);
+});
+
+app.MapPost("/api/campaigns/{campaignIdText}/load", (string campaignIdText) =>
+{
+    if (!Guid.TryParse(campaignIdText, out var campaignId))
+    {
+        return Results.Json(new { error = "invalid campaign id" }, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    try
+    {
+        campaignService.Load(campaignId);
+    }
+    catch (FileNotFoundException)
+    {
+        return Results.Json(new { error = "campaign not found" }, statusCode: StatusCodes.Status404NotFound);
+    }
+
+    EnsureJournalExistsForCurrentCampaign(campaignService, journalService);
+    return Results.Json(BuildStateResponse(session, campaignService, stateManager, historyService));
+});
+
+app.MapDelete("/api/campaigns/{deleteCampaignIdText}", (string deleteCampaignIdText) =>
+{
+    if (!Guid.TryParse(deleteCampaignIdText, out var deleteCampaignId))
+    {
+        return Results.Json(new { error = "invalid campaign id" }, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    var wasCurrent = campaignService.CurrentCampaign?.Id == deleteCampaignId;
+    var deleted = campaignService.Delete(deleteCampaignId);
+
+    if (deleted && wasCurrent)
+    {
+        var remaining = campaignService.ListCampaigns().FirstOrDefault(c => c.Id != deleteCampaignId);
+        if (remaining != null)
         {
-            await WriteJsonAsync(res, 404, new { error = "quick set not found" });
-            return;
+            campaignService.Load(remaining.Id);
+            EnsureJournalExistsForCurrentCampaign(campaignService, journalService);
         }
+        else
+        {
+            campaignService.CreateNew("Default Campaign");
+            EnsureJournalExistsForCurrentCampaign(campaignService, journalService);
+        }
+    }
 
-        var result = QuickSetService.Instance.Generate(quickSet);
+    return Results.Json(new { deleted }, statusCode: deleted ? StatusCodes.Status200OK : StatusCodes.Status404NotFound);
+});
 
-        var entry = historyService.AddEntry(
-            LogType.Meaning,
-            $"{quickSet.Name} Generated",
-            string.IsNullOrWhiteSpace(body?.Context) ? null : body!.Context!.Trim(),
-            result.ToDisplayDetails()
+app.MapPut("/api/session", async (HttpRequest request, CancellationToken cancellationToken) =>
+{
+    var body = await ReadBodyAsync<UpdateSessionRequest>(request, cancellationToken);
+    if (body == null)
+    {
+        return Results.Json(new { error = "invalid json" }, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    if (body.Chaos.HasValue)
+    {
+        session.Chaos = body.Chaos.Value;
+    }
+
+    if (!string.IsNullOrWhiteSpace(body.Engine))
+    {
+        session.Engine = body.Engine.Trim();
+    }
+
+    if (!string.IsNullOrWhiteSpace(body.Theme))
+    {
+        session.Theme = body.Theme.Trim();
+    }
+
+    campaignService.Save();
+    return Results.Json(BuildStateResponse(session, campaignService, stateManager, historyService));
+});
+
+app.MapGet("/api/history", () => Results.Json(historyService.Entries));
+
+app.MapGet("/api/journal", () =>
+{
+    var current = campaignService.CurrentCampaign;
+    if (current == null)
+    {
+        return Results.Json(new { error = "no campaign loaded" }, statusCode: StatusCodes.Status404NotFound);
+    }
+
+    var content = journalService.LoadOrCreate(current.Id, current.Name);
+    return Results.Json(new { campaignId = current.Id, content });
+});
+
+app.MapPut("/api/journal", async (HttpRequest request, CancellationToken cancellationToken) =>
+{
+    var current = campaignService.CurrentCampaign;
+    if (current == null)
+    {
+        return Results.Json(new { error = "no campaign loaded" }, statusCode: StatusCodes.Status404NotFound);
+    }
+
+    var body = await ReadBodyAsync<JournalUpdateRequest>(request, cancellationToken);
+    var content = body?.Content ?? string.Empty;
+
+    var saved = journalService.Save(current.Id, content);
+    return Results.Json(new { saved }, statusCode: saved ? StatusCodes.Status200OK : StatusCodes.Status500InternalServerError);
+});
+
+app.MapPost("/api/fate-check", async (HttpRequest request, CancellationToken cancellationToken) =>
+{
+    var body = await ReadBodyAsync<FateCheckRequest>(request, cancellationToken);
+    if (body == null)
+    {
+        return Results.Json(new { error = "invalid json" }, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    if (!TryParseOdds(body.Odds, out var odds))
+    {
+        return Results.Json(new { error = "invalid odds" }, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    var chaos = body.Chaos ?? session.Chaos;
+
+    var question = string.IsNullOrWhiteSpace(body.Question) ? null : body.Question.Trim();
+    var result = FateCheck.PerformCheck(chaos, odds);
+
+    var fateEntry = historyService.AddEntry(
+        LogType.FateCheck,
+        result.Result,
+        question,
+        $"Odds: {odds.GetDisplayName()}, Roll: {result.Roll}, Chaos: {chaos}"
+    );
+    AppendEntryToJournal(fateEntry, campaignService, journalService);
+
+    RandomEventResult? randomEvent = null;
+    if (result.RandomEventTriggered)
+    {
+        randomEvent = RandomEvent.Generate();
+        var eventEntry = historyService.AddEntry(
+            LogType.RandomEvent,
+            $"{randomEvent.EventFocus}: {randomEvent.EventAction}",
+            "Triggered by Fate Check"
         );
-        AppendEntryToJournal(entry);
-        campaignService.Save();
-
-        await WriteJsonAsync(res, 200, result);
-        return;
+        AppendEntryToJournal(eventEntry, campaignService, journalService);
     }
 
-    // GET /api/themes
-    if (segments is ["api", "themes"] && method == "GET")
+    campaignService.Save();
+
+    return Results.Json(new
     {
-        var themesPath = FindThemesJsonPath();
-        if (themesPath == null || !File.Exists(themesPath))
-        {
-            await WriteJsonAsync(res, 404, new { error = "themes.json not found" });
-            return;
-        }
+        chaos,
+        odds = odds.GetDisplayName(),
+        fate = result,
+        randomEvent
+    });
+});
 
-        ThemeCollection? collection = null;
-        try
-        {
-            var json = File.ReadAllText(themesPath);
-            collection = JsonSerializer.Deserialize<ThemeCollection>(json, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
-        }
-        catch
-        {
-            // Ignore.
-        }
+app.MapPost("/api/scene-check", async (HttpRequest request, CancellationToken cancellationToken) =>
+{
+    var body = await ReadBodyAsync<SceneCheckRequest>(request, cancellationToken) ?? new SceneCheckRequest();
+    var chaos = body.Chaos ?? session.Chaos;
+    var contextText = string.IsNullOrWhiteSpace(body.Context) ? null : body.Context.Trim();
 
-        var themes = collection?.Themes
-            .Select(t => new { name = t.Name, description = t.Description })
-            .OrderBy(t => t.name)
-            .ToList() ?? [];
+    var result = SceneCheck.PerformCheck(chaos);
 
-        await WriteJsonAsync(res, 200, themes);
-        return;
+    var details = $"Roll: {result.Roll}, Chaos: {chaos}";
+    if (result.SceneAdjustment != null)
+    {
+        details += $", Adjustment: {result.SceneAdjustment}";
     }
 
-    // Campaigns
-    if (segments is ["api", "campaigns"])
+    var sceneEntry = historyService.AddEntry(LogType.SceneCheck, result.Result, contextText, details);
+    AppendEntryToJournal(sceneEntry, campaignService, journalService);
+
+    if (result.RandomEvent != null)
     {
-        if (method == "GET")
-        {
-            var campaigns = campaignService.ListCampaigns()
-                .Select(c => new
-                {
-                    id = c.Id,
-                    name = c.Name,
-                    createdAt = c.CreatedAt,
-                    lastPlayed = c.LastPlayed,
-                    chaos = c.Chaos,
-                    engine = c.Engine,
-                    theme = c.Theme,
-                    characterCount = c.Characters.Count,
-                    activeThreadCount = c.ActiveThreads.Count,
-                    closedThreadCount = c.ClosedThreads.Count,
-                    historyCount = c.History.Count
-                })
-                .OrderByDescending(c => c.lastPlayed)
-                .ToList();
-
-            await WriteJsonAsync(res, 200, campaigns);
-            return;
-        }
-
-        if (method == "POST")
-        {
-            var body = await ReadJsonAsync<CreateCampaignRequest>(req);
-            var name = body?.Name?.Trim();
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                await WriteJsonAsync(res, 400, new { error = "name is required" });
-                return;
-            }
-
-            campaignService.CreateNew(name);
-            EnsureJournalExistsForCurrentCampaign();
-
-            await WriteJsonAsync(res, 201, BuildStateResponse());
-            return;
-        }
-    }
-
-    // POST /api/campaigns/{id}/load
-    if (segments is ["api", "campaigns", var campaignIdText, "load"] && method == "POST")
-    {
-        if (!Guid.TryParse(campaignIdText, out var campaignId))
-        {
-            await WriteJsonAsync(res, 400, new { error = "invalid campaign id" });
-            return;
-        }
-
-        try
-        {
-            campaignService.Load(campaignId);
-        }
-        catch (FileNotFoundException)
-        {
-            await WriteJsonAsync(res, 404, new { error = "campaign not found" });
-            return;
-        }
-
-        EnsureJournalExistsForCurrentCampaign();
-        await WriteJsonAsync(res, 200, BuildStateResponse());
-        return;
-    }
-
-    // DELETE /api/campaigns/{id}
-    if (segments is ["api", "campaigns", var deleteCampaignIdText] && method == "DELETE")
-    {
-        if (!Guid.TryParse(deleteCampaignIdText, out var deleteCampaignId))
-        {
-            await WriteJsonAsync(res, 400, new { error = "invalid campaign id" });
-            return;
-        }
-
-        var wasCurrent = campaignService.CurrentCampaign?.Id == deleteCampaignId;
-        var deleted = campaignService.Delete(deleteCampaignId);
-
-        if (deleted && wasCurrent)
-        {
-            var remaining = campaignService.ListCampaigns().FirstOrDefault(c => c.Id != deleteCampaignId);
-            if (remaining != null)
-            {
-                campaignService.Load(remaining.Id);
-                EnsureJournalExistsForCurrentCampaign();
-            }
-            else
-            {
-                campaignService.CreateNew("Default Campaign");
-                EnsureJournalExistsForCurrentCampaign();
-            }
-        }
-
-        await WriteJsonAsync(res, deleted ? 200 : 404, new { deleted });
-        return;
-    }
-
-    // PUT /api/session
-    if (segments is ["api", "session"] && method == "PUT")
-    {
-        var body = await ReadJsonAsync<UpdateSessionRequest>(req);
-        if (body == null)
-        {
-            await WriteJsonAsync(res, 400, new { error = "invalid json" });
-            return;
-        }
-
-        if (body.Chaos.HasValue)
-        {
-            session.Chaos = body.Chaos.Value;
-        }
-
-        if (!string.IsNullOrWhiteSpace(body.Engine))
-        {
-            session.Engine = body.Engine.Trim();
-        }
-
-        if (!string.IsNullOrWhiteSpace(body.Theme))
-        {
-            session.Theme = body.Theme.Trim();
-        }
-
-        campaignService.Save();
-        await WriteJsonAsync(res, 200, BuildStateResponse());
-        return;
-    }
-
-    // GET /api/history
-    if (segments is ["api", "history"] && method == "GET")
-    {
-        await WriteJsonAsync(res, 200, historyService.Entries);
-        return;
-    }
-
-    // Journal
-    if (segments is ["api", "journal"])
-    {
-        var current = campaignService.CurrentCampaign;
-        if (current == null)
-        {
-            await WriteJsonAsync(res, 404, new { error = "no campaign loaded" });
-            return;
-        }
-
-        if (method == "GET")
-        {
-            var content = journalService.LoadOrCreate(current.Id, current.Name);
-            await WriteJsonAsync(res, 200, new { campaignId = current.Id, content });
-            return;
-        }
-
-        if (method == "PUT")
-        {
-            var body = await ReadJsonAsync<JournalUpdateRequest>(req);
-            var content = body?.Content ?? string.Empty;
-
-            var saved = journalService.Save(current.Id, content);
-            await WriteJsonAsync(res, saved ? 200 : 500, new { saved });
-            return;
-        }
-    }
-
-    // POST /api/fate-check
-    if (segments is ["api", "fate-check"] && method == "POST")
-    {
-        var body = await ReadJsonAsync<FateCheckRequest>(req);
-        if (body == null)
-        {
-            await WriteJsonAsync(res, 400, new { error = "invalid json" });
-            return;
-        }
-
-        if (!TryParseOdds(body.Odds, out var odds))
-        {
-            await WriteJsonAsync(res, 400, new { error = "invalid odds" });
-            return;
-        }
-
-        var chaos = body.Chaos ?? session.Chaos;
-
-        var question = string.IsNullOrWhiteSpace(body.Question) ? null : body.Question.Trim();
-        var result = FateCheck.PerformCheck(chaos, odds);
-
-        var fateEntry = historyService.AddEntry(
-            LogType.FateCheck,
-            result.Result,
-            question,
-            $"Odds: {odds.GetDisplayName()}, Roll: {result.Roll}, Chaos: {chaos}"
+        var ev = result.RandomEvent;
+        var eventEntry = historyService.AddEntry(
+            LogType.RandomEvent,
+            $"{ev.EventFocus}: {ev.EventAction}",
+            "Triggered by Scene Interrupt"
         );
-        AppendEntryToJournal(fateEntry);
+        AppendEntryToJournal(eventEntry, campaignService, journalService);
+    }
 
-        RandomEventResult? randomEvent = null;
-        if (result.RandomEventTriggered)
-        {
-            randomEvent = RandomEvent.Generate();
-            var eventEntry = historyService.AddEntry(
-                LogType.RandomEvent,
-                $"{randomEvent.EventFocus}: {randomEvent.EventAction}",
-                "Triggered by Fate Check"
-            );
-            AppendEntryToJournal(eventEntry);
-        }
+    campaignService.Save();
 
+    return Results.Json(new { chaos, scene = result });
+});
+
+app.MapPost("/api/random-event", () =>
+{
+    var ev = RandomEvent.Generate();
+
+    var eventDetails = ev.SelectedCharacter != null
+        ? $"Character: {ev.SelectedCharacter}"
+        : ev.SelectedThread != null
+            ? $"Thread: {ev.SelectedThread}"
+            : null;
+
+    var entry = historyService.AddEntry(LogType.RandomEvent, $"{ev.EventFocus}: {ev.EventAction}", null, eventDetails);
+    AppendEntryToJournal(entry, campaignService, journalService);
+    campaignService.Save();
+
+    return Results.Json(ev);
+});
+
+app.MapPost("/api/dice-roll", async (HttpRequest request, CancellationToken cancellationToken) =>
+{
+    var body = await ReadBodyAsync<DiceRollRequest>(request, cancellationToken);
+    var input = body?.Expression;
+
+    if (string.IsNullOrWhiteSpace(input))
+    {
+        return Results.Json(new { error = "expression is required" }, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    if (!DiceExpression.TryParse(input, out var expression, out var error))
+    {
+        return Results.Json(new { error = error ?? "invalid dice expression" }, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    var result = DiceRoller.Instance.Roll(expression!);
+    var breakdown = result.BuildBreakdown();
+    var entry = historyService.AddEntry(LogType.DiceRoll, result.Total.ToString(), expression!.ToDisplayString(), breakdown);
+    AppendEntryToJournal(entry, campaignService, journalService);
+    campaignService.Save();
+
+    return Results.Json(new { roll = result, breakdown });
+});
+
+app.MapPost("/api/meaning/action", async (HttpRequest request, CancellationToken cancellationToken) =>
+{
+    var body = await ReadBodyAsync<MeaningRequest>(request, cancellationToken);
+    var contextText = string.IsNullOrWhiteSpace(body?.Context) ? null : body!.Context!.Trim();
+
+    var result = MeaningEngine.GenerateAction();
+    var entry = historyService.AddEntry(LogType.Meaning, result.Combined, contextText, "Table: Action");
+    AppendEntryToJournal(entry, campaignService, journalService);
+    campaignService.Save();
+
+    return Results.Json(result);
+});
+
+app.MapPost("/api/meaning/description", async (HttpRequest request, CancellationToken cancellationToken) =>
+{
+    var body = await ReadBodyAsync<MeaningRequest>(request, cancellationToken);
+    var contextText = string.IsNullOrWhiteSpace(body?.Context) ? null : body!.Context!.Trim();
+
+    var result = MeaningEngine.GenerateDescription();
+    var entry = historyService.AddEntry(LogType.Meaning, result.Combined, contextText, "Table: Description");
+    AppendEntryToJournal(entry, campaignService, journalService);
+    campaignService.Save();
+
+    return Results.Json(result);
+});
+
+app.MapPost("/api/meaning/table", async (HttpRequest request, CancellationToken cancellationToken) =>
+{
+    var body = await ReadBodyAsync<MeaningTableRequest>(request, cancellationToken);
+    var tableId = body?.TableId?.Trim();
+    if (string.IsNullOrWhiteSpace(tableId))
+    {
+        return Results.Json(new { error = "tableId is required" }, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    var contextText = string.IsNullOrWhiteSpace(body?.Context) ? null : body!.Context!.Trim();
+    var table = TableService.Instance.FindTable(tableId);
+    var displayName = table?.DisplayName ?? tableId;
+
+    var result = MeaningEngine.GenerateFromTable(tableId, displayName);
+    var entry = historyService.AddEntry(LogType.Meaning, result.Combined, contextText, $"Table: {displayName}");
+    AppendEntryToJournal(entry, campaignService, journalService);
+    campaignService.Save();
+
+    return Results.Json(new
+    {
+        table = new { id = tableId, displayName },
+        meaning = result
+    });
+});
+
+app.MapPost("/api/meaning/fusion", async (HttpRequest request, CancellationToken cancellationToken) =>
+{
+    var body = await ReadBodyAsync<MeaningFusionRequest>(request, cancellationToken);
+    var tableId1 = body?.TableId1?.Trim();
+    var tableId2 = body?.TableId2?.Trim();
+
+    if (string.IsNullOrWhiteSpace(tableId1) || string.IsNullOrWhiteSpace(tableId2))
+    {
+        return Results.Json(new { error = "tableId1 and tableId2 are required" }, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    var contextText = string.IsNullOrWhiteSpace(body?.Context) ? null : body!.Context!.Trim();
+    var table1 = TableService.Instance.FindTable(tableId1);
+    var table2 = TableService.Instance.FindTable(tableId2);
+    var name1 = table1?.DisplayName ?? tableId1;
+    var name2 = table2?.DisplayName ?? tableId2;
+
+    var result = MeaningEngine.GenerateFusion(tableId1, tableId2);
+    var entry = historyService.AddEntry(LogType.Meaning, result.Combined, contextText, $"Fusion: {name1} + {name2}");
+    AppendEntryToJournal(entry, campaignService, journalService);
+    campaignService.Save();
+
+    return Results.Json(new
+    {
+        table1 = new { id = tableId1, displayName = name1 },
+        table2 = new { id = tableId2, displayName = name2 },
+        meaning = result
+    });
+});
+
+app.MapGet("/api/adventure", () => Results.Json(new
+{
+    characters = stateManager.State.Characters,
+    activeThreads = stateManager.State.ActiveThreads,
+    closedThreads = stateManager.State.ClosedThreads
+}));
+
+app.MapPost("/api/adventure/characters", async (HttpRequest request, CancellationToken cancellationToken) =>
+{
+    var body = await ReadBodyAsync<AddCharacterRequest>(request, cancellationToken);
+    var name = body?.Name?.Trim();
+    var desc = string.IsNullOrWhiteSpace(body?.Description) ? null : body!.Description!.Trim();
+
+    if (string.IsNullOrWhiteSpace(name))
+    {
+        return Results.Json(new { error = "name is required" }, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    var character = stateManager.AddCharacter(name, desc);
+    campaignService.Save();
+    return Results.Json(character, statusCode: StatusCodes.Status201Created);
+});
+
+app.MapDelete("/api/adventure/characters", (string? name) =>
+{
+    if (string.IsNullOrWhiteSpace(name))
+    {
+        return Results.Json(new { error = "name is required" }, statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    var character = stateManager.State.Characters.FirstOrDefault(c =>
+        c.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+
+    if (character == null)
+    {
+        return Results.Json(new { error = "character not found" }, statusCode: StatusCodes.Status404NotFound);
+    }
+
+    var removed = stateManager.RemoveCharacter(character);
+    if (removed)
+    {
         campaignService.Save();
-
-        await WriteJsonAsync(res, 200, new
-        {
-            chaos,
-            odds = odds.GetDisplayName(),
-            fate = result,
-            randomEvent
-        });
-        return;
     }
 
-    // POST /api/scene-check
-    if (segments is ["api", "scene-check"] && method == "POST")
+    return Results.Json(new { removed });
+});
+
+app.MapPost("/api/adventure/threads", async (HttpRequest request, CancellationToken cancellationToken) =>
+{
+    var body = await ReadBodyAsync<AddThreadRequest>(request, cancellationToken);
+    var name = body?.Name?.Trim();
+    var desc = string.IsNullOrWhiteSpace(body?.Description) ? null : body!.Description!.Trim();
+
+    if (string.IsNullOrWhiteSpace(name))
     {
-        var body = await ReadJsonAsync<SceneCheckRequest>(req) ?? new SceneCheckRequest();
-        var chaos = body.Chaos ?? session.Chaos;
-        var contextText = string.IsNullOrWhiteSpace(body.Context) ? null : body.Context.Trim();
-
-        var result = SceneCheck.PerformCheck(chaos);
-
-        var details = $"Roll: {result.Roll}, Chaos: {chaos}";
-        if (result.SceneAdjustment != null)
-        {
-            details += $", Adjustment: {result.SceneAdjustment}";
-        }
-
-        var sceneEntry = historyService.AddEntry(LogType.SceneCheck, result.Result, contextText, details);
-        AppendEntryToJournal(sceneEntry);
-
-        if (result.RandomEvent != null)
-        {
-            var ev = result.RandomEvent;
-            var eventEntry = historyService.AddEntry(
-                LogType.RandomEvent,
-                $"{ev.EventFocus}: {ev.EventAction}",
-                "Triggered by Scene Interrupt"
-            );
-            AppendEntryToJournal(eventEntry);
-        }
-
-        campaignService.Save();
-
-        await WriteJsonAsync(res, 200, new { chaos, scene = result });
-        return;
+        return Results.Json(new { error = "name is required" }, statusCode: StatusCodes.Status400BadRequest);
     }
 
-    // POST /api/random-event
-    if (segments is ["api", "random-event"] && method == "POST")
+    var thread = stateManager.AddThread(name, desc);
+    campaignService.Save();
+    return Results.Json(thread, statusCode: StatusCodes.Status201Created);
+});
+
+app.MapPost("/api/adventure/threads/close", (string? name) =>
+{
+    if (string.IsNullOrWhiteSpace(name))
     {
-        var ev = RandomEvent.Generate();
-
-        var eventDetails = ev.SelectedCharacter != null
-            ? $"Character: {ev.SelectedCharacter}"
-            : ev.SelectedThread != null
-                ? $"Thread: {ev.SelectedThread}"
-                : null;
-
-        var entry = historyService.AddEntry(LogType.RandomEvent, $"{ev.EventFocus}: {ev.EventAction}", null, eventDetails);
-        AppendEntryToJournal(entry);
-        campaignService.Save();
-
-        await WriteJsonAsync(res, 200, ev);
-        return;
+        return Results.Json(new { error = "name is required" }, statusCode: StatusCodes.Status400BadRequest);
     }
 
-    // POST /api/dice-roll
-    if (segments is ["api", "dice-roll"] && method == "POST")
+    var thread = stateManager.State.ActiveThreads.FirstOrDefault(t =>
+        t.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+    if (thread == null)
     {
-        var body = await ReadJsonAsync<DiceRollRequest>(req);
-        var input = body?.Expression;
-
-        if (string.IsNullOrWhiteSpace(input))
-        {
-            await WriteJsonAsync(res, 400, new { error = "expression is required" });
-            return;
-        }
-
-        if (!DiceExpression.TryParse(input, out var expression, out var error))
-        {
-            await WriteJsonAsync(res, 400, new { error = error ?? "invalid dice expression" });
-            return;
-        }
-
-        var result = DiceRoller.Instance.Roll(expression!);
-        var breakdown = result.BuildBreakdown();
-        var entry = historyService.AddEntry(LogType.DiceRoll, result.Total.ToString(), expression!.ToDisplayString(), breakdown);
-        AppendEntryToJournal(entry);
-        campaignService.Save();
-
-        await WriteJsonAsync(res, 200, new { roll = result, breakdown });
-        return;
+        return Results.Json(new { error = "thread not found" }, statusCode: StatusCodes.Status404NotFound);
     }
 
-    // Meaning
-    // POST /api/meaning/action
-    if (segments is ["api", "meaning", "action"] && method == "POST")
+    stateManager.CloseThread(thread);
+    campaignService.Save();
+    return Results.Json(thread);
+});
+
+app.MapPost("/api/adventure/threads/reopen", (string? name) =>
+{
+    if (string.IsNullOrWhiteSpace(name))
     {
-        var body = await ReadJsonAsync<MeaningRequest>(req);
-        var contextText = string.IsNullOrWhiteSpace(body?.Context) ? null : body!.Context!.Trim();
-
-        var result = MeaningEngine.GenerateAction();
-        var entry = historyService.AddEntry(LogType.Meaning, result.Combined, contextText, "Table: Action");
-        AppendEntryToJournal(entry);
-        campaignService.Save();
-
-        await WriteJsonAsync(res, 200, result);
-        return;
+        return Results.Json(new { error = "name is required" }, statusCode: StatusCodes.Status400BadRequest);
     }
 
-    // POST /api/meaning/description
-    if (segments is ["api", "meaning", "description"] && method == "POST")
+    var thread = stateManager.State.ClosedThreads.FirstOrDefault(t =>
+        t.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+    if (thread == null)
     {
-        var body = await ReadJsonAsync<MeaningRequest>(req);
-        var contextText = string.IsNullOrWhiteSpace(body?.Context) ? null : body!.Context!.Trim();
-
-        var result = MeaningEngine.GenerateDescription();
-        var entry = historyService.AddEntry(LogType.Meaning, result.Combined, contextText, "Table: Description");
-        AppendEntryToJournal(entry);
-        campaignService.Save();
-
-        await WriteJsonAsync(res, 200, result);
-        return;
+        return Results.Json(new { error = "thread not found" }, statusCode: StatusCodes.Status404NotFound);
     }
 
-    // POST /api/meaning/table
-    if (segments is ["api", "meaning", "table"] && method == "POST")
+    stateManager.ReopenThread(thread);
+    campaignService.Save();
+    return Results.Json(thread);
+});
+
+app.MapFallback(() => Results.Json(new { error = "not found" }, statusCode: StatusCodes.Status404NotFound));
+
+app.Run();
+
+static void ConfigureUrls(WebApplicationBuilder builder)
+{
+    var soloForgeUrl = Environment.GetEnvironmentVariable("SOLOFORGE_API_URL");
+    if (!string.IsNullOrWhiteSpace(soloForgeUrl))
     {
-        var body = await ReadJsonAsync<MeaningTableRequest>(req);
-        var tableId = body?.TableId?.Trim();
-        if (string.IsNullOrWhiteSpace(tableId))
-        {
-            await WriteJsonAsync(res, 400, new { error = "tableId is required" });
-            return;
-        }
-
-        var contextText = string.IsNullOrWhiteSpace(body?.Context) ? null : body!.Context!.Trim();
-        var table = TableService.Instance.FindTable(tableId);
-        var displayName = table?.DisplayName ?? tableId;
-
-        var result = MeaningEngine.GenerateFromTable(tableId, displayName);
-        var entry = historyService.AddEntry(LogType.Meaning, result.Combined, contextText, $"Table: {displayName}");
-        AppendEntryToJournal(entry);
-        campaignService.Save();
-
-        await WriteJsonAsync(res, 200, new
-        {
-            table = new { id = tableId, displayName },
-            meaning = result
-        });
+        builder.WebHost.UseUrls(NormalizeUrl(soloForgeUrl));
         return;
     }
 
-    // POST /api/meaning/fusion
-    if (segments is ["api", "meaning", "fusion"] && method == "POST")
+    var aspNetUrls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
+    if (string.IsNullOrWhiteSpace(aspNetUrls))
     {
-        var body = await ReadJsonAsync<MeaningFusionRequest>(req);
-        var tableId1 = body?.TableId1?.Trim();
-        var tableId2 = body?.TableId2?.Trim();
-
-        if (string.IsNullOrWhiteSpace(tableId1) || string.IsNullOrWhiteSpace(tableId2))
-        {
-            await WriteJsonAsync(res, 400, new { error = "tableId1 and tableId2 are required" });
-            return;
-        }
-
-        var contextText = string.IsNullOrWhiteSpace(body?.Context) ? null : body!.Context!.Trim();
-        var table1 = TableService.Instance.FindTable(tableId1);
-        var table2 = TableService.Instance.FindTable(tableId2);
-        var name1 = table1?.DisplayName ?? tableId1;
-        var name2 = table2?.DisplayName ?? tableId2;
-
-        var result = MeaningEngine.GenerateFusion(tableId1, tableId2);
-        var entry = historyService.AddEntry(LogType.Meaning, result.Combined, contextText, $"Fusion: {name1} + {name2}");
-        AppendEntryToJournal(entry);
-        campaignService.Save();
-
-        await WriteJsonAsync(res, 200, new
-        {
-            table1 = new { id = tableId1, displayName = name1 },
-            table2 = new { id = tableId2, displayName = name2 },
-            meaning = result
-        });
-        return;
+        builder.WebHost.UseUrls("http://localhost:5137");
     }
-
-    // GET /api/adventure
-    if (segments is ["api", "adventure"] && method == "GET")
-    {
-        await WriteJsonAsync(res, 200, new
-        {
-            characters = stateManager.State.Characters,
-            activeThreads = stateManager.State.ActiveThreads,
-            closedThreads = stateManager.State.ClosedThreads
-        });
-        return;
-    }
-
-    // POST /api/adventure/characters
-    if (segments is ["api", "adventure", "characters"] && method == "POST")
-    {
-        var body = await ReadJsonAsync<AddCharacterRequest>(req);
-        var name = body?.Name?.Trim();
-        var desc = string.IsNullOrWhiteSpace(body?.Description) ? null : body!.Description!.Trim();
-
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            await WriteJsonAsync(res, 400, new { error = "name is required" });
-            return;
-        }
-
-        var character = stateManager.AddCharacter(name, desc);
-        campaignService.Save();
-        await WriteJsonAsync(res, 201, character);
-        return;
-    }
-
-    // DELETE /api/adventure/characters?name=...
-    if (segments is ["api", "adventure", "characters"] && method == "DELETE")
-    {
-        var name = req.QueryString["name"];
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            await WriteJsonAsync(res, 400, new { error = "name is required" });
-            return;
-        }
-
-        var character = stateManager.State.Characters.FirstOrDefault(c =>
-            c.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-
-        if (character == null)
-        {
-            await WriteJsonAsync(res, 404, new { error = "character not found" });
-            return;
-        }
-
-        var removed = stateManager.RemoveCharacter(character);
-        if (removed)
-        {
-            campaignService.Save();
-        }
-
-        await WriteJsonAsync(res, 200, new { removed });
-        return;
-    }
-
-    // POST /api/adventure/threads
-    if (segments is ["api", "adventure", "threads"] && method == "POST")
-    {
-        var body = await ReadJsonAsync<AddThreadRequest>(req);
-        var name = body?.Name?.Trim();
-        var desc = string.IsNullOrWhiteSpace(body?.Description) ? null : body!.Description!.Trim();
-
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            await WriteJsonAsync(res, 400, new { error = "name is required" });
-            return;
-        }
-
-        var thread = stateManager.AddThread(name, desc);
-        campaignService.Save();
-        await WriteJsonAsync(res, 201, thread);
-        return;
-    }
-
-    // POST /api/adventure/threads/close?name=...
-    if (segments is ["api", "adventure", "threads", "close"] && method == "POST")
-    {
-        var name = req.QueryString["name"];
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            await WriteJsonAsync(res, 400, new { error = "name is required" });
-            return;
-        }
-
-        var thread = stateManager.State.ActiveThreads.FirstOrDefault(t => t.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-        if (thread == null)
-        {
-            await WriteJsonAsync(res, 404, new { error = "thread not found" });
-            return;
-        }
-
-        stateManager.CloseThread(thread);
-        campaignService.Save();
-        await WriteJsonAsync(res, 200, thread);
-        return;
-    }
-
-    // POST /api/adventure/threads/reopen?name=...
-    if (segments is ["api", "adventure", "threads", "reopen"] && method == "POST")
-    {
-        var name = req.QueryString["name"];
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            await WriteJsonAsync(res, 400, new { error = "name is required" });
-            return;
-        }
-
-        var thread = stateManager.State.ClosedThreads.FirstOrDefault(t => t.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-        if (thread == null)
-        {
-            await WriteJsonAsync(res, 404, new { error = "thread not found" });
-            return;
-        }
-
-        stateManager.ReopenThread(thread);
-        campaignService.Save();
-        await WriteJsonAsync(res, 200, thread);
-        return;
-    }
-
-    await WriteJsonAsync(res, 404, new { error = "not found" });
 }
 
-object BuildStateResponse()
+static string NormalizeUrl(string url)
+{
+    var trimmed = url.Trim();
+    return trimmed.EndsWith("/", StringComparison.Ordinal)
+        ? trimmed.TrimEnd('/')
+        : trimmed;
+}
+
+static object BuildStateResponse(
+    Session session,
+    CampaignService campaignService,
+    AdventureStateManager stateManager,
+    HistoryService historyService)
 {
     var current = campaignService.CurrentCampaign;
 
@@ -805,7 +705,7 @@ object BuildStateResponse()
     };
 }
 
-void EnsureJournalExistsForCurrentCampaign()
+static void EnsureJournalExistsForCurrentCampaign(CampaignService campaignService, JournalService journalService)
 {
     var current = campaignService.CurrentCampaign;
     if (current == null)
@@ -817,7 +717,7 @@ void EnsureJournalExistsForCurrentCampaign()
     journalService.Save(current.Id, content);
 }
 
-void AppendEntryToJournal(LogEntry entry)
+static void AppendEntryToJournal(LogEntry entry, CampaignService campaignService, JournalService journalService)
 {
     var current = campaignService.CurrentCampaign;
     if (current == null)
@@ -830,7 +730,7 @@ void AppendEntryToJournal(LogEntry entry)
     journalService.Save(current.Id, updated);
 }
 
-string? FindThemesJsonPath()
+static string? FindThemesJsonPath()
 {
     var current = new DirectoryInfo(AppContext.BaseDirectory);
     while (current != null)
@@ -848,25 +748,11 @@ string? FindThemesJsonPath()
     return File.Exists(relative) ? relative : null;
 }
 
-void AddCorsHeaders(HttpListenerRequest req, HttpListenerResponse res)
+static async Task<T?> ReadBodyAsync<T>(HttpRequest request, CancellationToken cancellationToken)
 {
-    var origin = req.Headers["Origin"];
-    res.Headers["Access-Control-Allow-Origin"] = string.IsNullOrWhiteSpace(origin) ? "*" : origin;
-    res.Headers["Vary"] = "Origin";
-    res.Headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS";
-    res.Headers["Access-Control-Allow-Headers"] = "Content-Type";
-}
-
-async Task<T?> ReadJsonAsync<T>(HttpListenerRequest request)
-{
-    if (!request.HasEntityBody)
-    {
-        return default;
-    }
-
     try
     {
-        return await JsonSerializer.DeserializeAsync<T>(request.InputStream, jsonOptions);
+        return await request.ReadFromJsonAsync<T>(cancellationToken: cancellationToken);
     }
     catch
     {
@@ -874,19 +760,7 @@ async Task<T?> ReadJsonAsync<T>(HttpListenerRequest request)
     }
 }
 
-async Task WriteJsonAsync(HttpListenerResponse response, int statusCode, object payload)
-{
-    response.StatusCode = statusCode;
-    response.ContentType = "application/json; charset=utf-8";
-
-    var json = JsonSerializer.Serialize(payload, jsonOptions);
-    var bytes = Encoding.UTF8.GetBytes(json);
-    response.ContentEncoding = Encoding.UTF8;
-    response.ContentLength64 = bytes.LongLength;
-    await response.OutputStream.WriteAsync(bytes);
-}
-
-bool TryParseOdds(string? input, out Odds odds)
+static bool TryParseOdds(string? input, out Odds odds)
 {
     odds = Odds.FiftyFifty;
     if (string.IsNullOrWhiteSpace(input))

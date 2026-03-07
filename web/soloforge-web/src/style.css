@@ -1,6 +1,53 @@
 @import "tailwindcss";
 
+/* Theme CSS Variables */
 :root {
+  /* Light mode colors */
+  --color-bg-primary: theme(colors.stone.50);
+  --color-bg-secondary: theme(colors.amber.50);
+  --color-bg-tertiary: theme(colors.sky.50);
+  --color-bg-card: rgba(255, 255, 255, 0.7);
+  --color-bg-card-solid: theme(colors.white);
+  --color-bg-input: theme(colors.white);
+  --color-bg-hover: theme(colors.slate.50);
+  --color-bg-accent: theme(colors.slate.900);
+  --color-bg-accent-hover: theme(colors.slate.800);
+  --color-bg-success: theme(colors.emerald.600);
+  --color-bg-success-hover: theme(colors.emerald.500);
+  --color-bg-warning: theme(colors.amber.500);
+  --color-bg-warning-hover: theme(colors.amber.400);
+  --color-bg-warning-subtle: theme(colors.amber.50);
+  --color-bg-danger: theme(colors.rose.50);
+  --color-bg-danger-hover: theme(colors.rose.100);
+  --color-bg-info: theme(colors.sky.50);
+  --color-bg-muted: theme(colors.slate.50);
+
+  --color-text-primary: theme(colors.slate.900);
+  --color-text-secondary: theme(colors.slate.700);
+  --color-text-muted: theme(colors.slate.600);
+  --color-text-dimmed: theme(colors.slate.500);
+  --color-text-inverted: theme(colors.white);
+  --color-text-success: theme(colors.emerald.700);
+  --color-text-warning: theme(colors.amber.900);
+  --color-text-danger: theme(colors.rose.700);
+  --color-text-info: theme(colors.sky.900);
+
+  --color-border-primary: theme(colors.slate.200);
+  --color-border-secondary: theme(colors.white / 60%);
+  --color-border-card: theme(colors.white / 70%);
+  --color-border-success: theme(colors.emerald.200);
+  --color-border-warning: theme(colors.amber.200);
+  --color-border-danger: theme(colors.rose.200);
+  --color-border-info: theme(colors.sky.200);
+
+  --color-status-online: theme(colors.emerald.500);
+  --color-status-offline: theme(colors.rose.500);
+  --color-status-pending: theme(colors.slate.300);
+
+  --gradient-bg: radial-gradient(900px circle at 20% 10%, rgba(14, 165, 233, 0.18), transparent 55%),
+                 radial-gradient(700px circle at 80% 20%, rgba(245, 158, 11, 0.16), transparent 55%),
+                 radial-gradient(900px circle at 50% 100%, rgba(120, 113, 108, 0.16), transparent 55%);
+
   color-scheme: light;
   font-family: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   text-rendering: optimizeLegibility;
@@ -8,8 +55,99 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Dark mode colors */
+.dark {
+  --color-bg-primary: theme(colors.slate.900);
+  --color-bg-secondary: theme(colors.slate.800);
+  --color-bg-tertiary: theme(colors.slate.800);
+  --color-bg-card: rgba(30, 41, 59, 0.8);
+  --color-bg-card-solid: theme(colors.slate.800);
+  --color-bg-input: theme(colors.slate.800);
+  --color-bg-hover: theme(colors.slate.700);
+  --color-bg-accent: theme(colors.slate.100);
+  --color-bg-accent-hover: theme(colors.slate.200);
+  --color-bg-success: theme(colors.emerald.600);
+  --color-bg-success-hover: theme(colors.emerald.500);
+  --color-bg-warning: theme(colors.amber.600);
+  --color-bg-warning-hover: theme(colors.amber.500);
+  --color-bg-warning-subtle: rgba(251, 191, 36, 0.15);
+  --color-bg-danger: rgba(239, 68, 68, 0.15);
+  --color-bg-danger-hover: rgba(239, 68, 68, 0.25);
+  --color-bg-info: rgba(14, 165, 233, 0.15);
+  --color-bg-muted: theme(colors.slate.800);
+
+  --color-text-primary: theme(colors.slate.100);
+  --color-text-secondary: theme(colors.slate.200);
+  --color-text-muted: theme(colors.slate.400);
+  --color-text-dimmed: theme(colors.slate.500);
+  --color-text-inverted: theme(colors.slate.900);
+  --color-text-success: theme(colors.emerald.400);
+  --color-text-warning: theme(colors.amber.400);
+  --color-text-danger: theme(colors.rose.400);
+  --color-text-info: theme(colors.sky.400);
+
+  --color-border-primary: theme(colors.slate.600);
+  --color-border-secondary: theme(colors.slate.700);
+  --color-border-card: theme(colors.slate.700);
+  --color-border-success: theme(colors.emerald.800);
+  --color-border-warning: theme(colors.amber.800);
+  --color-border-danger: theme(colors.rose.800);
+  --color-border-info: theme(colors.sky.800);
+
+  --color-status-online: theme(colors.emerald.400);
+  --color-status-offline: theme(colors.rose.400);
+  --color-status-pending: theme(colors.slate.500);
+
+  --gradient-bg: radial-gradient(900px circle at 20% 10%, rgba(14, 165, 233, 0.12), transparent 55%),
+                 radial-gradient(700px circle at 80% 20%, rgba(245, 158, 11, 0.10), transparent 55%),
+                 radial-gradient(900px circle at 50% 100%, rgba(100, 116, 139, 0.12), transparent 55%);
+
+  color-scheme: dark;
+}
+
 html,
 body,
 #app {
   height: 100%;
+}
+
+/* Utility classes using CSS variables */
+.bg-app {
+  background: linear-gradient(to bottom right, var(--color-bg-primary), var(--color-bg-secondary), var(--color-bg-tertiary));
+}
+
+.bg-card {
+  background-color: var(--color-bg-card);
+  border-color: var(--color-border-secondary);
+}
+
+.text-primary {
+  color: var(--color-text-primary);
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+/* Scrollbar styling for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--color-border-primary);
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-dimmed);
 }
