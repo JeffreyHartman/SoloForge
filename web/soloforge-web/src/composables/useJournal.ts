@@ -104,6 +104,8 @@ export function useJournal() {
   }
 
   async function refreshJournal(campaignId: string | null) {
+    flushSave()
+
     if (!campaignId) {
       journal.value = ''
       currentCampaignId.value = null

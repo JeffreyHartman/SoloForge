@@ -97,6 +97,7 @@ const mod = isMac ? '\u2318' : 'Ctrl+'
     <!-- Font family -->
     <select
       :value="fontFamily"
+      aria-label="Journal font family"
       class="rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] px-2 py-1.5 text-[var(--color-text-primary)] outline-none"
       @change="$emit('update:fontFamily', ($event.target as HTMLSelectElement).value as JournalPrefs['fontFamily'])"
     >
@@ -108,6 +109,7 @@ const mod = isMac ? '\u2318' : 'Ctrl+'
     <!-- Font size -->
     <select
       :value="fontSize"
+      aria-label="Journal font size"
       class="rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] px-2 py-1.5 text-[var(--color-text-primary)] outline-none"
       @change="$emit('update:fontSize', Number(($event.target as HTMLSelectElement).value))"
     >

@@ -57,9 +57,14 @@ const fieldEntries = computed(() => Object.entries(props.segment.fields))
     <!-- Collapsed -->
     <div
       v-if="collapsed"
-      class="flex items-center gap-2 rounded-lg px-3 py-1.5 cursor-pointer select-none transition-colors hover:bg-[var(--color-bg-hover)]"
+      role="button"
+      tabindex="0"
+      :aria-expanded="false"
+      class="flex items-center gap-2 rounded-lg px-3 py-1.5 cursor-pointer select-none transition-colors hover:bg-[var(--color-bg-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-bg-accent)]"
       :style="{ borderLeft: `3px solid ${style.border}` }"
       @click="$emit('toggle')"
+      @keydown.enter.prevent="$emit('toggle')"
+      @keydown.space.prevent="$emit('toggle')"
     >
       <span
         class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider"
@@ -71,7 +76,7 @@ const fieldEntries = computed(() => Object.entries(props.segment.fields))
         <span v-if="summary.context" class="mr-1.5 font-semibold text-[var(--color-text-primary)]">{{ summary.context }}</span>
         <span class="text-[var(--color-text-secondary)]">{{ summary.result }}</span>
       </span>
-      <div class="ml-auto flex items-center gap-1 shrink-0 opacity-0 group-hover/roll:opacity-100 transition-opacity">
+      <div class="ml-auto flex items-center gap-1 shrink-0 opacity-0 group-hover/roll:opacity-100 group-focus-within/roll:opacity-100 transition-opacity">
         <button
           class="rounded p-0.5 text-[var(--color-text-dimmed)] hover:text-[var(--color-text-danger)] hover:bg-[var(--color-bg-danger)] transition"
           title="Remove from journal"
@@ -84,7 +89,7 @@ const fieldEntries = computed(() => Object.entries(props.segment.fields))
       </div>
 
       <!-- Hover detail panel -->
-      <div class="invisible group-hover/roll:visible absolute left-8 top-full z-20 mt-1 w-80 rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)] p-3 shadow-lg transition-all">
+      <div class="invisible group-hover/roll:visible group-focus-within/roll:visible absolute left-8 top-full z-20 mt-1 w-80 rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)] p-3 shadow-lg transition-all">
         <div
           class="mb-2 text-[11px] font-bold uppercase tracking-wider"
           :style="{ color: style.color }"
@@ -118,6 +123,7 @@ const fieldEntries = computed(() => Object.entries(props.segment.fields))
           <button
             class="rounded p-1 text-[var(--color-text-dimmed)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition"
             title="Collapse"
+            :aria-expanded="true"
             @click="$emit('toggle')"
           >
             <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">

@@ -158,13 +158,9 @@ export function useJournalParser(content: Ref<string | undefined>) {
     // Verify the offset still matches (content may have shifted)
     if (text.slice(start, end) !== seg.raw) return
 
-    // Consume trailing newlines
-    while (end < text.length && text[end] === '\n') end++
-    // Consume one leading newline if not at start
-    if (start > 0 && text[start - 1] === '\n') start--
-
-    let updated = text.slice(0, Math.max(0, start)) + text.slice(end)
-    content.value = updated.replace(/\n{3,}/g, '\n\n')
+    const before = text.slice(0, start).replace(/\n+$/, '')
+    const after = text.slice(end).replace(/^\n+/, '')
+    content.value = before && after ? `${before}\n\n${after}` : before + after
   }
 
   return { segments, deleteSegment }
