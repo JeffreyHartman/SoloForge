@@ -228,16 +228,6 @@ async function reopenThread(name: string) {
 }
 
 // Journal actions
-async function saveJournal() {
-  if (!campaign.currentCampaignId.value) return
-  clearError()
-  try {
-    await journalState.saveJournal()
-  } catch (err) {
-    setError(err)
-  }
-}
-
 async function reloadJournal() {
   clearError()
   try {
@@ -365,11 +355,9 @@ onMounted(() => {
         v-else-if="currentView === 'journal'"
         :campaign-id="campaign.currentCampaignId.value"
         :loading="journalState.loading.journal"
-        :loading-save="journalState.loading.saveJournal"
         :api-online="apiOnline ?? false"
         v-model:content="journalState.journal.value"
         @reload="reloadJournal"
-        @save="saveJournal"
       />
 
       <HistoryView

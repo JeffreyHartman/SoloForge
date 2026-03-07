@@ -1,11 +1,16 @@
 <script setup lang="ts">
+import { computed, reactive, onMounted, onUnmounted } from 'vue'
 import BaseCard from '../common/BaseCard.vue'
 import BaseButton from '../common/BaseButton.vue'
+import JournalToolbar from './JournalToolbar.vue'
+import JournalPreview from './JournalPreview.vue'
+import { useJournal } from '../../composables/useJournal'
+import { useJournalParser } from '../../composables/useJournalParser'
+import { useJournalPrefs, FONT_FAMILIES } from '../../composables/useJournalPrefs'
 
-defineProps<{
+const props = defineProps<{
   campaignId: string | null
   loading: boolean
-  loadingSave: boolean
   apiOnline: boolean
 }>()
 
@@ -13,14 +18,85 @@ const content = defineModel<string>('content')
 
 defineEmits<{
   reload: []
-  save: []
 }>()
+
+const { saveStatus, flushSave } = useJournal()
+const { prefs } = useJournalPrefs()
+const { segments, deleteSegment } = useJournalParser(content)
+
+// Collapse state
+const collapsedIds = reactive(new Set<string>())
+
+function toggleCollapse(id: string) {
+  if (collapsedIds.has(id)) collapsedIds.delete(id)
+  else collapsedIds.add(id)
+}
+
+function collapseAll() {
+  for (const seg of segments.value) {
+    if (seg.type === 'roll') collapsedIds.add(seg.id)
+  }
+}
+
+function expandAll() {
+  collapsedIds.clear()
+}
+
+function handleDelete(id: string) {
+  deleteSegment(id)
+  collapsedIds.delete(id)
+}
+
+const emptyMessage = computed(() =>
+  props.campaignId ? 'Nothing in the journal yet.' : 'Load or create a campaign first.'
+)
+
+const fontStyle = computed(() => ({
+  fontFamily: FONT_FAMILIES[prefs.fontFamily] ?? FONT_FAMILIES.mono,
+  fontSize: `${prefs.fontSize}px`,
+}))
+
+const showPreview = computed(() => prefs.mode === 'preview' || prefs.split)
+const showCollapseControls = computed(() => showPreview.value && prefs.enhanced)
+
+const statusText = computed(() => {
+  if (saveStatus.value === 'saving') return 'Saving...'
+  if (saveStatus.value === 'unsaved') return 'Unsaved'
+  return 'Saved'
+})
+
+const statusClass = computed(() => {
+  if (saveStatus.value === 'saving') return 'text-[var(--color-text-info)]'
+  if (saveStatus.value === 'unsaved') return 'text-[var(--color-text-warning)]'
+  return 'text-[var(--color-text-dimmed)]'
+})
+
+// Keyboard shortcuts
+function onKeydown(e: KeyboardEvent) {
+  const mod = e.ctrlKey || e.metaKey
+  if (!mod || e.key.toLowerCase() !== 'e') return
+
+  e.preventDefault()
+  if (e.shiftKey) {
+    prefs.split = !prefs.split
+  } else {
+    prefs.split = false
+    prefs.mode = prefs.mode === 'edit' ? 'preview' : 'edit'
+  }
+}
+
+onMounted(() => document.addEventListener('keydown', onKeydown))
+onUnmounted(() => {
+  document.removeEventListener('keydown', onKeydown)
+  flushSave()
+})
 </script>
 
 <template>
   <BaseCard title="Journal">
     <template #header>
       <div class="flex items-center gap-2">
+        <span class="text-xs transition-colors" :class="statusClass">{{ statusText }}</span>
         <BaseButton
           variant="secondary"
           size="sm"
@@ -29,27 +105,83 @@ defineEmits<{
         >
           Reload
         </BaseButton>
-        <BaseButton
-          variant="success"
-          size="sm"
-          :disabled="loadingSave || !campaignId || !apiOnline"
-          :loading="loadingSave"
-          @click="$emit('save')"
-        >
-          Save
-        </BaseButton>
       </div>
     </template>
 
+    <JournalToolbar
+      :mode="prefs.mode"
+      :split="prefs.split"
+      :enhanced="prefs.enhanced"
+      :font-family="prefs.fontFamily"
+      :font-size="prefs.fontSize"
+      :show-collapse-controls="showCollapseControls"
+      @update:mode="prefs.mode = $event"
+      @update:split="prefs.split = $event"
+      @update:enhanced="prefs.enhanced = $event"
+      @update:font-family="prefs.fontFamily = $event"
+      @update:font-size="prefs.fontSize = $event"
+      @collapse-all="collapseAll"
+      @expand-all="expandAll"
+    />
+
+    <!-- Split view: editor + preview side by side -->
+    <div v-if="prefs.split" class="flex h-[calc(100vh-20rem)] min-h-[420px] gap-3">
+      <textarea
+        v-model="content"
+        aria-label="Journal content"
+        class="h-full flex-1 resize-none rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] p-4 leading-relaxed text-[var(--color-text-primary)] shadow-sm outline-none transition placeholder:text-[var(--color-text-dimmed)] focus:border-[var(--color-text-dimmed)] focus:shadow"
+        :style="fontStyle"
+        :placeholder="campaignId ? 'Write your journal in markdown...' : 'Load or create a campaign first.'"
+        :disabled="!campaignId"
+        @blur="flushSave"
+      />
+      <div
+        class="h-full flex-1 overflow-y-auto rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] p-4 shadow-sm"
+        :style="fontStyle"
+      >
+        <JournalPreview
+          :content="content"
+          :enhanced="prefs.enhanced"
+          :segments="segments"
+          :collapsed-ids="collapsedIds"
+          :empty-message="emptyMessage"
+          @toggle="toggleCollapse"
+          @delete="handleDelete"
+        />
+      </div>
+    </div>
+
+    <!-- Edit mode (single pane) -->
     <textarea
+      v-else-if="prefs.mode === 'edit'"
       v-model="content"
       aria-label="Journal content"
-      class="h-[calc(100vh-16rem)] min-h-[420px] w-full resize-none rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] p-4 font-mono text-[13px] leading-5 text-[var(--color-text-primary)] shadow-sm outline-none transition placeholder:text-[var(--color-text-dimmed)] focus:border-[var(--color-text-dimmed)] focus:shadow"
-      :placeholder="campaignId ? 'Journal markdown...' : 'Load or create a campaign first.'"
+      class="h-[calc(100vh-20rem)] min-h-[420px] w-full resize-none rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] p-4 leading-relaxed text-[var(--color-text-primary)] shadow-sm outline-none transition placeholder:text-[var(--color-text-dimmed)] focus:border-[var(--color-text-dimmed)] focus:shadow"
+      :style="fontStyle"
+      :placeholder="campaignId ? 'Write your journal in markdown...' : 'Load or create a campaign first.'"
       :disabled="!campaignId"
+      @blur="flushSave"
     />
+
+    <!-- Preview mode (single pane) -->
+    <div
+      v-else
+      class="h-[calc(100vh-20rem)] min-h-[420px] overflow-y-auto rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] p-4 shadow-sm"
+      :style="fontStyle"
+    >
+      <JournalPreview
+        :content="content"
+        :enhanced="prefs.enhanced"
+        :segments="segments"
+        :collapsed-ids="collapsedIds"
+        :empty-message="emptyMessage"
+        @toggle="toggleCollapse"
+        @delete="handleDelete"
+      />
+    </div>
+
     <div class="mt-2 text-xs text-[var(--color-text-dimmed)]">
-      Saved in your local <code class="rounded bg-[var(--color-bg-muted)] px-1 py-0.5 font-mono text-[11px]">saves/</code> folder as markdown. This is plain text; rendering comes later.
+      Saved as markdown in <code class="rounded bg-[var(--color-bg-muted)] px-1 py-0.5 font-mono text-[11px]">saves/</code>. Compatible with Obsidian and other markdown editors.
     </div>
   </BaseCard>
 </template>

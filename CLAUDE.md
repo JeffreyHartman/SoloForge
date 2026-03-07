@@ -91,6 +91,12 @@ Engine calls produce result records -> `HistoryService.AddEntry` logs them -> `J
 - Singleton pattern: `private static readonly Lazy<T> _instance` + `Instance`
 - Using directives ordered: System, third-party, then SoloForge
 
+## Vue / Frontend Conventions
+
+- Always include appropriate ARIA attributes (`aria-label`, `aria-pressed`, `aria-expanded`, `role`, `tabindex`, etc.) on interactive elements — buttons, toggles, selects, custom controls. Low effort, keeps the app accessible.
+- Sanitize all `v-html` bindings with DOMPurify
+- Use CSS custom properties (`var(--color-*)`) for theming, not Tailwind `dark:` variants
+
 ## Data and Templates
 
 - `TableService` auto-discovers `.txt` tables in `data/` and `data/elements/` (case-insensitive IDs)
