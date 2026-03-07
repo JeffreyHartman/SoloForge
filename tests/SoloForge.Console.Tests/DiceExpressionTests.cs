@@ -8,6 +8,8 @@ public class DiceExpressionTests
     [InlineData("2d6+1", 1, 1, 2, 6)]
     [InlineData("d20", 0, 1, 1, 20)]
     [InlineData("1d8-2", -2, 1, 1, 8)]
+    [InlineData("d%", 0, 1, 1, 100)]
+    [InlineData("2d%+3", 3, 1, 2, 100)]
     public void TryParse_WithValidExpression_ParsesTermsAndModifier(
         string input,
         int expectedModifier,
@@ -31,7 +33,6 @@ public class DiceExpressionTests
     [InlineData("")]
     [InlineData("+")]
     [InlineData("2d")]
-    [InlineData("2d%")]
     [InlineData("0d6")]
     [InlineData("2x6")]
     public void TryParse_WithInvalidExpression_ReturnsFalse(string input)
@@ -47,6 +48,7 @@ public class DiceExpressionTests
     [InlineData("2d6+1", "2d6+1")]
     [InlineData("d20", "d20")]
     [InlineData("1d8-2", "d8-2")]
+    [InlineData("d%", "d%")]
     public void ToDisplayString_ProducesStableDisplayFormat(string input, string expected)
     {
         DiceExpression.TryParse(input, out var expression, out _).Should().BeTrue();

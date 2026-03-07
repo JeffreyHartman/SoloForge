@@ -151,3 +151,8 @@ body,
 .dark ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-dimmed);
 }
+
+.dark {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-primary) var(--color-bg-secondary);
+}

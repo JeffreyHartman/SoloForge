@@ -76,13 +76,7 @@ const modes: { id: MeaningMode; label: string }[] = [
       </div>
 
       <div v-else-if="mode === 'quickSet'">
-        <label class="block text-xs font-medium text-[var(--color-text-muted)]">Quick set</label>
-        <select
-          v-model="quickSetId"
-          class="mt-1 w-full rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-sm outline-none transition focus:border-[var(--color-text-dimmed)] focus:shadow"
-        >
-          <option v-for="q in quickSets" :key="q.id" :value="q.id">{{ q.name }}</option>
-        </select>
+        <BaseSelect v-model="quickSetId" label="Quick set" :options="quickSets.map(q => ({ value: q.id, label: q.name }))" />
       </div>
 
       <BaseButton

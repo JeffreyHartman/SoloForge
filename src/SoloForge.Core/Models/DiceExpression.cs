@@ -126,12 +126,6 @@ public sealed record DiceExpression(IReadOnlyList<DiceTerm> Terms, int Modifier)
             return false;
         }
 
-        if (faces == 100)
-        {
-            error = "Use d% for percentile rolls.";
-            return false;
-        }
-
         error = "";
         return true;
     }

@@ -69,9 +69,11 @@ const { isDark, toggleTheme } = useTheme()
         </button>
 
         <button
-          class="rounded-full border border-[var(--color-border-secondary)] bg-[var(--color-bg-card)] px-4 py-1.5 text-xs font-medium text-[var(--color-text-primary)] shadow-sm backdrop-blur transition hover:bg-[var(--color-bg-card-solid)]"
+          class="rounded-full border border-[var(--color-border-secondary)] bg-[var(--color-bg-card)] px-4 py-1.5 text-xs font-medium text-[var(--color-text-primary)] shadow-sm backdrop-blur transition"
+          :class="isBusy ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--color-bg-card-solid)]'"
           type="button"
           :disabled="isBusy"
+          :aria-busy="isBusy"
           @click="$emit('refresh')"
         >
           Refresh

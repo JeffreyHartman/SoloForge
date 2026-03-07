@@ -25,6 +25,8 @@ const tabs: { id: ViewName; label: string; icon: string }[] = [
         v-for="tab in tabs"
         :key="tab.id"
         type="button"
+        :aria-current="currentView === tab.id ? 'page' : undefined"
+        :aria-label="tab.label"
         class="flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition"
         :class="
           currentView === tab.id
@@ -33,7 +35,7 @@ const tabs: { id: ViewName; label: string; icon: string }[] = [
         "
         @click="$emit('navigate', tab.id)"
       >
-        <svg class="hidden h-4 w-4 sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg class="hidden h-4 w-4 sm:block" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="tab.icon" />
         </svg>
         <span>{{ tab.label }}</span>

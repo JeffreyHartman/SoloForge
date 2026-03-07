@@ -5,7 +5,7 @@ import BaseButton from '../common/BaseButton.vue'
 import BaseInput from '../common/BaseInput.vue'
 import { ref } from 'vue'
 
-defineProps<{
+const props = defineProps<{
   result: RandomEventResult | null
   loading: boolean
   loadingAddNpc: boolean
@@ -21,6 +21,7 @@ const newNpcName = ref('')
 const newNpcDescription = ref('')
 
 function handleAddNpc() {
+  if (props.loadingAddNpc || !props.apiOnline) return
   const name = newNpcName.value.trim()
   if (name) {
     emit('addNpc', name, newNpcDescription.value.trim())

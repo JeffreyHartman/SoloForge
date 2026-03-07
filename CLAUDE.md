@@ -78,15 +78,21 @@ Vue 3 + TypeScript + Tailwind CSS 4 + Vite. Composables in `src/composables/` wr
 ### Data Flow
 Engine calls produce result records -> `HistoryService.AddEntry` logs them -> `JournalService` appends to the campaign journal -> `CampaignService.Save()` persists to `saves/`.
 
-## Key Conventions
-
-Refer to `AGENTS.md` for detailed C#, naming, error handling, UI, and service conventions. Key highlights:
+## C# Conventions
 
 - File-scoped namespaces, `sealed` services, `record` for immutable types
-- `_camelCase` private fields, PascalCase public members
-- `System.Text.Json` with camelCase policy for persistence
+- `_camelCase` private fields, PascalCase public members, `var` when type is obvious
 - Braces on new lines, 4-space indentation
+- `System.Text.Json` with camelCase policy for persistence
 - `Random.Shared` for all RNG in engine classes
 - `AppLogger.ForContext<T>()` for structured Serilog logging
-- `AppContext.BaseDirectory` for runtime path resolution
+- `AppContext.BaseDirectory` for runtime path resolution, `Path.Combine` for paths
 - Guard clauses for parameter validation
+- Singleton pattern: `private static readonly Lazy<T> _instance` + `Instance`
+- Using directives ordered: System, third-party, then SoloForge
+
+## Data and Templates
+
+- `TableService` auto-discovers `.txt` tables in `data/` and `data/elements/` (case-insensitive IDs)
+- `TemplateService` loads markdown from `templates/`; placeholders use `{Field}` and `{?Field}...{/Field}`
+- Campaign state persisted as JSON in `saves/`; models must stay backward-compatible (add fields with defaults)

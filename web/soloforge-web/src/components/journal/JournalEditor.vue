@@ -24,7 +24,7 @@ defineEmits<{
         <BaseButton
           variant="secondary"
           size="sm"
-          :disabled="loading || !apiOnline"
+          :disabled="loading || !apiOnline || !campaignId"
           @click="$emit('reload')"
         >
           Reload
@@ -43,6 +43,7 @@ defineEmits<{
 
     <textarea
       v-model="content"
+      aria-label="Journal content"
       class="h-[calc(100vh-16rem)] min-h-[420px] w-full resize-none rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] p-4 font-mono text-[13px] leading-5 text-[var(--color-text-primary)] shadow-sm outline-none transition placeholder:text-[var(--color-text-dimmed)] focus:border-[var(--color-text-dimmed)] focus:shadow"
       :placeholder="campaignId ? 'Journal markdown...' : 'Load or create a campaign first.'"
       :disabled="!campaignId"

@@ -52,6 +52,7 @@ function handleRemove(name: string) {
           <BaseButton
             variant="danger"
             size="sm"
+            :aria-label="`Remove ${c.name}`"
             :disabled="loadingRemove || !apiOnline"
             @click="handleRemove(c.name)"
           >

@@ -13,9 +13,13 @@ export async function apiGet<T>(path: string): Promise<T> {
 }
 
 export async function apiSend<T>(path: string, method: string, body?: unknown): Promise<T> {
+  const headers: Record<string, string> = { Accept: 'application/json' }
+  if (body !== undefined) {
+    headers['Content-Type'] = 'application/json'
+  }
   const resp = await fetch(path, {
     method,
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    headers,
     body: body === undefined ? undefined : JSON.stringify(body),
   })
   if (!resp.ok) {
