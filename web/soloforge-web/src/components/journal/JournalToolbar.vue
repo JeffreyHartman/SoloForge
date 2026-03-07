@@ -34,6 +34,7 @@ const mod = isMac ? '\u2318' : 'Ctrl+'
         :class="!split && mode === 'edit'
           ? 'bg-[var(--color-bg-accent)] text-[var(--color-text-inverted)]'
           : 'bg-[var(--color-bg-card-solid)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)]'"
+        :aria-pressed="!split && mode === 'edit'"
         :title="`Edit mode (${mod}E)`"
         @click="$emit('update:split', false); $emit('update:mode', 'edit')"
       >
@@ -44,6 +45,7 @@ const mod = isMac ? '\u2318' : 'Ctrl+'
         :class="!split && mode === 'preview'
           ? 'bg-[var(--color-bg-accent)] text-[var(--color-text-inverted)]'
           : 'bg-[var(--color-bg-card-solid)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)]'"
+        :aria-pressed="!split && mode === 'preview'"
         :title="`Preview mode (${mod}E)`"
         @click="$emit('update:split', false); $emit('update:mode', 'preview')"
       >
@@ -54,6 +56,7 @@ const mod = isMac ? '\u2318' : 'Ctrl+'
         :class="split
           ? 'bg-[var(--color-bg-accent)] text-[var(--color-text-inverted)]'
           : 'bg-[var(--color-bg-card-solid)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)]'"
+        :aria-pressed="split"
         :title="`Split view (${mod}Shift+E)`"
         @click="$emit('update:split', !split)"
       >
