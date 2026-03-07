@@ -28,11 +28,12 @@ function load(): JournalPrefs {
 
 const prefs = reactive<JournalPrefs>(load())
 
-export function useJournalPrefs() {
-  watch(prefs, (val) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(val))
-  }, { deep: true })
+// Persist at module level — runs once, not per useJournalPrefs() call
+watch(prefs, (val) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(val))
+}, { deep: true })
 
+export function useJournalPrefs() {
   return { prefs }
 }
 

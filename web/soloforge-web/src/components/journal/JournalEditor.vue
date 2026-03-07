@@ -3,13 +3,12 @@ import { computed, reactive, onMounted, onUnmounted } from 'vue'
 import BaseCard from '../common/BaseCard.vue'
 import BaseButton from '../common/BaseButton.vue'
 import JournalToolbar from './JournalToolbar.vue'
-import RollPanel from './RollPanel.vue'
-import MarkdownBlock from './MarkdownBlock.vue'
+import JournalPreview from './JournalPreview.vue'
 import { useJournal } from '../../composables/useJournal'
 import { useJournalParser } from '../../composables/useJournalParser'
 import { useJournalPrefs, FONT_FAMILIES } from '../../composables/useJournalPrefs'
 
-defineProps<{
+const props = defineProps<{
   campaignId: string | null
   loading: boolean
   apiOnline: boolean
@@ -42,6 +41,15 @@ function collapseAll() {
 function expandAll() {
   collapsedIds.clear()
 }
+
+function handleDelete(id: string) {
+  deleteSegment(id)
+  collapsedIds.delete(id)
+}
+
+const emptyMessage = computed(() =>
+  props.campaignId ? 'Nothing in the journal yet.' : 'Load or create a campaign first.'
+)
 
 const fontStyle = computed(() => ({
   fontFamily: FONT_FAMILIES[prefs.fontFamily] ?? FONT_FAMILIES.mono,
@@ -131,22 +139,15 @@ onUnmounted(() => {
         class="h-full flex-1 overflow-y-auto rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] p-4 shadow-sm"
         :style="fontStyle"
       >
-        <div v-if="!content?.trim()" class="text-[var(--color-text-dimmed)]">
-          {{ campaignId ? 'Nothing in the journal yet.' : 'Load or create a campaign first.' }}
-        </div>
-        <template v-else-if="prefs.enhanced">
-          <template v-for="segment in segments" :key="segment.id">
-            <MarkdownBlock v-if="segment.type === 'text'" :content="segment.raw" />
-            <RollPanel
-              v-else
-              :segment="segment"
-              :collapsed="collapsedIds.has(segment.id)"
-              @toggle="toggleCollapse(segment.id)"
-              @delete="deleteSegment(segment.id)"
-            />
-          </template>
-        </template>
-        <MarkdownBlock v-else :content="content" />
+        <JournalPreview
+          :content="content"
+          :enhanced="prefs.enhanced"
+          :segments="segments"
+          :collapsed-ids="collapsedIds"
+          :empty-message="emptyMessage"
+          @toggle="toggleCollapse"
+          @delete="handleDelete"
+        />
       </div>
     </div>
 
@@ -168,22 +169,15 @@ onUnmounted(() => {
       class="h-[calc(100vh-20rem)] min-h-[420px] overflow-y-auto rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] p-4 shadow-sm"
       :style="fontStyle"
     >
-      <div v-if="!content?.trim()" class="text-[var(--color-text-dimmed)]">
-        {{ campaignId ? 'Nothing in the journal yet.' : 'Load or create a campaign first.' }}
-      </div>
-      <template v-else-if="prefs.enhanced">
-        <template v-for="segment in segments" :key="segment.id">
-          <MarkdownBlock v-if="segment.type === 'text'" :content="segment.raw" />
-          <RollPanel
-            v-else
-            :segment="segment"
-            :collapsed="collapsedIds.has(segment.id)"
-            @toggle="toggleCollapse(segment.id)"
-            @delete="deleteSegment(segment.id)"
-          />
-        </template>
-      </template>
-      <MarkdownBlock v-else :content="content" />
+      <JournalPreview
+        :content="content"
+        :enhanced="prefs.enhanced"
+        :segments="segments"
+        :collapsed-ids="collapsedIds"
+        :empty-message="emptyMessage"
+        @toggle="toggleCollapse"
+        @delete="handleDelete"
+      />
     </div>
 
     <div class="mt-2 text-xs text-[var(--color-text-dimmed)]">

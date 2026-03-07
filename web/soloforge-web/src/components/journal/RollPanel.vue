@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import DOMPurify from 'dompurify'
 import type { RollSegment } from '../../composables/useJournalParser'
 
 const props = defineProps<{
@@ -11,6 +12,10 @@ defineEmits<{
   toggle: []
   delete: []
 }>()
+
+function sanitize(html: string): string {
+  return DOMPurify.sanitize(html)
+}
 
 interface RollStyle {
   border: string
@@ -88,7 +93,7 @@ const fieldEntries = computed(() => Object.entries(props.segment.fields))
         </div>
         <div v-for="[key, val] in fieldEntries" :key="key" class="flex gap-2 py-0.5 text-sm">
           <span class="shrink-0 font-semibold text-[var(--color-text-muted)]">{{ key }}:</span>
-          <span class="text-[var(--color-text-primary)]" v-html="val" />
+          <span class="text-[var(--color-text-primary)]" v-html="sanitize(val)" />
         </div>
       </div>
     </div>
@@ -134,7 +139,7 @@ const fieldEntries = computed(() => Object.entries(props.segment.fields))
       <div class="space-y-1">
         <div v-for="[key, val] in fieldEntries" :key="key" class="flex gap-3 text-sm">
           <span class="shrink-0 min-w-20 font-semibold text-[var(--color-text-muted)]">{{ key }}</span>
-          <span class="text-[var(--color-text-primary)]" v-html="val" />
+          <span class="text-[var(--color-text-primary)]" v-html="sanitize(val)" />
         </div>
       </div>
     </div>

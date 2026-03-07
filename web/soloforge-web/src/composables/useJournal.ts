@@ -25,44 +25,45 @@ function scheduleSave() {
 
 async function executeSave() {
   if (!currentCampaignId.value) return
-  if (journal.value === lastSavedContent) {
-    saveStatus.value = 'saved'
-    return
-  }
-  if (saving) {
-    pendingSave = true
-    return
-  }
 
-  saving = true
-  loading.saveJournal = true
-  saveStatus.value = 'saving'
-  const contentAtStart = journal.value
-  const campaignId = currentCampaignId.value
+  // Loop until content is stable (replaces recursion)
+  while (true) {
+    if (journal.value === lastSavedContent) {
+      saveStatus.value = 'saved'
+      return
+    }
+    if (saving) {
+      pendingSave = true
+      return
+    }
 
-  try {
-    await apiSend<{ saved: boolean }>('/api/journal', 'PUT', {
-      campaignId,
-      content: contentAtStart,
-    })
-    lastSavedContent = contentAtStart
-  } catch {
-    // Save failed — stay unsaved, will retry on next trigger
-    saveStatus.value = 'unsaved'
+    saving = true
+    loading.saveJournal = true
+    saveStatus.value = 'saving'
+    const contentAtStart = journal.value
+    const campaignId = currentCampaignId.value
+
+    try {
+      await apiSend<{ saved: boolean }>('/api/journal', 'PUT', {
+        campaignId,
+        content: contentAtStart,
+      })
+      lastSavedContent = contentAtStart
+    } catch {
+      saveStatus.value = 'unsaved'
+      saving = false
+      loading.saveJournal = false
+      return
+    }
+
     saving = false
     loading.saveJournal = false
-    return
-  }
 
-  saving = false
-  loading.saveJournal = false
-
-  // Content changed during save — save again
-  if (pendingSave || journal.value !== contentAtStart) {
+    if (!pendingSave && journal.value === contentAtStart) {
+      saveStatus.value = 'saved'
+      return
+    }
     pendingSave = false
-    await executeSave()
-  } else {
-    saveStatus.value = 'saved'
   }
 }
 
@@ -78,7 +79,6 @@ function flushSave() {
 
 function onBeforeUnload() {
   if (journal.value === lastSavedContent || !currentCampaignId.value) return
-  // Use keepalive fetch so the browser completes the request during unload
   fetch('/api/journal', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },

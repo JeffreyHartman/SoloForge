@@ -1,22 +1,26 @@
 import { computed, type Ref } from 'vue'
 
+export type RollType = 'Fate Check' | 'Scene Check' | 'Random Event' | 'Meaning Roll' | 'Dice Roll' | 'Note'
+
 export interface TextSegment {
   id: string
   type: 'text'
   raw: string
+  offset: number
 }
 
 export interface RollSegment {
   id: string
   type: 'roll'
-  rollType: string
+  rollType: RollType
   fields: Record<string, string>
   raw: string
+  offset: number
 }
 
 export type JournalSegment = TextSegment | RollSegment
 
-const KNOWN_ROLL_TYPES = new Set([
+const KNOWN_ROLL_TYPES: ReadonlySet<string> = new Set<RollType>([
   'Fate Check',
   'Scene Check',
   'Random Event',
@@ -34,7 +38,7 @@ function hashId(raw: string, index: number): string {
   return 's' + Math.abs(hash).toString(36)
 }
 
-function parseTableFields(tableText: string): { rollType: string; fields: Record<string, string> } | null {
+function parseTableFields(tableText: string): { rollType: RollType; fields: Record<string, string> } | null {
   const lines = tableText.split('\n')
   if (lines.length < 3) return null
 
@@ -52,7 +56,7 @@ function parseTableFields(tableText: string): { rollType: string; fields: Record
     }
   }
 
-  return { rollType, fields }
+  return { rollType: rollType as RollType, fields }
 }
 
 function parseSegments(text: string): JournalSegment[] {
@@ -61,18 +65,28 @@ function parseSegments(text: string): JournalSegment[] {
   const lines = text.split('\n')
   const segments: JournalSegment[] = []
   let textLines: string[] = []
+  let textStartOffset = 0
   let segIndex = 0
   let i = 0
+
+  // Pre-compute byte offset of each line
+  const lineOffsets: number[] = []
+  let pos = 0
+  for (const line of lines) {
+    lineOffsets.push(pos)
+    pos += line.length + 1 // +1 for \n
+  }
 
   function flushText() {
     const raw = textLines.join('\n')
     if (raw.trim()) {
-      segments.push({ id: hashId(raw, segIndex++), type: 'text', raw })
+      segments.push({ id: hashId(raw, segIndex++), type: 'text', raw, offset: textStartOffset })
     }
     textLines = []
   }
 
   while (i < lines.length) {
+    if (textLines.length === 0) textStartOffset = lineOffsets[i]
     const line = lines[i]
 
     // Note blockquote
@@ -84,6 +98,7 @@ function parseSegments(text: string): JournalSegment[] {
         rollType: 'Note',
         fields: { Note: line.replace(/^>\s*\*\*Note:\*\*\s*/, '') },
         raw: line,
+        offset: lineOffsets[i],
       })
       i++
       continue
@@ -91,8 +106,8 @@ function parseSegments(text: string): JournalSegment[] {
 
     // Table block: line starts with | and next line is a separator row
     if (/^\|/.test(line) && i + 1 < lines.length && /^\|[\s:|-]+\|/.test(lines[i + 1])) {
+      const tableOffset = lineOffsets[i]
       const tableLines: string[] = []
-      const tableStart = i
       while (i < lines.length && /^\|/.test(lines[i])) {
         tableLines.push(lines[i])
         i++
@@ -109,6 +124,7 @@ function parseSegments(text: string): JournalSegment[] {
           rollType: parsed.rollType,
           fields: parsed.fields,
           raw: tableRaw,
+          offset: tableOffset,
         })
       } else {
         // Not a recognized roll table — keep as text
@@ -135,11 +151,12 @@ export function useJournalParser(content: Ref<string | undefined>) {
     const seg = segments.value.find(s => s.id === segmentId)
     if (!seg) return
 
-    const idx = text.indexOf(seg.raw)
-    if (idx === -1) return
+    // Use the tracked offset for precise removal
+    let start = seg.offset
+    let end = seg.offset + seg.raw.length
 
-    let start = idx
-    let end = idx + seg.raw.length
+    // Verify the offset still matches (content may have shifted)
+    if (text.slice(start, end) !== seg.raw) return
 
     // Consume trailing newlines
     while (end < text.length && text[end] === '\n') end++

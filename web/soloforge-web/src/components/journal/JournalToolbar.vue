@@ -20,7 +20,8 @@ defineEmits<{
   expandAll: []
 }>()
 
-const isMac = navigator.platform.includes('Mac')
+const platform = (navigator as any).userAgentData?.platform ?? navigator.platform ?? ''
+const isMac = platform.includes('Mac') || platform.includes('mac')
 const mod = isMac ? '\u2318' : 'Ctrl+'
 </script>
 
