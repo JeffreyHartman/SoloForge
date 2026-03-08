@@ -25,12 +25,12 @@ interface RollStyle {
 }
 
 const STYLES: Record<string, RollStyle> = {
-  'Fate Check':    { border: '#3b82f6', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)',  label: 'Fate' },
-  'Scene Check':   { border: '#f59e0b', color: '#d97706', bg: 'rgba(245, 158, 11, 0.1)',  label: 'Scene' },
-  'Random Event':  { border: '#a855f7', color: '#9333ea', bg: 'rgba(168, 85, 247, 0.1)',  label: 'Event' },
-  'Meaning Roll':  { border: '#10b981', color: '#059669', bg: 'rgba(16, 185, 129, 0.1)',  label: 'Meaning' },
-  'Dice Roll':     { border: '#f43f5e', color: '#e11d48', bg: 'rgba(244, 63, 94, 0.1)',   label: 'Dice' },
-  'Note':          { border: '#94a3b8', color: '#64748b', bg: 'rgba(148, 163, 184, 0.1)', label: 'Note' },
+  'Fate Check':    { border: 'var(--color-roll-fate)',    color: 'var(--color-roll-fate)',         bg: 'var(--color-roll-fate-bg)',    label: 'Fate' },
+  'Scene Check':   { border: 'var(--color-roll-scene)',   color: 'var(--color-roll-scene-text)',   bg: 'var(--color-roll-scene-bg)',   label: 'Scene' },
+  'Random Event':  { border: 'var(--color-roll-event)',   color: 'var(--color-roll-event-text)',   bg: 'var(--color-roll-event-bg)',   label: 'Event' },
+  'Meaning Roll':  { border: 'var(--color-roll-meaning)', color: 'var(--color-roll-meaning-text)', bg: 'var(--color-roll-meaning-bg)', label: 'Meaning' },
+  'Dice Roll':     { border: 'var(--color-roll-dice)',    color: 'var(--color-roll-dice-text)',    bg: 'var(--color-roll-dice-bg)',    label: 'Dice' },
+  'Note':          { border: 'var(--color-roll-note)',    color: 'var(--color-roll-note-text)',    bg: 'var(--color-roll-note-bg)',    label: 'Note' },
 }
 
 const style = computed(() => STYLES[props.segment.rollType] ?? STYLES['Note'])

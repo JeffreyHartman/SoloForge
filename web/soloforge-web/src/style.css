@@ -5,12 +5,31 @@
    Applied via [data-theme="name"] on <html>.
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Base reset (font, rendering) ── */
+/* ── Base reset (font, rendering, roll-type colors) ── */
 :root {
   font-family: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  text-rendering: optimizeLegibility;
+  text-rendering: optimizelegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Roll-type accent colors (overridden by terminal themes) */
+  --color-roll-fate: #3b82f6;
+  --color-roll-fate-bg: rgba(59, 130, 246, 0.1);
+  --color-roll-scene: #f59e0b;
+  --color-roll-scene-text: #d97706;
+  --color-roll-scene-bg: rgba(245, 158, 11, 0.1);
+  --color-roll-event: #a855f7;
+  --color-roll-event-text: #9333ea;
+  --color-roll-event-bg: rgba(168, 85, 247, 0.1);
+  --color-roll-meaning: #10b981;
+  --color-roll-meaning-text: #059669;
+  --color-roll-meaning-bg: rgba(16, 185, 129, 0.1);
+  --color-roll-dice: #f43f5e;
+  --color-roll-dice-text: #e11d48;
+  --color-roll-dice-bg: rgba(244, 63, 94, 0.1);
+  --color-roll-note: #94a3b8;
+  --color-roll-note-text: #64748b;
+  --color-roll-note-bg: rgba(148, 163, 184, 0.1);
 }
 
 /* ─────────────────────────────────────
@@ -528,6 +547,25 @@
 
   --gradient-bg: radial-gradient(900px circle at 50% 50%, rgba(255, 176, 0, 0.04), transparent 60%);
 
+  /* Monochrome roll-type colors */
+  --color-roll-fate: #ffb000;
+  --color-roll-fate-bg: rgba(255, 176, 0, 0.10);
+  --color-roll-scene: #cc8a00;
+  --color-roll-scene-text: #cc8a00;
+  --color-roll-scene-bg: rgba(204, 138, 0, 0.10);
+  --color-roll-event: #e0a000;
+  --color-roll-event-text: #e0a000;
+  --color-roll-event-bg: rgba(224, 160, 0, 0.10);
+  --color-roll-meaning: #ddaa00;
+  --color-roll-meaning-text: #ddaa00;
+  --color-roll-meaning-bg: rgba(221, 170, 0, 0.10);
+  --color-roll-dice: #ffc830;
+  --color-roll-dice-text: #ffc830;
+  --color-roll-dice-bg: rgba(255, 200, 48, 0.10);
+  --color-roll-note: #997000;
+  --color-roll-note-text: #997000;
+  --color-roll-note-bg: rgba(153, 112, 0, 0.08);
+
   color-scheme: dark;
 }
 
@@ -578,6 +616,25 @@
 
   --gradient-bg: radial-gradient(900px circle at 50% 50%, rgba(51, 255, 51, 0.03), transparent 60%);
 
+  /* Monochrome roll-type colors */
+  --color-roll-fate: #33ff33;
+  --color-roll-fate-bg: rgba(51, 255, 51, 0.08);
+  --color-roll-scene: #20cc20;
+  --color-roll-scene-text: #20cc20;
+  --color-roll-scene-bg: rgba(32, 204, 32, 0.08);
+  --color-roll-event: #28e028;
+  --color-roll-event-text: #28e028;
+  --color-roll-event-bg: rgba(40, 224, 40, 0.08);
+  --color-roll-meaning: #30dd30;
+  --color-roll-meaning-text: #30dd30;
+  --color-roll-meaning-bg: rgba(48, 221, 48, 0.08);
+  --color-roll-dice: #66ff66;
+  --color-roll-dice-text: #66ff66;
+  --color-roll-dice-bg: rgba(102, 255, 102, 0.08);
+  --color-roll-note: #109910;
+  --color-roll-note-text: #109910;
+  --color-roll-note-bg: rgba(16, 153, 16, 0.06);
+
   color-scheme: dark;
 }
 
@@ -597,53 +654,53 @@
   scrollbar-color: var(--color-border-primary) var(--color-bg-secondary);
 }
 
-[data-theme="obsidian"] ::-webkit-scrollbar,
-[data-theme="fantasy"] ::-webkit-scrollbar,
-[data-theme="sci-fi"] ::-webkit-scrollbar,
-[data-theme="eldritch"] ::-webkit-scrollbar,
-[data-theme="dragon-fire"] ::-webkit-scrollbar,
-[data-theme="noir"] ::-webkit-scrollbar,
-[data-theme="steampunk"] ::-webkit-scrollbar,
-[data-theme="amber-terminal"] ::-webkit-scrollbar,
-[data-theme="green-terminal"] ::-webkit-scrollbar {
+[data-theme="obsidian"]::-webkit-scrollbar,
+[data-theme="fantasy"]::-webkit-scrollbar,
+[data-theme="sci-fi"]::-webkit-scrollbar,
+[data-theme="eldritch"]::-webkit-scrollbar,
+[data-theme="dragon-fire"]::-webkit-scrollbar,
+[data-theme="noir"]::-webkit-scrollbar,
+[data-theme="steampunk"]::-webkit-scrollbar,
+[data-theme="amber-terminal"]::-webkit-scrollbar,
+[data-theme="green-terminal"]::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-[data-theme="obsidian"] ::-webkit-scrollbar-track,
-[data-theme="fantasy"] ::-webkit-scrollbar-track,
-[data-theme="sci-fi"] ::-webkit-scrollbar-track,
-[data-theme="eldritch"] ::-webkit-scrollbar-track,
-[data-theme="dragon-fire"] ::-webkit-scrollbar-track,
-[data-theme="noir"] ::-webkit-scrollbar-track,
-[data-theme="steampunk"] ::-webkit-scrollbar-track,
-[data-theme="amber-terminal"] ::-webkit-scrollbar-track,
-[data-theme="green-terminal"] ::-webkit-scrollbar-track {
+[data-theme="obsidian"]::-webkit-scrollbar-track,
+[data-theme="fantasy"]::-webkit-scrollbar-track,
+[data-theme="sci-fi"]::-webkit-scrollbar-track,
+[data-theme="eldritch"]::-webkit-scrollbar-track,
+[data-theme="dragon-fire"]::-webkit-scrollbar-track,
+[data-theme="noir"]::-webkit-scrollbar-track,
+[data-theme="steampunk"]::-webkit-scrollbar-track,
+[data-theme="amber-terminal"]::-webkit-scrollbar-track,
+[data-theme="green-terminal"]::-webkit-scrollbar-track {
   background: var(--color-bg-secondary);
 }
 
-[data-theme="obsidian"] ::-webkit-scrollbar-thumb,
-[data-theme="fantasy"] ::-webkit-scrollbar-thumb,
-[data-theme="sci-fi"] ::-webkit-scrollbar-thumb,
-[data-theme="eldritch"] ::-webkit-scrollbar-thumb,
-[data-theme="dragon-fire"] ::-webkit-scrollbar-thumb,
-[data-theme="noir"] ::-webkit-scrollbar-thumb,
-[data-theme="steampunk"] ::-webkit-scrollbar-thumb,
-[data-theme="amber-terminal"] ::-webkit-scrollbar-thumb,
-[data-theme="green-terminal"] ::-webkit-scrollbar-thumb {
+[data-theme="obsidian"]::-webkit-scrollbar-thumb,
+[data-theme="fantasy"]::-webkit-scrollbar-thumb,
+[data-theme="sci-fi"]::-webkit-scrollbar-thumb,
+[data-theme="eldritch"]::-webkit-scrollbar-thumb,
+[data-theme="dragon-fire"]::-webkit-scrollbar-thumb,
+[data-theme="noir"]::-webkit-scrollbar-thumb,
+[data-theme="steampunk"]::-webkit-scrollbar-thumb,
+[data-theme="amber-terminal"]::-webkit-scrollbar-thumb,
+[data-theme="green-terminal"]::-webkit-scrollbar-thumb {
   background: var(--color-border-primary);
   border-radius: 4px;
 }
 
-[data-theme="obsidian"] ::-webkit-scrollbar-thumb:hover,
-[data-theme="fantasy"] ::-webkit-scrollbar-thumb:hover,
-[data-theme="sci-fi"] ::-webkit-scrollbar-thumb:hover,
-[data-theme="eldritch"] ::-webkit-scrollbar-thumb:hover,
-[data-theme="dragon-fire"] ::-webkit-scrollbar-thumb:hover,
-[data-theme="noir"] ::-webkit-scrollbar-thumb:hover,
-[data-theme="steampunk"] ::-webkit-scrollbar-thumb:hover,
-[data-theme="amber-terminal"] ::-webkit-scrollbar-thumb:hover,
-[data-theme="green-terminal"] ::-webkit-scrollbar-thumb:hover {
+[data-theme="obsidian"]::-webkit-scrollbar-thumb:hover,
+[data-theme="fantasy"]::-webkit-scrollbar-thumb:hover,
+[data-theme="sci-fi"]::-webkit-scrollbar-thumb:hover,
+[data-theme="eldritch"]::-webkit-scrollbar-thumb:hover,
+[data-theme="dragon-fire"]::-webkit-scrollbar-thumb:hover,
+[data-theme="noir"]::-webkit-scrollbar-thumb:hover,
+[data-theme="steampunk"]::-webkit-scrollbar-thumb:hover,
+[data-theme="amber-terminal"]::-webkit-scrollbar-thumb:hover,
+[data-theme="green-terminal"]::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-dimmed);
 }
 
@@ -658,7 +715,9 @@ body,
 
 /* Utility classes using CSS variables */
 .bg-app {
-  background: linear-gradient(to bottom right, var(--color-bg-primary), var(--color-bg-secondary), var(--color-bg-tertiary));
+  background:
+    var(--gradient-bg),
+    linear-gradient(to bottom right, var(--color-bg-primary), var(--color-bg-secondary), var(--color-bg-tertiary));
 }
 
 .bg-card {

@@ -121,15 +121,18 @@ function initTheme() {
     // localStorage unavailable
   }
 
-  // Migrate old light/dark values
-  if (stored === 'dark') stored = 'obsidian'
-  if (stored === 'light') stored = 'parchment'
+  // Migrate old light/dark values and persist the migrated key
+  if (stored === 'dark' || stored === 'light') {
+    stored = stored === 'dark' ? 'obsidian' : 'parchment'
+    try { localStorage.setItem(STORAGE_KEY, stored) } catch { /* noop */ }
+  }
 
   const themeId = stored && WEB_THEMES.some(t => t.id === stored) ? stored : DEFAULT_THEME
   applyTheme(themeId)
 }
 
 function setTheme(id: string) {
+  if (!WEB_THEMES.some(t => t.id === id)) return
   applyTheme(id)
   try {
     localStorage.setItem(STORAGE_KEY, id)

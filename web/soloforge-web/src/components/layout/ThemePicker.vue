@@ -5,6 +5,7 @@ import { useTheme } from '../../composables/useTheme'
 const { themes, currentThemeId, setTheme } = useTheme()
 const open = ref(false)
 const pickerRef = ref<HTMLElement | null>(null)
+const menuId = 'theme-menu'
 
 function selectTheme(id: string) {
   setTheme(id)
@@ -40,7 +41,9 @@ onBeforeUnmount(() => {
       class="flex items-center gap-1.5 rounded-full border border-[var(--color-border-secondary)] bg-[var(--color-bg-card)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] shadow-sm backdrop-blur transition hover:bg-[var(--color-bg-card-solid)]"
       title="Change theme"
       aria-label="Change theme"
+      aria-haspopup="menu"
       :aria-expanded="open"
+      :aria-controls="menuId"
       @click="open = !open"
     >
       <!-- Palette icon -->
@@ -65,8 +68,9 @@ onBeforeUnmount(() => {
     >
       <div
         v-if="open"
+        :id="menuId"
         class="absolute right-0 z-50 mt-2 w-72 origin-top-right rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)] p-2 shadow-xl"
-        role="listbox"
+        role="menu"
         aria-label="Theme selection"
       >
         <div class="max-h-[420px] overflow-y-auto">
@@ -74,8 +78,8 @@ onBeforeUnmount(() => {
             v-for="theme in themes"
             :key="theme.id"
             type="button"
-            role="option"
-            :aria-selected="currentThemeId === theme.id"
+            role="menuitemradio"
+            :aria-checked="currentThemeId === theme.id"
             class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition"
             :class="
               currentThemeId === theme.id
