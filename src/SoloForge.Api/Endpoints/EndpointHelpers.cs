@@ -55,22 +55,40 @@ internal static class EndpointHelpers
         };
     }
 
-    internal static void EnsureJournalExists(CampaignService campaignService, JournalService journalService)
+    internal static void EnsureVaultExists(CampaignService campaignService, NotesService notesService, JournalService journalService)
     {
         var current = campaignService.CurrentCampaign;
         if (current == null) return;
 
-        var content = journalService.LoadOrCreate(current.Id, current.Name);
-        journalService.Save(current.Id, content);
+        // Migrate legacy single-file journal to vault if needed
+        var legacyPath = campaignService.GetJournalPath(current.Id);
+        notesService.MigrateIfNeeded(current.Id, legacyPath, current.SessionLogPath);
+
+        // Ensure vault directory exists
+        notesService.EnsureVault(current.Id);
+
+        // Ensure session log note exists
+        var sessionLogContent = notesService.ReadNote(current.Id, current.SessionLogPath);
+        if (sessionLogContent == null)
+        {
+            var defaultContent = JournalDefaults.CreateDefault(current.Name);
+            if (!notesService.WriteNote(current.Id, current.SessionLogPath, defaultContent))
+                throw new InvalidOperationException($"Failed to create session log at {current.SessionLogPath}");
+        }
     }
 
-    internal static void AppendEntryToJournal(LogEntry entry, CampaignService campaignService, JournalService journalService)
+    internal static void AppendEntryToJournal(LogEntry entry, CampaignService campaignService, JournalService journalService, NotesService notesService)
     {
         var current = campaignService.CurrentCampaign;
         if (current == null) return;
 
-        var currentText = journalService.LoadOrCreate(current.Id, current.Name);
-        var updated = journalService.AppendEntryToText(currentText, entry);
-        journalService.Save(current.Id, updated);
+        var sessionLogPath = current.SessionLogPath;
+        var currentText = notesService.ReadNote(current.Id, sessionLogPath)
+            ?? JournalDefaults.CreateDefault(current.Name);
+
+        var markdown = journalService.ToMarkdown(entry);
+        var updated = JournalTextComposer.AppendMarkdown(currentText, markdown);
+        if (!notesService.WriteNote(current.Id, sessionLogPath, updated))
+            throw new InvalidOperationException($"Failed to write session log at {sessionLogPath}");
     }
 }

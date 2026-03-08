@@ -32,7 +32,8 @@ internal static class MythicEndpoints
             CancellationToken ct,
             CampaignService campaignService,
             HistoryService historyService,
-            JournalService journalService) =>
+            JournalService journalService,
+            NotesService notesService) =>
         {
             var body = await EndpointHelpers.ReadBodyAsync<GenerateQuickSetRequest>(request, ct);
             var id = body?.Id?.Trim();
@@ -57,7 +58,7 @@ internal static class MythicEndpoints
                 string.IsNullOrWhiteSpace(body?.Context) ? null : body!.Context!.Trim(),
                 result.ToDisplayDetails()
             );
-            EndpointHelpers.AppendEntryToJournal(entry, campaignService, journalService);
+            EndpointHelpers.AppendEntryToJournal(entry, campaignService, journalService, notesService);
             campaignService.Save();
 
             return Results.Json(result);
@@ -69,7 +70,8 @@ internal static class MythicEndpoints
             Session session,
             CampaignService campaignService,
             HistoryService historyService,
-            JournalService journalService) =>
+            JournalService journalService,
+            NotesService notesService) =>
         {
             var body = await EndpointHelpers.ReadBodyAsync<FateCheckRequest>(request, ct);
             if (body == null)
@@ -92,7 +94,7 @@ internal static class MythicEndpoints
                 question,
                 $"Odds: {odds.GetDisplayName()}, Roll: {result.Roll}, Chaos: {chaos}"
             );
-            EndpointHelpers.AppendEntryToJournal(fateEntry, campaignService, journalService);
+            EndpointHelpers.AppendEntryToJournal(fateEntry, campaignService, journalService, notesService);
 
             RandomEventResult? randomEvent = null;
             if (result.RandomEventTriggered)
@@ -103,7 +105,7 @@ internal static class MythicEndpoints
                     $"{randomEvent.EventFocus}: {randomEvent.EventAction}",
                     "Triggered by Fate Check"
                 );
-                EndpointHelpers.AppendEntryToJournal(eventEntry, campaignService, journalService);
+                EndpointHelpers.AppendEntryToJournal(eventEntry, campaignService, journalService, notesService);
             }
 
             campaignService.Save();
@@ -123,7 +125,8 @@ internal static class MythicEndpoints
             Session session,
             CampaignService campaignService,
             HistoryService historyService,
-            JournalService journalService) =>
+            JournalService journalService,
+            NotesService notesService) =>
         {
             var body = await EndpointHelpers.ReadBodyAsync<SceneCheckRequest>(request, ct) ?? new SceneCheckRequest();
             var chaos = body.Chaos ?? session.Chaos;
@@ -138,7 +141,7 @@ internal static class MythicEndpoints
             }
 
             var sceneEntry = historyService.AddEntry(LogType.SceneCheck, result.Result, contextText, details);
-            EndpointHelpers.AppendEntryToJournal(sceneEntry, campaignService, journalService);
+            EndpointHelpers.AppendEntryToJournal(sceneEntry, campaignService, journalService, notesService);
 
             if (result.RandomEvent != null)
             {
@@ -148,7 +151,7 @@ internal static class MythicEndpoints
                     $"{ev.EventFocus}: {ev.EventAction}",
                     "Triggered by Scene Interrupt"
                 );
-                EndpointHelpers.AppendEntryToJournal(eventEntry, campaignService, journalService);
+                EndpointHelpers.AppendEntryToJournal(eventEntry, campaignService, journalService, notesService);
             }
 
             campaignService.Save();
@@ -159,7 +162,8 @@ internal static class MythicEndpoints
         app.MapPost("/random-event", (
             CampaignService campaignService,
             HistoryService historyService,
-            JournalService journalService) =>
+            JournalService journalService,
+            NotesService notesService) =>
         {
             var ev = RandomEvent.Generate();
 
@@ -170,7 +174,7 @@ internal static class MythicEndpoints
                     : null;
 
             var entry = historyService.AddEntry(LogType.RandomEvent, $"{ev.EventFocus}: {ev.EventAction}", null, eventDetails);
-            EndpointHelpers.AppendEntryToJournal(entry, campaignService, journalService);
+            EndpointHelpers.AppendEntryToJournal(entry, campaignService, journalService, notesService);
             campaignService.Save();
 
             return Results.Json(ev);
@@ -181,7 +185,8 @@ internal static class MythicEndpoints
             CancellationToken ct,
             CampaignService campaignService,
             HistoryService historyService,
-            JournalService journalService) =>
+            JournalService journalService,
+            NotesService notesService) =>
         {
             var body = await EndpointHelpers.ReadBodyAsync<DiceRollRequest>(request, ct);
             var input = body?.Expression;
@@ -199,7 +204,7 @@ internal static class MythicEndpoints
             var result = DiceRoller.Instance.Roll(expression!);
             var breakdown = result.BuildBreakdown();
             var entry = historyService.AddEntry(LogType.DiceRoll, result.Total.ToString(), expression!.ToDisplayString(), breakdown);
-            EndpointHelpers.AppendEntryToJournal(entry, campaignService, journalService);
+            EndpointHelpers.AppendEntryToJournal(entry, campaignService, journalService, notesService);
             campaignService.Save();
 
             return Results.Json(new { roll = result, breakdown });
@@ -210,14 +215,15 @@ internal static class MythicEndpoints
             CancellationToken ct,
             CampaignService campaignService,
             HistoryService historyService,
-            JournalService journalService) =>
+            JournalService journalService,
+            NotesService notesService) =>
         {
             var body = await EndpointHelpers.ReadBodyAsync<MeaningRequest>(request, ct);
             var contextText = string.IsNullOrWhiteSpace(body?.Context) ? null : body!.Context!.Trim();
 
             var result = MeaningEngine.GenerateAction();
             var entry = historyService.AddEntry(LogType.Meaning, result.Combined, contextText, "Table: Action");
-            EndpointHelpers.AppendEntryToJournal(entry, campaignService, journalService);
+            EndpointHelpers.AppendEntryToJournal(entry, campaignService, journalService, notesService);
             campaignService.Save();
 
             return Results.Json(result);
@@ -228,14 +234,15 @@ internal static class MythicEndpoints
             CancellationToken ct,
             CampaignService campaignService,
             HistoryService historyService,
-            JournalService journalService) =>
+            JournalService journalService,
+            NotesService notesService) =>
         {
             var body = await EndpointHelpers.ReadBodyAsync<MeaningRequest>(request, ct);
             var contextText = string.IsNullOrWhiteSpace(body?.Context) ? null : body!.Context!.Trim();
 
             var result = MeaningEngine.GenerateDescription();
             var entry = historyService.AddEntry(LogType.Meaning, result.Combined, contextText, "Table: Description");
-            EndpointHelpers.AppendEntryToJournal(entry, campaignService, journalService);
+            EndpointHelpers.AppendEntryToJournal(entry, campaignService, journalService, notesService);
             campaignService.Save();
 
             return Results.Json(result);
@@ -246,7 +253,8 @@ internal static class MythicEndpoints
             CancellationToken ct,
             CampaignService campaignService,
             HistoryService historyService,
-            JournalService journalService) =>
+            JournalService journalService,
+            NotesService notesService) =>
         {
             var body = await EndpointHelpers.ReadBodyAsync<MeaningTableRequest>(request, ct);
             var tableId = body?.TableId?.Trim();
@@ -261,7 +269,7 @@ internal static class MythicEndpoints
 
             var result = MeaningEngine.GenerateFromTable(tableId, displayName);
             var entry = historyService.AddEntry(LogType.Meaning, result.Combined, contextText, $"Table: {displayName}");
-            EndpointHelpers.AppendEntryToJournal(entry, campaignService, journalService);
+            EndpointHelpers.AppendEntryToJournal(entry, campaignService, journalService, notesService);
             campaignService.Save();
 
             return Results.Json(new
@@ -276,7 +284,8 @@ internal static class MythicEndpoints
             CancellationToken ct,
             CampaignService campaignService,
             HistoryService historyService,
-            JournalService journalService) =>
+            JournalService journalService,
+            NotesService notesService) =>
         {
             var body = await EndpointHelpers.ReadBodyAsync<MeaningFusionRequest>(request, ct);
             var tableId1 = body?.TableId1?.Trim();
@@ -295,7 +304,7 @@ internal static class MythicEndpoints
 
             var result = MeaningEngine.GenerateFusion(tableId1, tableId2);
             var entry = historyService.AddEntry(LogType.Meaning, result.Combined, contextText, $"Fusion: {name1} + {name2}");
-            EndpointHelpers.AppendEntryToJournal(entry, campaignService, journalService);
+            EndpointHelpers.AppendEntryToJournal(entry, campaignService, journalService, notesService);
             campaignService.Save();
 
             return Results.Json(new

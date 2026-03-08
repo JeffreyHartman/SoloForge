@@ -23,3 +23,14 @@ public sealed record MeaningTableRequest(string? TableId, string? Context);
 public sealed record MeaningFusionRequest(string? TableId1, string? TableId2, string? Context);
 
 public sealed record GenerateQuickSetRequest(string? Id, string? Context);
+
+// Notes vault requests
+public sealed record NoteCreateRequest(string? Path, string? Content);
+
+public sealed record NoteUpdateRequest(string? Path, string? Content);
+
+public sealed record NoteMoveRequest(string? OldPath, string? NewPath);
+
+public sealed record FolderCreateRequest(string? Path);
+
+public sealed record SetSessionLogRequest(string? Path);

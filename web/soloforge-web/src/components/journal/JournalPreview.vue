@@ -14,6 +14,7 @@ defineProps<{
 defineEmits<{
   toggle: [id: string]
   delete: [id: string]
+  navigate: [path: string]
 }>()
 </script>
 
@@ -23,7 +24,7 @@ defineEmits<{
   </div>
   <template v-else-if="enhanced">
     <template v-for="segment in segments" :key="segment.id">
-      <MarkdownBlock v-if="segment.type === 'text'" :content="segment.raw" />
+      <MarkdownBlock v-if="segment.type === 'text'" :content="segment.raw" @navigate="$emit('navigate', $event)" />
       <RollPanel
         v-else
         :segment="segment"
@@ -33,5 +34,5 @@ defineEmits<{
       />
     </template>
   </template>
-  <MarkdownBlock v-else :content="content" />
+  <MarkdownBlock v-else :content="content" @navigate="$emit('navigate', $event)" />
 </template>

@@ -12,15 +12,16 @@ internal static class JournalEndpoints
             return Results.Json(historyService.Entries);
         });
 
-        app.MapGet("/journal", (CampaignService campaignService, JournalService journalService) =>
+        // Legacy journal endpoints now redirect to the session log note in the vault
+        app.MapGet("/journal", (CampaignService campaignService, NotesService notesService) =>
         {
             var current = campaignService.CurrentCampaign;
             if (current == null)
-            {
                 return Results.Json(new { error = "no campaign loaded" }, statusCode: StatusCodes.Status404NotFound);
-            }
 
-            var content = journalService.LoadOrCreate(current.Id, current.Name);
+            var content = notesService.ReadNote(current.Id, current.SessionLogPath)
+                ?? JournalDefaults.CreateDefault(current.Name);
+
             return Results.Json(new { campaignId = current.Id, content });
         });
 
@@ -28,18 +29,16 @@ internal static class JournalEndpoints
             HttpRequest request,
             CancellationToken ct,
             CampaignService campaignService,
-            JournalService journalService) =>
+            NotesService notesService) =>
         {
             var current = campaignService.CurrentCampaign;
             if (current == null)
-            {
                 return Results.Json(new { error = "no campaign loaded" }, statusCode: StatusCodes.Status404NotFound);
-            }
 
             var body = await EndpointHelpers.ReadBodyAsync<JournalUpdateRequest>(request, ct);
             var content = body?.Content ?? string.Empty;
 
-            var saved = journalService.Save(current.Id, content);
+            var saved = notesService.WriteNote(current.Id, current.SessionLogPath, content);
             return Results.Json(new { saved }, statusCode: saved ? StatusCodes.Status200OK : StatusCodes.Status500InternalServerError);
         });
 
