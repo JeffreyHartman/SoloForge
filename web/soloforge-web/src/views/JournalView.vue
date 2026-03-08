@@ -31,7 +31,13 @@ async function confirmRename() {
   const oldPath = renameTarget.value
   const parts = oldPath.split('/')
   const isNote = oldPath.endsWith('.md')
-  const newName = renameValue.value.trim()
+  let newName = renameValue.value.trim().replace(/\//g, '-')
+  // Strip trailing .md to avoid double extensions
+  if (newName.endsWith('.md')) newName = newName.slice(0, -3)
+  if (!newName) {
+    cancelRename()
+    return
+  }
   parts[parts.length - 1] = isNote ? `${newName}.md` : newName
   const newPath = parts.join('/')
   if (newPath !== oldPath) {

@@ -32,8 +32,10 @@ export function sceneCheckToMarkdown(result: SceneCheckResponse): string {
 export function randomEventToMarkdown(result: RandomEventResult): string {
   let md = `| Random Event | &nbsp; |\n| ------------ | ------ |\n`
   md += `| **Event** | ${result.eventFocus}: ${result.eventAction} |\n`
-  if (result.selectedCharacter) md += `| *Details* | Character: ${result.selectedCharacter} |\n`
-  else if (result.selectedThread) md += `| *Details* | Thread: ${result.selectedThread} |\n`
+  const details: string[] = []
+  if (result.selectedCharacter) details.push(`Character: ${result.selectedCharacter}`)
+  if (result.selectedThread) details.push(`Thread: ${result.selectedThread}`)
+  if (details.length > 0) md += `| *Details* | ${details.join(', ')} |\n`
   return md.trimEnd()
 }
 
@@ -47,7 +49,7 @@ export function meaningToMarkdown(result: MeaningResult): string {
 
 /** Formats a quick set generation result as a markdown table for clipboard copy. */
 export function quickSetToMarkdown(result: QuickSetResult): string {
-  let md = `| Meaning Roll | &nbsp; |\n| ------------ | ------ |\n`
+  let md = `| Quick Set | &nbsp; |\n| --------- | ------ |\n`
   md += `| **Result** | ${result.quickSet.name} Generated |\n`
   const details = result.results.map(r => `${r.label}: ${r.combined}`).join('<br>')
   md += `| *Details* | ${details} |\n`

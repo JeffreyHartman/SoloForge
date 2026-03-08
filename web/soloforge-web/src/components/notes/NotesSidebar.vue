@@ -96,7 +96,7 @@ function cancelCreate() {
     class="shrink-0 overflow-hidden transition-all duration-300 ease-in-out"
     :style="{ width: open ? '280px' : '0px' }"
   >
-    <div class="flex h-full w-[280px] flex-col border-r border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)]">
+    <div class="flex h-full w-[280px] flex-col border-r border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)]" :inert="!open">
       <!-- Header -->
       <div class="flex items-center justify-between border-b border-[var(--color-border-primary)] px-3 py-2.5">
         <span class="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Notes</span>

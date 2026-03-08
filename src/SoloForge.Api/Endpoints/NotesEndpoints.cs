@@ -39,7 +39,16 @@ internal static class NotesEndpoints
             if (string.IsNullOrWhiteSpace(path))
                 return Results.Json(new { error = "path is required" }, statusCode: StatusCodes.Status400BadRequest);
 
-            var content = notesService.ReadNote(current.Id, path);
+            string? content;
+            try
+            {
+                content = notesService.ReadNote(current.Id, path);
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("traversal"))
+            {
+                return Results.Json(new { error = "invalid path" }, statusCode: StatusCodes.Status400BadRequest);
+            }
+
             if (content == null)
                 return Results.Json(new { error = "note not found" }, statusCode: StatusCodes.Status404NotFound);
 
@@ -58,7 +67,16 @@ internal static class NotesEndpoints
             if (string.IsNullOrWhiteSpace(body?.Path))
                 return Results.Json(new { error = "path is required" }, statusCode: StatusCodes.Status400BadRequest);
 
-            var created = notesService.CreateNote(current.Id, body.Path, body.Content);
+            bool created;
+            try
+            {
+                created = notesService.CreateNote(current.Id, body.Path, body.Content);
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("traversal"))
+            {
+                return Results.Json(new { error = "invalid path" }, statusCode: StatusCodes.Status400BadRequest);
+            }
+
             if (!created)
                 return Results.Json(new { error = "note already exists or could not be created" }, statusCode: StatusCodes.Status409Conflict);
 
@@ -77,7 +95,16 @@ internal static class NotesEndpoints
             if (string.IsNullOrWhiteSpace(body?.Path))
                 return Results.Json(new { error = "path is required" }, statusCode: StatusCodes.Status400BadRequest);
 
-            var saved = notesService.WriteNote(current.Id, body.Path, body.Content ?? string.Empty);
+            bool saved;
+            try
+            {
+                saved = notesService.WriteNote(current.Id, body.Path, body.Content ?? string.Empty);
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("traversal"))
+            {
+                return Results.Json(new { error = "invalid path" }, statusCode: StatusCodes.Status400BadRequest);
+            }
+
             return Results.Json(new { saved }, statusCode: saved ? StatusCodes.Status200OK : StatusCodes.Status500InternalServerError);
         });
 
@@ -91,7 +118,16 @@ internal static class NotesEndpoints
             if (string.IsNullOrWhiteSpace(path))
                 return Results.Json(new { error = "path is required" }, statusCode: StatusCodes.Status400BadRequest);
 
-            var deleted = notesService.DeleteNote(current.Id, path);
+            bool deleted;
+            try
+            {
+                deleted = notesService.DeleteNote(current.Id, path);
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("traversal"))
+            {
+                return Results.Json(new { error = "invalid path" }, statusCode: StatusCodes.Status400BadRequest);
+            }
+
             return Results.Json(new { deleted });
         });
 
@@ -107,7 +143,16 @@ internal static class NotesEndpoints
             if (string.IsNullOrWhiteSpace(body?.Path))
                 return Results.Json(new { error = "path is required" }, statusCode: StatusCodes.Status400BadRequest);
 
-            var created = notesService.CreateFolder(current.Id, body.Path);
+            bool created;
+            try
+            {
+                created = notesService.CreateFolder(current.Id, body.Path);
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("traversal"))
+            {
+                return Results.Json(new { error = "invalid path" }, statusCode: StatusCodes.Status400BadRequest);
+            }
+
             if (!created)
                 return Results.Json(new { error = "folder already exists or could not be created" }, statusCode: StatusCodes.Status409Conflict);
 
@@ -124,7 +169,16 @@ internal static class NotesEndpoints
             if (string.IsNullOrWhiteSpace(path))
                 return Results.Json(new { error = "path is required" }, statusCode: StatusCodes.Status400BadRequest);
 
-            var deleted = notesService.DeleteFolder(current.Id, path);
+            bool deleted;
+            try
+            {
+                deleted = notesService.DeleteFolder(current.Id, path);
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("traversal"))
+            {
+                return Results.Json(new { error = "invalid path" }, statusCode: StatusCodes.Status400BadRequest);
+            }
+
             return Results.Json(new { deleted });
         });
 
@@ -140,7 +194,16 @@ internal static class NotesEndpoints
             if (string.IsNullOrWhiteSpace(body?.OldPath) || string.IsNullOrWhiteSpace(body?.NewPath))
                 return Results.Json(new { error = "oldPath and newPath are required" }, statusCode: StatusCodes.Status400BadRequest);
 
-            var moved = notesService.Move(current.Id, body.OldPath, body.NewPath);
+            bool moved;
+            try
+            {
+                moved = notesService.Move(current.Id, body.OldPath, body.NewPath);
+            }
+            catch (InvalidOperationException ex) when (ex.Message.Contains("traversal"))
+            {
+                return Results.Json(new { error = "invalid path" }, statusCode: StatusCodes.Status400BadRequest);
+            }
+
             if (!moved)
                 return Results.Json(new { error = "move failed (source not found or target exists)" }, statusCode: StatusCodes.Status409Conflict);
 

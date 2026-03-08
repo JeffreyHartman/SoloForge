@@ -20,7 +20,6 @@ defineEmits<{
 }>()
 
 const expanded = ref(true)
-const showContextMenu = ref(false)
 
 const isSessionLog = computed(() => props.node.path === props.sessionLogPath)
 const indent = (props.depth ?? 0) * 16
@@ -39,7 +38,7 @@ const indent = (props.depth ?? 0) * 16
       @click="expanded = !expanded"
       @keydown.enter.prevent="expanded = !expanded"
       @keydown.space.prevent="expanded = !expanded"
-      @contextmenu.prevent="showContextMenu = !showContextMenu"
+      @contextmenu.prevent
     >
       <!-- Chevron -->
       <svg
@@ -56,9 +55,9 @@ const indent = (props.depth ?? 0) * 16
       <span class="truncate text-[var(--color-text-primary)]">{{ node.name }}</span>
 
       <!-- Folder actions (hover) -->
-      <div class="ml-auto flex items-center gap-0.5 opacity-0 group-hover/node:opacity-100 transition-opacity">
+      <div class="ml-auto flex items-center gap-0.5 opacity-0 group-hover/node:opacity-100 group-focus-within/node:opacity-100 transition-opacity">
         <button
-          class="rounded p-0.5 text-[var(--color-text-dimmed)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition"
+          class="rounded p-0.5 text-[var(--color-text-dimmed)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] focus:opacity-100 transition"
           title="New note"
           aria-label="New note in folder"
           @click.stop="$emit('createNote', node.path)"
@@ -68,7 +67,7 @@ const indent = (props.depth ?? 0) * 16
           </svg>
         </button>
         <button
-          class="rounded p-0.5 text-[var(--color-text-dimmed)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition"
+          class="rounded p-0.5 text-[var(--color-text-dimmed)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] focus:opacity-100 transition"
           title="New subfolder"
           aria-label="New subfolder"
           @click.stop="$emit('createFolder', node.path)"
@@ -79,7 +78,7 @@ const indent = (props.depth ?? 0) * 16
           </svg>
         </button>
         <button
-          class="rounded p-0.5 text-[var(--color-text-dimmed)] hover:text-[var(--color-text-danger)] hover:bg-[var(--color-bg-danger)] transition"
+          class="rounded p-0.5 text-[var(--color-text-dimmed)] hover:text-[var(--color-text-danger)] hover:bg-[var(--color-bg-danger)] focus:opacity-100 transition"
           title="Delete folder"
           aria-label="Delete folder"
           @click.stop="$emit('deleteFolder', node.path)"
@@ -145,7 +144,7 @@ const indent = (props.depth ?? 0) * 16
       <!-- File actions (hover) -->
       <div
         class="ml-auto flex items-center gap-0.5 transition-opacity"
-        :class="activePath === node.path ? 'opacity-70 hover:opacity-100' : 'opacity-0 group-hover/node:opacity-100'"
+        :class="activePath === node.path ? 'opacity-70 hover:opacity-100' : 'opacity-0 group-hover/node:opacity-100 group-focus-within/node:opacity-100'"
       >
         <button
           v-if="!isSessionLog"
