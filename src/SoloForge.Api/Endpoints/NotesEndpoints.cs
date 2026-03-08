@@ -208,12 +208,14 @@ internal static class NotesEndpoints
                 return Results.Json(new { error = "move failed (source not found or target exists)" }, statusCode: StatusCodes.Status409Conflict);
 
             // If the moved item was or contains the session log, update the path
-            if (string.Equals(current.SessionLogPath, body.OldPath, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(current.SessionLogPath) &&
+                string.Equals(current.SessionLogPath, body.OldPath, StringComparison.OrdinalIgnoreCase))
             {
                 current.SessionLogPath = body.NewPath;
                 campaignService.Save();
             }
-            else if (current.SessionLogPath.StartsWith(body.OldPath + "/", StringComparison.OrdinalIgnoreCase))
+            else if (!string.IsNullOrEmpty(current.SessionLogPath) &&
+                     current.SessionLogPath.StartsWith(body.OldPath + "/", StringComparison.OrdinalIgnoreCase))
             {
                 current.SessionLogPath = body.NewPath + current.SessionLogPath[body.OldPath.Length..];
                 campaignService.Save();
