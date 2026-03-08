@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CampaignSummary, CampaignInfo, ThemeSummary } from '../types'
+import type { CampaignSummary, CampaignInfo } from '../types'
 import SessionSettings from '../components/campaign/SessionSettings.vue'
 import CampaignList from '../components/campaign/CampaignList.vue'
 
@@ -8,7 +8,6 @@ defineProps<{
   currentCampaign: CampaignInfo | null
   currentCampaignId: string | null
   chaos: number
-  themes: ThemeSummary[]
   loadingCampaigns: boolean
   loadingCreate: boolean
   loadingLoad: boolean
@@ -19,7 +18,6 @@ defineProps<{
 
 const chaosDraft = defineModel<number>('chaosDraft', { required: true })
 const engineDraft = defineModel<string>('engineDraft', { required: true })
-const themeDraft = defineModel<string>('themeDraft', { required: true })
 
 const emit = defineEmits<{
   createCampaign: [name: string]
@@ -34,12 +32,10 @@ const emit = defineEmits<{
     <SessionSettings
       :current-campaign="currentCampaign"
       :chaos="chaos"
-      :themes="themes"
       :loading="loadingSession"
       :api-online="apiOnline"
       v-model:chaos-draft="chaosDraft"
       v-model:engine-draft="engineDraft"
-      v-model:theme-draft="themeDraft"
       @apply="emit('updateSession')"
     />
 

@@ -1,23 +1,18 @@
 <script setup lang="ts">
-import { useId } from 'vue'
-import type { ThemeSummary, CampaignInfo } from '../../types'
+import type { CampaignInfo } from '../../types'
 import BaseCard from '../common/BaseCard.vue'
 import BaseButton from '../common/BaseButton.vue'
 import BaseInput from '../common/BaseInput.vue'
 
-const themeControlId = useId()
-
 defineProps<{
   currentCampaign: CampaignInfo | null
   chaos: number
-  themes: ThemeSummary[]
   loading: boolean
   apiOnline: boolean
 }>()
 
 const chaosDraft = defineModel<number>('chaosDraft')
 const engineDraft = defineModel<string>('engineDraft')
-const themeDraft = defineModel<string>('themeDraft')
 
 defineEmits<{
   apply: []
@@ -71,25 +66,8 @@ function formatDate(value: string | null | undefined): string {
       </div>
     </div>
 
-    <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div class="mt-3">
       <BaseInput v-model="engineDraft" label="Engine" />
-      <div>
-        <label :for="themeControlId" class="block text-xs font-medium text-[var(--color-text-muted)]">Theme</label>
-        <select
-          v-if="themes.length > 0"
-          :id="themeControlId"
-          v-model="themeDraft"
-          class="mt-1 w-full rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-sm outline-none transition focus:border-[var(--color-text-dimmed)] focus:shadow"
-        >
-          <option v-for="t in themes" :key="t.name" :value="t.name">{{ t.name }}</option>
-        </select>
-        <input
-          v-else
-          :id="themeControlId"
-          v-model="themeDraft"
-          class="mt-1 w-full rounded-xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-sm outline-none transition focus:border-[var(--color-text-dimmed)] focus:shadow"
-        />
-      </div>
     </div>
   </BaseCard>
 </template>

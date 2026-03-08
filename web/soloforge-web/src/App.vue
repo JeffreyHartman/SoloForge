@@ -58,7 +58,6 @@ async function refreshAll() {
       campaign.refreshCampaigns(),
       tables.refreshTables(),
       tables.refreshQuickSets(),
-      session.refreshThemes(),
       historyState.refreshHistory(),
       journalState.refreshJournal(campaign.currentCampaignId.value),
       notesState.refreshTree(campaign.currentCampaignId.value),
@@ -304,7 +303,6 @@ onMounted(() => {
         :current-campaign="campaign.currentCampaign.value"
         :current-campaign-id="campaign.currentCampaignId.value"
         :chaos="campaign.session.value.chaos"
-        :themes="session.themes.value"
         :loading-campaigns="campaign.loading.campaigns"
         :loading-create="campaign.loading.createCampaign"
         :loading-load="campaign.loading.loadCampaign"
@@ -313,7 +311,6 @@ onMounted(() => {
         :api-online="apiOnline ?? false"
         v-model:chaos-draft="session.chaosDraft.value"
         v-model:engine-draft="session.engineDraft.value"
-        v-model:theme-draft="session.themeDraft.value"
         @create-campaign="createCampaign"
         @load-campaign="loadCampaign"
         @delete-campaign="deleteCampaign"
