@@ -499,8 +499,8 @@
   --color-bg-warning: #ffb000;
   --color-bg-warning-hover: #ffc020;
   --color-bg-warning-subtle: rgba(255, 176, 0, 0.08);
-  --color-bg-danger: rgba(255, 64, 0, 0.15);
-  --color-bg-danger-hover: rgba(255, 64, 0, 0.25);
+  --color-bg-danger: rgba(255, 176, 0, 0.10);
+  --color-bg-danger-hover: rgba(255, 176, 0, 0.18);
   --color-bg-info: rgba(255, 176, 0, 0.12);
   --color-bg-muted: #0e0e00;
 
@@ -511,7 +511,7 @@
   --color-text-inverted: #000000;
   --color-text-success: #ddaa00;
   --color-text-warning: #ffb000;
-  --color-text-danger: #ff5500;
+  --color-text-danger: #ffc830;
   --color-text-info: #cc9000;
 
   --color-border-primary: #332800;
@@ -519,11 +519,11 @@
   --color-border-card: rgba(255, 176, 0, 0.08);
   --color-border-success: #332800;
   --color-border-warning: #332800;
-  --color-border-danger: #331800;
+  --color-border-danger: #332800;
   --color-border-info: #332800;
 
   --color-status-online: #ffb000;
-  --color-status-offline: #ff5500;
+  --color-status-offline: #ffc830;
   --color-status-pending: #665000;
 
   --gradient-bg: radial-gradient(900px circle at 50% 50%, rgba(255, 176, 0, 0.04), transparent 60%);
@@ -549,8 +549,8 @@
   --color-bg-warning: #33ff33;
   --color-bg-warning-hover: #44ff44;
   --color-bg-warning-subtle: rgba(51, 255, 51, 0.06);
-  --color-bg-danger: rgba(255, 51, 51, 0.15);
-  --color-bg-danger-hover: rgba(255, 51, 51, 0.25);
+  --color-bg-danger: rgba(51, 255, 51, 0.08);
+  --color-bg-danger-hover: rgba(51, 255, 51, 0.15);
   --color-bg-info: rgba(51, 255, 51, 0.10);
   --color-bg-muted: #000e00;
 
@@ -561,7 +561,7 @@
   --color-text-inverted: #000000;
   --color-text-success: #30dd30;
   --color-text-warning: #33ff33;
-  --color-text-danger: #ff4444;
+  --color-text-danger: #66ff66;
   --color-text-info: #20cc20;
 
   --color-border-primary: #003300;
@@ -569,11 +569,11 @@
   --color-border-card: rgba(51, 255, 51, 0.06);
   --color-border-success: #003300;
   --color-border-warning: #003300;
-  --color-border-danger: #330000;
+  --color-border-danger: #003300;
   --color-border-info: #003300;
 
   --color-status-online: #33ff33;
-  --color-status-offline: #ff4444;
+  --color-status-offline: #66ff66;
   --color-status-pending: #086608;
 
   --gradient-bg: radial-gradient(900px circle at 50% 50%, rgba(51, 255, 51, 0.03), transparent 60%);
