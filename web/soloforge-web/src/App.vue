@@ -77,6 +77,7 @@ async function refreshAll() {
 async function createCampaign(name: string) {
   clearError()
   try {
+    notesState.flushSave()
     const state = await campaign.createCampaign(name)
     session.syncFromState(state.session)
     notesState.resetState()
@@ -92,6 +93,7 @@ async function createCampaign(name: string) {
 async function loadCampaign(id: string) {
   clearError()
   try {
+    notesState.flushSave()
     const state = await campaign.loadCampaign(id)
     session.syncFromState(state.session)
     notesState.resetState()
@@ -110,6 +112,7 @@ async function deleteCampaign(id: string) {
   if (campaign.campaigns.value.length <= 1) return
   clearError()
   try {
+    notesState.flushSave()
     await campaign.deleteCampaign(id)
     notesState.resetState()
     await historyState.refreshHistory()

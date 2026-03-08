@@ -229,7 +229,8 @@ public sealed class NotesService
         try
         {
             Directory.CreateDirectory(vault);
-            var targetPath = Path.Combine(vault, sessionLogPath);
+            // Validate sessionLogPath stays within vault (path traversal protection)
+            var targetPath = ResolveSafePath(campaignId, sessionLogPath);
             var targetDir = Path.GetDirectoryName(targetPath);
             if (!string.IsNullOrEmpty(targetDir))
                 Directory.CreateDirectory(targetDir);

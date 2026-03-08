@@ -123,6 +123,7 @@ const indent = (props.depth ?? 0) * 16
       tabindex="0"
       @click="$emit('select', node.path)"
       @keydown.enter.prevent="$emit('select', node.path)"
+      @keydown.space.prevent="$emit('select', node.path)"
     >
       <!-- Document icon -->
       <svg class="h-4 w-4 shrink-0 opacity-60" viewBox="0 0 20 20" fill="currentColor">

@@ -162,6 +162,25 @@ public class NotesServiceTests : IDisposable
     }
 
     [Fact]
+    public void MigrateIfNeeded_RejectsTraversalInSessionLogPath()
+    {
+        _service.EnsureVault(_campaignId);
+        var legacyPath = Path.Combine(_tempDir, $"{_campaignId}.md");
+        File.WriteAllText(legacyPath, "content");
+
+        // Remove vault files so migration proceeds
+        var vault = _service.GetVaultPath(_campaignId);
+        foreach (var f in Directory.GetFiles(vault, "*.md", SearchOption.AllDirectories))
+            File.Delete(f);
+
+        // Path traversal in session log path should fail gracefully
+        var result = _service.MigrateIfNeeded(_campaignId, legacyPath, "../../etc/evil.md");
+        result.Should().BeFalse();
+        // Legacy file should remain untouched
+        File.Exists(legacyPath).Should().BeTrue();
+    }
+
+    [Fact]
     public void MigrateIfNeeded_MovesLegacyFile()
     {
         _service.EnsureVault(_campaignId);

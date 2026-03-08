@@ -264,7 +264,7 @@ body,
 .markdown-body .wiki-link {
   color: var(--color-text-info);
   text-decoration: none;
-  border-bottom: 1px dashed currentColor;
+  border-bottom: 1px dashed currentcolor;
   cursor: pointer;
   transition: opacity 0.15s;
 }

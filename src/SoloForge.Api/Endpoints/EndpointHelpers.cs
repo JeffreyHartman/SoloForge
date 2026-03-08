@@ -72,7 +72,8 @@ internal static class EndpointHelpers
         if (sessionLogContent == null)
         {
             var defaultContent = JournalDefaults.CreateDefault(current.Name);
-            notesService.WriteNote(current.Id, current.SessionLogPath, defaultContent);
+            if (!notesService.WriteNote(current.Id, current.SessionLogPath, defaultContent))
+                throw new InvalidOperationException($"Failed to create session log at {current.SessionLogPath}");
         }
     }
 
@@ -87,6 +88,7 @@ internal static class EndpointHelpers
 
         var markdown = journalService.ToMarkdown(entry);
         var updated = JournalTextComposer.AppendMarkdown(currentText, markdown);
-        notesService.WriteNote(current.Id, sessionLogPath, updated);
+        if (!notesService.WriteNote(current.Id, sessionLogPath, updated))
+            throw new InvalidOperationException($"Failed to write session log at {sessionLogPath}");
     }
 }

@@ -55,6 +55,7 @@ async function handleCopy() {
 
     <div v-if="result" class="group/result mt-4 rounded-2xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-4">
       <button
+        type="button"
         class="float-right ml-2 rounded-lg p-1.5 text-[var(--color-text-dimmed)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition opacity-0 group-hover/result:opacity-100"
         :title="copied ? 'Copied!' : 'Copy as markdown'"
         :aria-label="copied ? 'Copied!' : 'Copy as markdown'"

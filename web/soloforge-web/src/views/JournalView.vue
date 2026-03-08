@@ -15,12 +15,14 @@ const notes = useNotes()
 const renameTarget = ref<string | null>(null)
 const renameValue = ref('')
 
+/** Opens the rename dialog pre-filled with the current name. */
 function startRename(path: string) {
   renameTarget.value = path
   const filename = path.split('/').pop() ?? ''
   renameValue.value = filename.endsWith('.md') ? filename.slice(0, -3) : filename
 }
 
+/** Applies the rename by moving the note/folder to the new path. */
 async function confirmRename() {
   if (!renameTarget.value || !renameValue.value.trim()) {
     cancelRename()
@@ -38,6 +40,7 @@ async function confirmRename() {
   cancelRename()
 }
 
+/** Closes the rename dialog without making changes. */
 function cancelRename() {
   renameTarget.value = null
   renameValue.value = ''

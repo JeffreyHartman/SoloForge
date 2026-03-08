@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import JournalToolbar from '../journal/JournalToolbar.vue'
 import JournalPreview from '../journal/JournalPreview.vue'
 import WikiLinkAutocomplete from './WikiLinkAutocomplete.vue'
@@ -16,7 +16,7 @@ const splitTextareaRef = ref<HTMLTextAreaElement | null>(null)
 
 const { activeNotePath, activeNoteContent, activeNoteFileName, saveStatus, allPaths, openNote, flushSave } = useNotes()
 
-// Navigate to a wiki-linked note
+/** Navigates to a wiki-linked note by opening it in the editor. */
 async function handleNavigate(path: string) {
   await openNote(path)
 }
@@ -26,24 +26,28 @@ const currentTextarea = computed(() => splitTextareaRef.value ?? textareaRef.val
 const { prefs } = useJournalPrefs()
 const { segments, deleteSegment } = useJournalParser(activeNoteContent)
 
-// Collapse state for roll panels
-const collapsedIds = new Set<string>()
+// Collapse state for roll panels (must be reactive for Vue to detect Set mutations)
+const collapsedIds = reactive(new Set<string>())
 
+/** Toggles the collapsed/expanded state of a roll panel segment. */
 function toggleCollapse(id: string) {
   if (collapsedIds.has(id)) collapsedIds.delete(id)
   else collapsedIds.add(id)
 }
 
+/** Collapses all roll panel segments into compact view. */
 function collapseAll() {
   for (const seg of segments.value) {
     if (seg.type === 'roll') collapsedIds.add(seg.id)
   }
 }
 
+/** Expands all roll panel segments to show full details. */
 function expandAll() {
   collapsedIds.clear()
 }
 
+/** Deletes a roll panel segment from the note content and cleans up its collapse state. */
 function handleDelete(id: string) {
   deleteSegment(id)
   collapsedIds.delete(id)

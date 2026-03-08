@@ -30,6 +30,7 @@ const newItemParent = ref<string>('')
 
 const createInputRef = ref<HTMLInputElement | null>(null)
 
+/** Opens the inline create form for a new note, auto-focusing the name input. */
 function startCreateNote(parentFolder: string) {
   newItemType.value = 'note'
   newItemParent.value = parentFolder
@@ -37,6 +38,7 @@ function startCreateNote(parentFolder: string) {
   nextTick(() => createInputRef.value?.focus())
 }
 
+/** Opens the inline create form for a new folder, auto-focusing the name input. */
 function startCreateFolder(parentFolder: string) {
   newItemType.value = 'folder'
   newItemParent.value = parentFolder
@@ -44,6 +46,7 @@ function startCreateFolder(parentFolder: string) {
   nextTick(() => createInputRef.value?.focus())
 }
 
+/** Emits the create event with the full path and closes the inline form. */
 function confirmCreate() {
   const name = newItemName.value.trim()
   if (!name) {
@@ -62,6 +65,7 @@ function confirmCreate() {
   cancelCreate()
 }
 
+/** Closes the inline create form without creating anything. */
 function cancelCreate() {
   newItemType.value = null
   newItemName.value = ''

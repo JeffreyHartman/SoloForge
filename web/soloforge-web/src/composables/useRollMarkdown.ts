@@ -7,6 +7,7 @@ import type {
   DiceRollResponse,
 } from '../types'
 
+/** Formats a fate check result as a markdown table for clipboard copy. */
 export function fateCheckToMarkdown(result: FateCheckResponse): string {
   let md = `| Fate Check | &nbsp; |\n| ---------- | ------ |\n`
   if (result.fate) {
@@ -17,6 +18,7 @@ export function fateCheckToMarkdown(result: FateCheckResponse): string {
   return md.trimEnd()
 }
 
+/** Formats a scene check result as a markdown table for clipboard copy. */
 export function sceneCheckToMarkdown(result: SceneCheckResponse): string {
   let md = `| Scene Check | &nbsp; |\n| ----------- | ------ |\n`
   md += `| **Result** | ${result.scene.result} |\n`
@@ -26,6 +28,7 @@ export function sceneCheckToMarkdown(result: SceneCheckResponse): string {
   return md.trimEnd()
 }
 
+/** Formats a random event result as a markdown table for clipboard copy. */
 export function randomEventToMarkdown(result: RandomEventResult): string {
   let md = `| Random Event | &nbsp; |\n| ------------ | ------ |\n`
   md += `| **Event** | ${result.eventFocus}: ${result.eventAction} |\n`
@@ -34,6 +37,7 @@ export function randomEventToMarkdown(result: RandomEventResult): string {
   return md.trimEnd()
 }
 
+/** Formats a meaning roll result as a markdown table for clipboard copy. */
 export function meaningToMarkdown(result: MeaningResult): string {
   let md = `| Meaning Roll | &nbsp; |\n| ------------ | ------ |\n`
   md += `| **Result** | ${result.combined} |\n`
@@ -41,6 +45,7 @@ export function meaningToMarkdown(result: MeaningResult): string {
   return md.trimEnd()
 }
 
+/** Formats a quick set generation result as a markdown table for clipboard copy. */
 export function quickSetToMarkdown(result: QuickSetResult): string {
   let md = `| Meaning Roll | &nbsp; |\n| ------------ | ------ |\n`
   md += `| **Result** | ${result.quickSet.name} Generated |\n`
@@ -49,6 +54,7 @@ export function quickSetToMarkdown(result: QuickSetResult): string {
   return md.trimEnd()
 }
 
+/** Formats a dice roll result as a markdown table for clipboard copy. */
 export function diceRollToMarkdown(result: DiceRollResponse): string {
   let md = `| Dice Roll | &nbsp; |\n| --------- | ------ |\n`
   md += `| **Expression** | ${result.roll.summary} |\n`
@@ -57,6 +63,7 @@ export function diceRollToMarkdown(result: DiceRollResponse): string {
   return md.trimEnd()
 }
 
+/** Copies text to the system clipboard. Returns true on success, false on failure. */
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text)

@@ -113,6 +113,7 @@ const modes: { id: MeaningMode; label: string }[] = [
 
     <div v-if="meaningResult" class="group/result mt-4 rounded-2xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-4">
       <button
+        type="button"
         class="float-right ml-2 rounded-lg p-1.5 text-[var(--color-text-dimmed)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition opacity-0 group-hover/result:opacity-100"
         :title="copiedMeaning ? 'Copied!' : 'Copy as markdown'"
         :aria-label="copiedMeaning ? 'Copied!' : 'Copy as markdown'"
@@ -146,6 +147,7 @@ const modes: { id: MeaningMode; label: string }[] = [
 
     <div v-if="quickSetResult" class="group/qs mt-4 rounded-2xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-4">
       <button
+        type="button"
         class="float-right ml-2 rounded-lg p-1.5 text-[var(--color-text-dimmed)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition opacity-0 group-hover/qs:opacity-100"
         :title="copiedQuickSet ? 'Copied!' : 'Copy as markdown'"
         :aria-label="copiedQuickSet ? 'Copied!' : 'Copy as markdown'"

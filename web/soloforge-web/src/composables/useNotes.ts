@@ -42,11 +42,13 @@ let initialized = false
 const tabContentCache = new Map<string, string>()
 const tabSavedCache = new Map<string, string>()
 
+/** Schedules a debounced save of the active note content. */
 function scheduleSave() {
   if (debounceTimer) clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => void executeSave(), DEBOUNCE_MS)
 }
 
+/** Persists the active note content to the API, handling concurrent save requests. */
 async function executeSave() {
   const path = activeNotePath.value
   if (!currentCampaignId.value || !path) return
@@ -92,6 +94,7 @@ async function executeSave() {
   }
 }
 
+/** Immediately triggers a save if there are unsaved changes, cancelling any pending debounce timer. */
 function flushSave() {
   if (debounceTimer) {
     clearTimeout(debounceTimer)
@@ -102,6 +105,7 @@ function flushSave() {
   }
 }
 
+/** Fires a synchronous keepalive save on page unload to prevent data loss. */
 function onBeforeUnload() {
   const path = activeNotePath.value
   if (!path || activeNoteContent.value === lastSavedContent || !currentCampaignId.value) return
@@ -136,6 +140,7 @@ export function useNotes() {
     window.addEventListener('beforeunload', onBeforeUnload)
   }
 
+  /** Fetches the note tree and path list from the API for the given campaign. */
   async function refreshTree(campaignId: string | null) {
     if (!campaignId) {
       tree.value = []
@@ -159,6 +164,7 @@ export function useNotes() {
     }
   }
 
+  /** Opens a note in the editor, adding it to tabs and loading from cache or API. */
   async function openNote(path: string) {
     // Save current note before switching
     flushSave()
@@ -192,6 +198,7 @@ export function useNotes() {
     }
   }
 
+  /** Closes a tab, flushing saves and switching to an adjacent tab if the closed tab was active. */
   function closeTab(path: string) {
     // If closing the active tab, save first
     if (path === activeNotePath.value) {
@@ -219,6 +226,7 @@ export function useNotes() {
     }
   }
 
+  /** Creates a new note at the given path and opens it in the editor. */
   async function createNote(path: string, content?: string) {
     if (!currentCampaignId.value) return
     loading.create = true
@@ -231,6 +239,7 @@ export function useNotes() {
     }
   }
 
+  /** Deletes a note, closing its tab and refreshing the tree. */
   async function deleteNote(path: string) {
     if (!currentCampaignId.value) return
     loading.delete = true
@@ -243,6 +252,7 @@ export function useNotes() {
     }
   }
 
+  /** Creates a new folder in the vault and refreshes the tree. */
   async function createFolder(path: string) {
     if (!currentCampaignId.value) return
     loading.create = true
@@ -254,6 +264,7 @@ export function useNotes() {
     }
   }
 
+  /** Deletes a folder and all its contents, closing any open tabs within it. */
   async function deleteFolder(path: string) {
     if (!currentCampaignId.value) return
     loading.delete = true
@@ -261,7 +272,7 @@ export function useNotes() {
       await apiSend(`/api/notes/folder?path=${encodeURIComponent(path)}`, 'DELETE')
       // Close any open tabs that were in this folder
       for (const tab of [...openTabs.value]) {
-        if (tab.startsWith(path + '/')) {
+        if (tab === path || tab.startsWith(path + '/')) {
           closeTab(tab)
         }
       }
@@ -271,6 +282,7 @@ export function useNotes() {
     }
   }
 
+  /** Moves or renames a note/folder, updating tab references and caches. */
   async function moveItem(oldPath: string, newPath: string) {
     if (!currentCampaignId.value) return
     loading.move = true
@@ -302,6 +314,7 @@ export function useNotes() {
     }
   }
 
+  /** Designates a note as the session log (roll results auto-append to it). */
   async function setSessionLog(path: string) {
     if (!currentCampaignId.value) return
     await apiSend('/api/notes/session-log', 'PUT', { path })
@@ -310,6 +323,7 @@ export function useNotes() {
     await refreshTree(currentCampaignId.value)
   }
 
+  /** Clears the cache for the active note and re-fetches its content from the API. */
   async function reloadActiveNote() {
     const path = activeNotePath.value
     if (!path || !currentCampaignId.value) return
@@ -320,11 +334,13 @@ export function useNotes() {
     await openNote(path)
   }
 
+  /** Removes a note's content from the tab cache so the next open fetches fresh data. */
   function invalidateTabCache(path: string) {
     tabContentCache.delete(path)
     tabSavedCache.delete(path)
   }
 
+  /** Resets all notes state (tree, tabs, caches) — used when switching campaigns. */
   function resetState() {
     tree.value = []
     allPaths.value = []

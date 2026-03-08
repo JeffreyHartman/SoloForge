@@ -19,7 +19,7 @@ const dropdownStyle = ref<Record<string, string>>({})
 // Mirror element for cursor position calculation
 let mirror: HTMLDivElement | null = null
 
-// Convert paths to display names for matching
+/** Extracts the display name from a note path, stripping folders and .md extension. */
 function pathToName(path: string): string {
   const filename = path.split('/').pop() ?? path
   return filename.endsWith('.md') ? filename.slice(0, -3) : filename
@@ -47,6 +47,7 @@ watch(filtered, () => {
   selectedIndex.value = 0
 })
 
+/** Calculates pixel coordinates for a caret position in a textarea using a hidden mirror div. */
 function getCaretCoords(textarea: HTMLTextAreaElement, position: number) {
   if (!mirror) {
     mirror = document.createElement('div')
@@ -92,6 +93,7 @@ function getCaretCoords(textarea: HTMLTextAreaElement, position: number) {
   }
 }
 
+/** Checks if the cursor is inside a `[[` trigger and shows/positions the autocomplete dropdown. */
 function checkForTrigger() {
   const ta = props.textarea
   if (!ta) return
@@ -127,6 +129,12 @@ function checkForTrigger() {
   }
 }
 
+/** Checks if multiple notes share the same basename, requiring full-path disambiguation. */
+function isAmbiguous(item: { path: string; name: string }): boolean {
+  return props.allPaths.filter(p => pathToName(p) === item.name).length > 1
+}
+
+/** Inserts the selected wiki-link at the cursor position, using full path for ambiguous names. */
 function insertSelection(item: { path: string; name: string }) {
   const ta = props.textarea
   if (!ta) return
@@ -138,19 +146,23 @@ function insertSelection(item: { path: string; name: string }) {
 
   if (triggerIdx === -1) return
 
-  const newText = text.substring(0, triggerIdx) + `[[${item.name}]]` + text.substring(pos)
+  // Use full path when basename collides with another note, alias form: [[path|display]]
+  const linkText = isAmbiguous(item)
+    ? `${item.path}|${item.name}`
+    : item.name
+  const newText = text.substring(0, triggerIdx) + `[[${linkText}]]` + text.substring(pos)
   emit('update:modelValue', newText)
 
   show.value = false
 
-  // Restore cursor position after the inserted text
-  const newPos = triggerIdx + item.name.length + 4 // [[name]]
+  const newPos = triggerIdx + linkText.length + 4 // [[linkText]]
   nextTick(() => {
     ta.focus()
     ta.setSelectionRange(newPos, newPos)
   })
 }
 
+/** Handles keyboard navigation (arrows, tab/enter, escape) within the autocomplete dropdown. */
 function onKeydown(e: KeyboardEvent) {
   if (!show.value) return
 
@@ -171,6 +183,7 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
+/** Re-checks for the `[[` trigger on each textarea input event. */
 function onInput() {
   checkForTrigger()
 }
