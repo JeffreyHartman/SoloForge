@@ -60,6 +60,14 @@ public record CampaignData
     /// </summary>
     public List<PlotThread> ClosedThreads { get; init; } = [];
 
+    // === Notes ===
+
+    /// <summary>
+    /// Relative path within the vault to the session log note (e.g. "Session Log.md").
+    /// Roll results are automatically appended here.
+    /// </summary>
+    public string SessionLogPath { get; set; } = "Session Log.md";
+
     // === History ===
 
     /// <summary>

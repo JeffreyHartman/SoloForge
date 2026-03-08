@@ -4,6 +4,9 @@ import BaseCard from '../common/BaseCard.vue'
 import BaseButton from '../common/BaseButton.vue'
 import BaseInput from '../common/BaseInput.vue'
 import { ref } from 'vue'
+import { randomEventToMarkdown, copyToClipboard } from '../../composables/useRollMarkdown'
+
+const copied = ref(false)
 
 const props = defineProps<{
   result: RandomEventResult | null
@@ -19,6 +22,15 @@ const emit = defineEmits<{
 
 const newNpcName = ref('')
 const newNpcDescription = ref('')
+
+async function handleCopy() {
+  if (!props.result) return
+  const success = await copyToClipboard(randomEventToMarkdown(props.result))
+  if (success) {
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 1500)
+  }
+}
 
 function handleAddNpc() {
   if (props.loadingAddNpc || !props.apiOnline) return
@@ -44,7 +56,21 @@ function handleAddNpc() {
       </BaseButton>
     </template>
 
-    <div v-if="result" class="rounded-2xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-4">
+    <div v-if="result" class="group/result rounded-2xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-4">
+      <button
+        class="float-right ml-2 rounded-lg p-1.5 text-[var(--color-text-dimmed)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition opacity-0 group-hover/result:opacity-100"
+        :title="copied ? 'Copied!' : 'Copy as markdown'"
+        :aria-label="copied ? 'Copied!' : 'Copy as markdown'"
+        @click="handleCopy"
+      >
+        <svg v-if="!copied" class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="5" y="5" width="9" height="9" rx="1.5" />
+          <path d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5" />
+        </svg>
+        <svg v-else class="h-4 w-4 text-[var(--color-text-success)]" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 8l3 3 7-7" />
+        </svg>
+      </button>
       <div class="text-xs font-medium text-[var(--color-text-dimmed)]">Focus</div>
       <div class="mt-1 text-base font-semibold text-[var(--color-text-primary)]">{{ result.eventFocus }}</div>
       <div class="mt-3 text-xs font-medium text-[var(--color-text-dimmed)]">Action</div>

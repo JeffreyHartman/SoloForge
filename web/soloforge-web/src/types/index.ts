@@ -161,6 +161,26 @@ export interface DiceRollResponse {
   breakdown: string
 }
 
+// Notes Vault Types
+
+export interface NoteNode {
+  name: string
+  path: string
+  isFolder: boolean
+  children: NoteNode[]
+}
+
+export interface NoteTreeResponse {
+  campaignId: string
+  sessionLogPath: string
+  tree: NoteNode[]
+}
+
+export interface NoteListResponse {
+  campaignId: string
+  paths: string[]
+}
+
 // UI Types
 
 export type MeaningMode = 'action' | 'description' | 'table' | 'fusion' | 'quickSet'

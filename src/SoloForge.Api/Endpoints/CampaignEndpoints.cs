@@ -38,7 +38,8 @@ internal static class CampaignEndpoints
             CampaignService campaignService,
             AdventureStateManager stateManager,
             HistoryService historyService,
-            JournalService journalService) =>
+            JournalService journalService,
+            NotesService notesService) =>
         {
             var body = await EndpointHelpers.ReadBodyAsync<CreateCampaignRequest>(request, ct);
             var name = body?.Name?.Trim();
@@ -48,7 +49,7 @@ internal static class CampaignEndpoints
             }
 
             campaignService.CreateNew(name);
-            EndpointHelpers.EnsureJournalExists(campaignService, journalService);
+            EndpointHelpers.EnsureVaultExists(campaignService, notesService, journalService);
 
             return Results.Json(
                 EndpointHelpers.BuildStateResponse(session, campaignService, stateManager, historyService),
@@ -61,7 +62,8 @@ internal static class CampaignEndpoints
             CampaignService campaignService,
             AdventureStateManager stateManager,
             HistoryService historyService,
-            JournalService journalService) =>
+            JournalService journalService,
+            NotesService notesService) =>
         {
             if (!Guid.TryParse(campaignIdText, out var campaignId))
             {
@@ -77,14 +79,15 @@ internal static class CampaignEndpoints
                 return Results.Json(new { error = "campaign not found" }, statusCode: StatusCodes.Status404NotFound);
             }
 
-            EndpointHelpers.EnsureJournalExists(campaignService, journalService);
+            EndpointHelpers.EnsureVaultExists(campaignService, notesService, journalService);
             return Results.Json(EndpointHelpers.BuildStateResponse(session, campaignService, stateManager, historyService));
         });
 
         app.MapDelete("/campaigns/{deleteCampaignIdText}", (
             string deleteCampaignIdText,
             CampaignService campaignService,
-            JournalService journalService) =>
+            JournalService journalService,
+            NotesService notesService) =>
         {
             if (!Guid.TryParse(deleteCampaignIdText, out var deleteCampaignId))
             {
@@ -105,7 +108,7 @@ internal static class CampaignEndpoints
                 {
                     campaignService.CreateNew("Default Campaign");
                 }
-                EndpointHelpers.EnsureJournalExists(campaignService, journalService);
+                EndpointHelpers.EnsureVaultExists(campaignService, notesService, journalService);
             }
 
             return Results.Json(new { deleted }, statusCode: deleted ? StatusCodes.Status200OK : StatusCodes.Status404NotFound);

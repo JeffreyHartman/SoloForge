@@ -12,6 +12,7 @@ import {
   useTables,
   useMythic,
 } from './composables'
+import { useNotes } from './composables/useNotes'
 
 import AppHeader from './components/layout/AppHeader.vue'
 import AppNav from './components/layout/AppNav.vue'
@@ -27,6 +28,7 @@ const { initTheme } = useTheme()
 const campaign = useCampaign()
 const session = useSession()
 const journalState = useJournal()
+const notesState = useNotes()
 const historyState = useHistory()
 const adventure = useAdventure()
 const tables = useTables()
@@ -40,7 +42,6 @@ const isBusy = computed(() =>
   campaign.loading.state ||
   campaign.loading.campaigns ||
   session.loading.updateSession ||
-  journalState.loading.journal ||
   historyState.loading.history
 )
 
@@ -60,6 +61,7 @@ async function refreshAll() {
       session.refreshThemes(),
       historyState.refreshHistory(),
       journalState.refreshJournal(campaign.currentCampaignId.value),
+      notesState.refreshTree(campaign.currentCampaignId.value),
     ])
     mythic.initMeaningDefaults(
       tables.getFirstElementTable(),
@@ -77,7 +79,11 @@ async function createCampaign(name: string) {
   try {
     const state = await campaign.createCampaign(name)
     session.syncFromState(state.session)
-    await journalState.refreshJournal(campaign.currentCampaignId.value)
+    notesState.resetState()
+    await Promise.all([
+      journalState.refreshJournal(campaign.currentCampaignId.value),
+      notesState.refreshTree(campaign.currentCampaignId.value),
+    ])
   } catch (err) {
     setError(err)
   }
@@ -88,8 +94,12 @@ async function loadCampaign(id: string) {
   try {
     const state = await campaign.loadCampaign(id)
     session.syncFromState(state.session)
+    notesState.resetState()
     await historyState.refreshHistory()
-    await journalState.refreshJournal(campaign.currentCampaignId.value)
+    await Promise.all([
+      journalState.refreshJournal(campaign.currentCampaignId.value),
+      notesState.refreshTree(campaign.currentCampaignId.value),
+    ])
     mythic.clearResults()
   } catch (err) {
     setError(err)
@@ -101,8 +111,12 @@ async function deleteCampaign(id: string) {
   clearError()
   try {
     await campaign.deleteCampaign(id)
+    notesState.resetState()
     await historyState.refreshHistory()
-    await journalState.refreshJournal(campaign.currentCampaignId.value)
+    await Promise.all([
+      journalState.refreshJournal(campaign.currentCampaignId.value),
+      notesState.refreshTree(campaign.currentCampaignId.value),
+    ])
   } catch (err) {
     setError(err)
   }
@@ -242,6 +256,13 @@ async function refreshAfterAction() {
   await campaign.refreshState()
   await historyState.refreshHistory()
   await journalState.refreshJournal(campaign.currentCampaignId.value)
+  // Invalidate stale cache for the session log so the next open shows fresh content
+  const logPath = notesState.sessionLogPath.value
+  notesState.invalidateTabCache(logPath)
+  // If the session log note is currently active, reload it immediately
+  if (notesState.activeNotePath.value === logPath) {
+    await notesState.reloadActiveNote()
+  }
 }
 
 onMounted(() => {
@@ -354,10 +375,7 @@ onMounted(() => {
       <JournalView
         v-else-if="currentView === 'journal'"
         :campaign-id="campaign.currentCampaignId.value"
-        :loading="journalState.loading.journal"
         :api-online="apiOnline ?? false"
-        v-model:content="journalState.journal.value"
-        @reload="reloadJournal"
       />
 
       <HistoryView

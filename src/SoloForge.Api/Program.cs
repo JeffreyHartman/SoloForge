@@ -39,6 +39,11 @@ builder.Services.AddSingleton<JournalService>(sp =>
     var campaignService = sp.GetRequiredService<CampaignService>();
     return new JournalService(campaignService.GetJournalPath, new TemplateServiceRenderer());
 });
+builder.Services.AddSingleton<NotesService>(sp =>
+{
+    var campaignService = sp.GetRequiredService<CampaignService>();
+    return new NotesService(campaignService.GetVaultPath);
+});
 
 var app = builder.Build();
 
@@ -73,6 +78,13 @@ app.MapMethods("/{**path}", ["OPTIONS"], () => Results.NoContent());
 var campaignService = app.Services.GetRequiredService<CampaignService>();
 campaignService.Initialize();
 
+// Ensure the vault exists for the initially loaded campaign (migrates legacy journal if needed)
+{
+    var notesService = app.Services.GetRequiredService<NotesService>();
+    var journalService = app.Services.GetRequiredService<JournalService>();
+    EndpointHelpers.EnsureVaultExists(campaignService, notesService, journalService);
+}
+
 app.Lifetime.ApplicationStarted.Register(() =>
 {
     var urls = app.Urls.Count > 0 ? string.Join(", ", app.Urls) : "http://localhost:5137";
@@ -103,7 +115,13 @@ app.MapGet("/", () => Results.Json(new
         "/api/quick-sets/generate",
         "/api/journal",
         "/api/history",
-        "/api/adventure"
+        "/api/adventure",
+        "/api/notes/tree",
+        "/api/notes/list",
+        "/api/notes",
+        "/api/notes/folder",
+        "/api/notes/move",
+        "/api/notes/session-log"
     }
 }));
 
@@ -114,6 +132,7 @@ api.MapCampaignEndpoints();
 api.MapMythicEndpoints();
 api.MapAdventureEndpoints();
 api.MapJournalEndpoints();
+api.MapNotesEndpoints();
 
 app.MapFallback(() => Results.Json(new { error = "not found" }, statusCode: StatusCodes.Status404NotFound));
 

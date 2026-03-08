@@ -178,6 +178,16 @@ public sealed class CampaignService
 
         File.Delete(path);
 
+        // Clean up legacy journal file
+        var legacyJournal = GetJournalPath(campaignId);
+        if (File.Exists(legacyJournal))
+            File.Delete(legacyJournal);
+
+        // Clean up vault directory
+        var vaultPath = GetVaultPath(campaignId);
+        if (Directory.Exists(vaultPath))
+            Directory.Delete(vaultPath, recursive: true);
+
         // If this was the current campaign, clear it
         if (CurrentCampaign?.Id == campaignId)
         {
@@ -239,9 +249,14 @@ public sealed class CampaignService
     public string GetCampaignPath(Guid id) => Path.Combine(SavesDirectory, $"{id}.json");
 
     /// <summary>
-    /// Gets the file path for a campaign journal.
+    /// Gets the file path for a campaign journal (legacy single-file format).
     /// </summary>
     public string GetJournalPath(Guid id) => Path.Combine(SavesDirectory, $"{id}.md");
+
+    /// <summary>
+    /// Gets the vault directory path for a campaign's notes.
+    /// </summary>
+    public string GetVaultPath(Guid id) => Path.Combine(SavesDirectory, id.ToString());
 
     private void HydrateServices(CampaignData data)
     {
