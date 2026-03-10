@@ -1,39 +1,32 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { MeaningResult, QuickSetResult, TableGroup, QuickSet, MeaningMode } from '../../types'
+import type { MeaningMode } from '../../types'
 import BaseCard from '../common/BaseCard.vue'
 import BaseButton from '../common/BaseButton.vue'
 import BaseInput from '../common/BaseInput.vue'
 import BaseSelect from '../common/BaseSelect.vue'
+import { useMythic } from '../../composables/useMythic'
+import { useTables } from '../../composables/useTables'
+import { useToolActions } from '../../composables/useToolActions'
 import { meaningToMarkdown, quickSetToMarkdown, copyToClipboard } from '../../composables/useRollMarkdown'
+
+const {
+  meaningMode, meaningContext, meaningTableId, meaningFusionTable1, meaningFusionTable2,
+  meaningQuickSetId, meaningResult, meaningMeta, quickSetResult, runMeaning, loading,
+} = useMythic()
+const { tableGroups, quickSets } = useTables()
+const { apiOnline, runAction } = useToolActions()
 
 const copiedMeaning = ref(false)
 const copiedQuickSet = ref(false)
 
-const props = defineProps<{
-  tableGroups: TableGroup[]
-  quickSets: QuickSet[]
-  meaningResult: MeaningResult | null
-  meaningMeta: string | null
-  quickSetResult: QuickSetResult | null
-  loading: boolean
-  apiOnline: boolean
-}>()
-
-const mode = defineModel<MeaningMode>('mode')
-const context = defineModel<string>('context')
-const tableId = defineModel<string>('tableId')
-const fusionTable1 = defineModel<string>('fusionTable1')
-const fusionTable2 = defineModel<string>('fusionTable2')
-const quickSetId = defineModel<string>('quickSetId')
-
-defineEmits<{
-  roll: []
-}>()
+function handleRoll() {
+  void runAction(() => runMeaning())
+}
 
 async function handleCopyMeaning() {
-  if (!props.meaningResult) return
-  const success = await copyToClipboard(meaningToMarkdown(props.meaningResult))
+  if (!meaningResult.value) return
+  const success = await copyToClipboard(meaningToMarkdown(meaningResult.value))
   if (success) {
     copiedMeaning.value = true
     setTimeout(() => { copiedMeaning.value = false }, 1500)
@@ -41,8 +34,8 @@ async function handleCopyMeaning() {
 }
 
 async function handleCopyQuickSet() {
-  if (!props.quickSetResult) return
-  const success = await copyToClipboard(quickSetToMarkdown(props.quickSetResult))
+  if (!quickSetResult.value) return
+  const success = await copyToClipboard(quickSetToMarkdown(quickSetResult.value))
   if (success) {
     copiedQuickSet.value = true
     setTimeout(() => { copiedQuickSet.value = false }, 1500)
@@ -71,11 +64,11 @@ const modes: { id: MeaningMode; label: string }[] = [
         type="button"
         class="rounded-full px-3 py-1.5 text-xs font-semibold shadow-sm transition"
         :class="
-          mode === m.id
+          meaningMode === m.id
             ? 'bg-[var(--color-bg-accent)] text-[var(--color-text-inverted)]'
             : 'border border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]'
         "
-        @click="mode = m.id"
+        @click="meaningMode = m.id"
       >
         {{ m.label }}
       </button>
@@ -83,29 +76,29 @@ const modes: { id: MeaningMode; label: string }[] = [
 
     <div class="mt-4 grid grid-cols-1 gap-3">
       <BaseInput
-        v-model="context"
+        v-model="meaningContext"
         label="Context (optional)"
         placeholder="What are you trying to understand?"
-        @enter="$emit('roll')"
+        @enter="handleRoll"
       />
 
-      <div v-if="mode === 'table'">
-        <BaseSelect v-model="tableId" label="Table" :groups="tableGroups" />
+      <div v-if="meaningMode === 'table'">
+        <BaseSelect v-model="meaningTableId" label="Table" :groups="tableGroups" />
       </div>
 
-      <div v-else-if="mode === 'fusion'" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <BaseSelect v-model="fusionTable1" label="Table 1" :groups="tableGroups" />
-        <BaseSelect v-model="fusionTable2" label="Table 2" :groups="tableGroups" />
+      <div v-else-if="meaningMode === 'fusion'" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <BaseSelect v-model="meaningFusionTable1" label="Table 1" :groups="tableGroups" />
+        <BaseSelect v-model="meaningFusionTable2" label="Table 2" :groups="tableGroups" />
       </div>
 
-      <div v-else-if="mode === 'quickSet'">
-        <BaseSelect v-model="quickSetId" label="Quick set" :options="quickSets.map(q => ({ value: q.id, label: q.name }))" />
+      <div v-else-if="meaningMode === 'quickSet'">
+        <BaseSelect v-model="meaningQuickSetId" label="Quick set" :options="quickSets.map(q => ({ value: q.id, label: q.name }))" />
       </div>
 
       <BaseButton
-        :disabled="loading || !apiOnline"
-        :loading="loading"
-        @click="$emit('roll')"
+        :disabled="loading.meaning || !apiOnline"
+        :loading="loading.meaning"
+        @click="handleRoll"
       >
         Roll
       </BaseButton>
