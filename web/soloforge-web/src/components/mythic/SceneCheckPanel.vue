@@ -1,28 +1,26 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { SceneCheckResponse } from '../../types'
 import BaseCard from '../common/BaseCard.vue'
 import BaseButton from '../common/BaseButton.vue'
 import BaseInput from '../common/BaseInput.vue'
+import { useMythic } from '../../composables/useMythic'
+import { useCampaign } from '../../composables/useCampaign'
+import { useToolActions } from '../../composables/useToolActions'
 import { sceneCheckToMarkdown, copyToClipboard } from '../../composables/useRollMarkdown'
 
-const props = defineProps<{
-  chaos: number
-  result: SceneCheckResponse | null
-  loading: boolean
-  apiOnline: boolean
-}>()
+const { sceneContext, sceneResult, runSceneCheck, loading } = useMythic()
+const { session } = useCampaign()
+const { apiOnline, runAction } = useToolActions()
 
-const context = defineModel<string>('context')
 const copied = ref(false)
 
-defineEmits<{
-  roll: []
-}>()
+function handleRoll() {
+  void runAction(() => runSceneCheck())
+}
 
 async function handleCopy() {
-  if (!props.result) return
-  const success = await copyToClipboard(sceneCheckToMarkdown(props.result))
+  if (!sceneResult.value) return
+  const success = await copyToClipboard(sceneCheckToMarkdown(sceneResult.value))
   if (success) {
     copied.value = true
     setTimeout(() => { copied.value = false }, 1500)
@@ -33,27 +31,27 @@ async function handleCopy() {
 <template>
   <BaseCard title="Scene Check">
     <template #header>
-      <div class="text-xs text-[var(--color-text-dimmed)]">Chaos {{ chaos }}</div>
+      <div class="text-xs text-[var(--color-text-dimmed)]">Chaos {{ session.chaos }}</div>
     </template>
 
     <div class="grid grid-cols-1 gap-3">
       <BaseInput
-        v-model="context"
+        v-model="sceneContext"
         label="Scene context (optional)"
         placeholder="What is the scene setup?"
-        @enter="$emit('roll')"
+        @enter="handleRoll"
       />
 
       <BaseButton
-        :disabled="loading || !apiOnline"
-        :loading="loading"
-        @click="$emit('roll')"
+        :disabled="loading.sceneCheck || !apiOnline"
+        :loading="loading.sceneCheck"
+        @click="handleRoll"
       >
         Check scene
       </BaseButton>
     </div>
 
-    <div v-if="result" class="group/result mt-4 rounded-2xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-4">
+    <div v-if="sceneResult" class="group/result mt-4 rounded-2xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-4">
       <button
         type="button"
         class="float-right ml-2 rounded-lg p-1.5 text-[var(--color-text-dimmed)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition opacity-0 group-hover/result:opacity-100 focus:opacity-100"
@@ -75,40 +73,40 @@ async function handleCopy() {
           <div
             class="mt-1 text-lg font-semibold"
             :class="
-              result.scene.result === 'Normal Scene'
+              sceneResult.scene.result === 'Normal Scene'
                 ? 'text-[var(--color-text-success)]'
-                : result.scene.result.includes('Altered')
+                : sceneResult.scene.result.includes('Altered')
                   ? 'text-[var(--color-text-warning)]'
-                  : result.scene.result.includes('Interrupt')
+                  : sceneResult.scene.result.includes('Interrupt')
                     ? 'text-[var(--color-text-danger)]'
                     : 'text-[var(--color-text-primary)]'
             "
           >
-            {{ result.scene.result }}
+            {{ sceneResult.scene.result }}
           </div>
           <div class="mt-1 text-xs text-[var(--color-text-muted)]">
-            Roll {{ result.scene.roll }} · Chaos {{ result.chaos }}
+            Roll {{ sceneResult.scene.roll }} · Chaos {{ sceneResult.chaos }}
           </div>
         </div>
       </div>
 
-      <div v-if="result.scene.sceneAdjustment" class="mt-4 rounded-xl border border-[var(--color-border-warning)] bg-[var(--color-bg-warning-subtle)] p-3">
+      <div v-if="sceneResult.scene.sceneAdjustment" class="mt-4 rounded-xl border border-[var(--color-border-warning)] bg-[var(--color-bg-warning-subtle)] p-3">
         <div class="text-xs font-semibold text-[var(--color-text-warning)]">Scene adjustment</div>
-        <div class="mt-1 text-sm font-semibold text-[var(--color-text-primary)]">{{ result.scene.sceneAdjustment }}</div>
+        <div class="mt-1 text-sm font-semibold text-[var(--color-text-primary)]">{{ sceneResult.scene.sceneAdjustment }}</div>
       </div>
 
-      <div v-if="result.scene.randomEvent" class="mt-4 rounded-xl border border-[var(--color-border-info)] bg-[var(--color-bg-info)] p-3">
+      <div v-if="sceneResult.scene.randomEvent" class="mt-4 rounded-xl border border-[var(--color-border-info)] bg-[var(--color-bg-info)] p-3">
         <div class="text-xs font-semibold text-[var(--color-text-info)]">Random event</div>
         <div class="mt-1 text-sm font-semibold text-[var(--color-text-primary)]">
-          {{ result.scene.randomEvent.eventFocus }}: {{ result.scene.randomEvent.eventAction }}
+          {{ sceneResult.scene.randomEvent.eventFocus }}: {{ sceneResult.scene.randomEvent.eventAction }}
         </div>
-        <div v-if="result.scene.randomEvent.selectedCharacter" class="mt-1 text-xs text-[var(--color-text-secondary)]">
-          Character: {{ result.scene.randomEvent.selectedCharacter }}
+        <div v-if="sceneResult.scene.randomEvent.selectedCharacter" class="mt-1 text-xs text-[var(--color-text-secondary)]">
+          Character: {{ sceneResult.scene.randomEvent.selectedCharacter }}
         </div>
-        <div v-if="result.scene.randomEvent.selectedThread" class="mt-1 text-xs text-[var(--color-text-secondary)]">
-          Thread: {{ result.scene.randomEvent.selectedThread }}
+        <div v-if="sceneResult.scene.randomEvent.selectedThread" class="mt-1 text-xs text-[var(--color-text-secondary)]">
+          Thread: {{ sceneResult.scene.randomEvent.selectedThread }}
         </div>
-        <div v-if="result.scene.randomEvent.listWasEmpty" class="mt-1 text-xs text-[var(--color-text-secondary)]">
+        <div v-if="sceneResult.scene.randomEvent.listWasEmpty" class="mt-1 text-xs text-[var(--color-text-secondary)]">
           (List was empty)
         </div>
       </div>

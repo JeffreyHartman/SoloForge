@@ -1,44 +1,49 @@
 <script setup lang="ts">
-import type { RandomEventResult } from '../../types'
+import { ref } from 'vue'
 import BaseCard from '../common/BaseCard.vue'
 import BaseButton from '../common/BaseButton.vue'
 import BaseInput from '../common/BaseInput.vue'
-import { ref } from 'vue'
+import { useMythic } from '../../composables/useMythic'
+import { useAdventure } from '../../composables/useAdventure'
+import { useCampaign } from '../../composables/useCampaign'
+import { useToolActions } from '../../composables/useToolActions'
 import { randomEventToMarkdown, copyToClipboard } from '../../composables/useRollMarkdown'
 
+const { randomResult, runRandomEvent, loading } = useMythic()
+const adventure = useAdventure()
+const campaign = useCampaign()
+const { apiOnline, runAction, clearError, setError } = useToolActions()
+
 const copied = ref(false)
-
-const props = defineProps<{
-  result: RandomEventResult | null
-  loading: boolean
-  loadingAddNpc: boolean
-  apiOnline: boolean
-}>()
-
-const emit = defineEmits<{
-  roll: []
-  addNpc: [name: string, description: string]
-}>()
-
 const newNpcName = ref('')
 const newNpcDescription = ref('')
 
+function handleRoll() {
+  void runAction(() => runRandomEvent())
+}
+
 async function handleCopy() {
-  if (!props.result) return
-  const success = await copyToClipboard(randomEventToMarkdown(props.result))
+  if (!randomResult.value) return
+  const success = await copyToClipboard(randomEventToMarkdown(randomResult.value))
   if (success) {
     copied.value = true
     setTimeout(() => { copied.value = false }, 1500)
   }
 }
 
-function handleAddNpc() {
-  if (props.loadingAddNpc || !props.apiOnline) return
+async function handleAddNpc() {
+  if (adventure.loading.addCharacter || !apiOnline.value) return
   const name = newNpcName.value.trim()
-  if (name) {
-    emit('addNpc', name, newNpcDescription.value.trim())
+  if (!name) return
+  clearError()
+  try {
+    await adventure.addCharacter(name, newNpcDescription.value.trim() || undefined)
+    await campaign.refreshState()
+    await campaign.refreshCampaigns()
     newNpcName.value = ''
     newNpcDescription.value = ''
+  } catch (err) {
+    setError(err)
   }
 }
 </script>
@@ -48,15 +53,15 @@ function handleAddNpc() {
     <template #header>
       <BaseButton
         size="sm"
-        :disabled="loading || !apiOnline"
-        :loading="loading"
-        @click="$emit('roll')"
+        :disabled="loading.randomEvent || !apiOnline"
+        :loading="loading.randomEvent"
+        @click="handleRoll"
       >
         Roll
       </BaseButton>
     </template>
 
-    <div v-if="result" class="group/result rounded-2xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-4">
+    <div v-if="randomResult" class="group/result rounded-2xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-4">
       <button
         type="button"
         class="float-right ml-2 rounded-lg p-1.5 text-[var(--color-text-dimmed)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition opacity-0 group-hover/result:opacity-100 focus:opacity-100"
@@ -73,23 +78,23 @@ function handleAddNpc() {
         </svg>
       </button>
       <div class="text-xs font-medium text-[var(--color-text-dimmed)]">Focus</div>
-      <div class="mt-1 text-base font-semibold text-[var(--color-text-primary)]">{{ result.eventFocus }}</div>
+      <div class="mt-1 text-base font-semibold text-[var(--color-text-primary)]">{{ randomResult.eventFocus }}</div>
       <div class="mt-3 text-xs font-medium text-[var(--color-text-dimmed)]">Action</div>
-      <div class="mt-1 text-base font-semibold text-[var(--color-text-primary)]">{{ result.eventAction }}</div>
+      <div class="mt-1 text-base font-semibold text-[var(--color-text-primary)]">{{ randomResult.eventAction }}</div>
 
-      <div v-if="result.selectedCharacter" class="mt-3 text-sm text-[var(--color-text-secondary)]">
-        Character: <span class="font-semibold text-[var(--color-text-primary)]">{{ result.selectedCharacter }}</span>
+      <div v-if="randomResult.selectedCharacter" class="mt-3 text-sm text-[var(--color-text-secondary)]">
+        Character: <span class="font-semibold text-[var(--color-text-primary)]">{{ randomResult.selectedCharacter }}</span>
       </div>
-      <div v-if="result.selectedThread" class="mt-1 text-sm text-[var(--color-text-secondary)]">
-        Thread: <span class="font-semibold text-[var(--color-text-primary)]">{{ result.selectedThread }}</span>
+      <div v-if="randomResult.selectedThread" class="mt-1 text-sm text-[var(--color-text-secondary)]">
+        Thread: <span class="font-semibold text-[var(--color-text-primary)]">{{ randomResult.selectedThread }}</span>
       </div>
-      <div v-if="result.listWasEmpty" class="mt-3 text-sm text-[var(--color-text-secondary)]">(List was empty)</div>
-      <div v-if="result.isNewNpc" class="mt-3 text-sm font-semibold text-[var(--color-text-warning)]">
+      <div v-if="randomResult.listWasEmpty" class="mt-3 text-sm text-[var(--color-text-secondary)]">(List was empty)</div>
+      <div v-if="randomResult.isNewNpc" class="mt-3 text-sm font-semibold text-[var(--color-text-warning)]">
         New NPC: add them to your character list.
       </div>
     </div>
 
-    <div v-if="result?.isNewNpc" class="mt-4 rounded-2xl border border-[var(--color-border-warning)] bg-[var(--color-bg-warning-subtle)] p-4">
+    <div v-if="randomResult?.isNewNpc" class="mt-4 rounded-2xl border border-[var(--color-border-warning)] bg-[var(--color-bg-warning-subtle)] p-4">
       <div class="text-xs font-semibold text-[var(--color-text-warning)]">Add NPC</div>
       <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-5">
         <div class="sm:col-span-3">
@@ -111,8 +116,8 @@ function handleAddNpc() {
       <BaseButton
         class="mt-3 w-full"
         variant="warning"
-        :disabled="loadingAddNpc || !newNpcName.trim() || !apiOnline"
-        :loading="loadingAddNpc"
+        :disabled="adventure.loading.addCharacter || !newNpcName.trim() || !apiOnline"
+        :loading="adventure.loading.addCharacter"
         @click="handleAddNpc"
       >
         Add NPC

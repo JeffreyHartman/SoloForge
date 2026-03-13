@@ -181,6 +181,21 @@ export interface NoteListResponse {
   paths: string[]
 }
 
+// Tool Navigation Types
+
+export interface ToolPage {
+  id: string
+  name: string
+  comingSoon?: boolean
+}
+
+export interface ToolGroup {
+  id: string
+  name: string
+  pages: ToolPage[]
+  sortOrder: number
+}
+
 // UI Types
 
 export type MeaningMode = 'action' | 'description' | 'table' | 'fusion' | 'quickSet'

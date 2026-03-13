@@ -136,57 +136,6 @@ async function updateSession() {
   }
 }
 
-// Mythic actions
-async function runFateCheck() {
-  clearError()
-  try {
-    await mythic.runFateCheck()
-    await refreshAfterAction()
-  } catch (err) {
-    setError(err)
-  }
-}
-
-async function runSceneCheck() {
-  clearError()
-  try {
-    await mythic.runSceneCheck()
-    await refreshAfterAction()
-  } catch (err) {
-    setError(err)
-  }
-}
-
-async function runRandomEvent() {
-  clearError()
-  try {
-    await mythic.runRandomEvent()
-    await refreshAfterAction()
-  } catch (err) {
-    setError(err)
-  }
-}
-
-async function runMeaning() {
-  clearError()
-  try {
-    await mythic.runMeaning()
-    await refreshAfterAction()
-  } catch (err) {
-    setError(err)
-  }
-}
-
-async function rollDice(expr?: string) {
-  clearError()
-  try {
-    await mythic.rollDice(expr)
-    await refreshAfterAction()
-  } catch (err) {
-    setError(err)
-  }
-}
-
 // Adventure actions
 async function addCharacter(name: string, description: string) {
   clearError()
@@ -243,30 +192,6 @@ async function reopenThread(name: string) {
   }
 }
 
-// Journal actions
-async function reloadJournal() {
-  clearError()
-  try {
-    await journalState.refreshJournal(campaign.currentCampaignId.value)
-  } catch (err) {
-    setError(err)
-  }
-}
-
-// Helper
-async function refreshAfterAction() {
-  await campaign.refreshState()
-  await historyState.refreshHistory()
-  await journalState.refreshJournal(campaign.currentCampaignId.value)
-  // Invalidate stale cache for the session log so the next open shows fresh content
-  const logPath = notesState.sessionLogPath.value
-  notesState.invalidateTabCache(logPath)
-  // If the session log note is currently active, reload it immediately
-  if (notesState.activeNotePath.value === logPath) {
-    await notesState.reloadActiveNote()
-  }
-}
-
 onMounted(() => {
   initTheme()
   void refreshAll()
@@ -290,13 +215,13 @@ onMounted(() => {
       @navigate="currentView = $event"
     />
 
-    <div v-if="errorMessage" class="relative mx-auto max-w-6xl px-4 pt-4">
+    <div v-if="errorMessage" class="relative mx-auto max-w-[1400px] px-4 pt-4">
       <div class="rounded-2xl border border-[var(--color-border-danger)] bg-[var(--color-bg-danger)] px-4 py-3 text-sm text-[var(--color-text-danger)]">
         {{ errorMessage }}
       </div>
     </div>
 
-    <main class="relative mx-auto max-w-6xl px-4 pb-12 pt-6">
+    <main class="relative mx-auto max-w-[1400px] px-4 pb-12 pt-6">
       <DashboardView
         v-if="currentView === 'dashboard'"
         :campaigns="campaign.campaigns.value"
@@ -317,42 +242,7 @@ onMounted(() => {
         @update-session="updateSession"
       />
 
-      <ToolsView
-        v-else-if="currentView === 'tools'"
-        :chaos="campaign.session.value.chaos"
-        :fate-result="mythic.fateResult.value"
-        :scene-result="mythic.sceneResult.value"
-        :random-result="mythic.randomResult.value"
-        :meaning-result="mythic.meaningResult.value"
-        :meaning-meta="mythic.meaningMeta.value"
-        :quick-set-result="mythic.quickSetResult.value"
-        :dice-result="mythic.diceResult.value"
-        :table-groups="tables.tableGroups.value"
-        :quick-sets="tables.quickSets.value"
-        :loading-fate="mythic.loading.fateCheck"
-        :loading-scene="mythic.loading.sceneCheck"
-        :loading-random="mythic.loading.randomEvent"
-        :loading-meaning="mythic.loading.meaning"
-        :loading-dice="mythic.loading.diceRoll"
-        :loading-add-npc="adventure.loading.addCharacter"
-        :api-online="apiOnline ?? false"
-        v-model:fate-odds="mythic.fateOdds.value"
-        v-model:fate-question="mythic.fateQuestion.value"
-        v-model:scene-context="mythic.sceneContext.value"
-        v-model:meaning-mode="mythic.meaningMode.value"
-        v-model:meaning-context="mythic.meaningContext.value"
-        v-model:meaning-table-id="mythic.meaningTableId.value"
-        v-model:meaning-fusion-table1="mythic.meaningFusionTable1.value"
-        v-model:meaning-fusion-table2="mythic.meaningFusionTable2.value"
-        v-model:meaning-quick-set-id="mythic.meaningQuickSetId.value"
-        v-model:dice-expression="mythic.diceExpression.value"
-        @fate-check="runFateCheck"
-        @scene-check="runSceneCheck"
-        @random-event="runRandomEvent"
-        @meaning="runMeaning"
-        @dice-roll="rollDice"
-        @add-npc="addCharacter"
-      />
+      <ToolsView v-else-if="currentView === 'tools'" />
 
       <AdventureView
         v-else-if="currentView === 'adventure'"

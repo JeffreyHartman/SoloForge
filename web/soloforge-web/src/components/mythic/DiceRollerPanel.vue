@@ -1,28 +1,25 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { DiceRollResponse } from '../../types'
 import { QUICK_DICE } from '../../types'
 import BaseCard from '../common/BaseCard.vue'
 import BaseButton from '../common/BaseButton.vue'
 import BaseInput from '../common/BaseInput.vue'
+import { useMythic } from '../../composables/useMythic'
+import { useToolActions } from '../../composables/useToolActions'
 import { diceRollToMarkdown, copyToClipboard } from '../../composables/useRollMarkdown'
 
-const props = defineProps<{
-  result: DiceRollResponse | null
-  loading: boolean
-  apiOnline: boolean
-}>()
+const { diceExpression, diceResult, rollDice, loading } = useMythic()
+const { apiOnline, runAction } = useToolActions()
 
-const expression = defineModel<string>('expression')
 const copied = ref(false)
 
-defineEmits<{
-  roll: [expr?: string]
-}>()
+function handleRoll(expr?: string) {
+  void runAction(() => rollDice(expr))
+}
 
 async function handleCopy() {
-  if (!props.result) return
-  const success = await copyToClipboard(diceRollToMarkdown(props.result))
+  if (!diceResult.value) return
+  const success = await copyToClipboard(diceRollToMarkdown(diceResult.value))
   if (success) {
     copied.value = true
     setTimeout(() => { copied.value = false }, 1500)
@@ -38,10 +35,10 @@ async function handleCopy() {
 
     <div class="grid grid-cols-1 gap-3">
       <BaseInput
-        v-model="expression"
+        v-model="diceExpression"
         label="Expression"
         placeholder="2d6+1"
-        @enter="$emit('roll', expression)"
+        @enter="handleRoll(diceExpression)"
       />
 
       <div class="flex flex-wrap gap-2">
@@ -50,22 +47,23 @@ async function handleCopy() {
           :key="die"
           type="button"
           class="rounded-full border border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)] px-3 py-1 text-xs font-semibold text-[var(--color-text-primary)] shadow-sm transition hover:bg-[var(--color-bg-hover)]"
-          @click="$emit('roll', '1' + die)"
+          :aria-label="`Roll 1${die}`"
+          @click="handleRoll('1' + die)"
         >
           {{ die }}
         </button>
       </div>
 
       <BaseButton
-        :disabled="loading || !apiOnline"
-        :loading="loading"
-        @click="$emit('roll', expression)"
+        :disabled="loading.diceRoll || !apiOnline"
+        :loading="loading.diceRoll"
+        @click="handleRoll(diceExpression)"
       >
         Roll
       </BaseButton>
     </div>
 
-    <div v-if="result" class="group/result mt-4 rounded-2xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-4">
+    <div v-if="diceResult" class="group/result mt-4 rounded-2xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-4">
       <button
         type="button"
         class="float-right ml-2 rounded-lg p-1.5 text-[var(--color-text-dimmed)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition opacity-0 group-hover/result:opacity-100 focus:opacity-100"
@@ -82,9 +80,9 @@ async function handleCopy() {
         </svg>
       </button>
       <div class="text-xs font-medium text-[var(--color-text-dimmed)]">Result</div>
-      <div class="mt-1 text-lg font-semibold text-[var(--color-text-primary)]">{{ result.roll.summary }}</div>
-      <div v-if="result.breakdown" class="mt-2 rounded-xl bg-[var(--color-bg-muted)] px-3 py-2 font-mono text-[12px] leading-5 text-[var(--color-text-secondary)]">
-        {{ result.breakdown }}
+      <div class="mt-1 text-lg font-semibold text-[var(--color-text-primary)]">{{ diceResult.roll.summary }}</div>
+      <div v-if="diceResult.breakdown" class="mt-2 rounded-xl bg-[var(--color-bg-muted)] px-3 py-2 font-mono text-[12px] leading-5 text-[var(--color-text-secondary)]">
+        {{ diceResult.breakdown }}
       </div>
     </div>
   </BaseCard>
