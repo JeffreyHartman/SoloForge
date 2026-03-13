@@ -6,7 +6,7 @@ export const names = [
   'The Copper Kettle', 'The Howling Wolf', 'The Moonlit Rose',
   'The Blind Basilisk', 'The Lucky Coin', 'The Thorny Crown',
   'The Dusty Tome', 'The Singing Sword', 'The Black Raven',
-  'The Prancing Pony', 'The Drunken Dwarf', 'The Shattered Shield',
+  'The Prancing Stag', 'The Drunken Dwarf', 'The Shattered Shield',
   'The Gilded Lily', 'The Amber Flask', 'The Leaping Salmon',
   'The Dancing Bear', 'The Quiet Storm', 'The Anvil and Hammer',
   'The Crooked Cat', 'The Pale Rider', 'The Feathered Arrow',

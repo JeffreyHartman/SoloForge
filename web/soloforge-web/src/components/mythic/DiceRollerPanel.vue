@@ -47,6 +47,7 @@ async function handleCopy() {
           :key="die"
           type="button"
           class="rounded-full border border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)] px-3 py-1 text-xs font-semibold text-[var(--color-text-primary)] shadow-sm transition hover:bg-[var(--color-bg-hover)]"
+          :aria-label="`Roll 1${die}`"
           @click="handleRoll('1' + die)"
         >
           {{ die }}

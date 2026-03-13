@@ -17,6 +17,6 @@ export const names = [
   'Lanfranc', 'Mechtild', 'Orderic', 'Peregrine', 'Richeldis',
   'Sigrid', 'Turold', 'Aelgifu', 'Botolf', 'Clemence',
   'Ealdred', 'Gisela', 'Hereward', 'Isolda', 'Joscelin',
-  'Leofwine', 'Millicent', 'Odo', 'Rohese', 'Swithun',
+  'Leofwine', 'Millicent', 'Osmund', 'Rohese', 'Swithun',
   'Thorkel', 'Wulfhild', 'Ymma', 'Anselm', 'Berengaria',
 ]

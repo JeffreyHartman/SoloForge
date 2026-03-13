@@ -57,11 +57,12 @@ const modes: { id: MeaningMode; label: string }[] = [
       <div class="text-xs text-[var(--color-text-dimmed)]">Action/Description/Tables/Fusion/Quick Sets</div>
     </template>
 
-    <div class="flex flex-wrap gap-2">
+    <div class="flex flex-wrap gap-2" role="group" aria-label="Meaning mode">
       <button
         v-for="m in modes"
         :key="m.id"
         type="button"
+        :aria-pressed="meaningMode === m.id"
         class="rounded-full px-3 py-1.5 text-xs font-semibold shadow-sm transition"
         :class="
           meaningMode === m.id

@@ -8,7 +8,7 @@ export const names = [
   'Blackthorn Keep', 'Dragonfall', 'Stormwatch Tower', 'The Sunken City',
   'Wraithwood', 'Amber Coast', 'Bleakrock Isle', 'Cinderpeak',
   'Dawnbreak', 'Eldergrove', 'Falconreach', 'Grimhollow',
-  'Hearthstone Village', 'Icewind Dale', 'Jade Harbor',
+  'Hearthstone Village', 'Frostfen Vale', 'Jade Harbor',
   'Kettlemere', 'Liongate', 'Mossbridge', 'Northmarch',
   'Oakheart', 'Pearlshore', 'Red Canyon', 'Serpent\'s Crossing',
   'Tidewater', 'Umber Falls', 'Valkyr\'s Rest', 'Westwatch',
