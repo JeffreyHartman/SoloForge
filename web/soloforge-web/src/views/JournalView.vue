@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import NotesSidebar from '../components/notes/NotesSidebar.vue'
 import NoteTabBar from '../components/notes/NoteTabBar.vue'
 import NoteEditor from '../components/notes/NoteEditor.vue'
+import ToolbarStrip from '../components/journal/ToolbarStrip.vue'
+import ToolbarModal from '../components/journal/ToolbarModal.vue'
 import { useNotes } from '../composables/useNotes'
 
 defineProps<{
@@ -14,6 +16,7 @@ const notes = useNotes()
 
 const renameTarget = ref<string | null>(null)
 const renameValue = ref('')
+const activeModalTool = ref<string | null>(null)
 
 /** Opens the rename dialog pre-filled with the current name. */
 function startRename(path: string) {
@@ -93,7 +96,7 @@ async function handleSetSessionLog(path: string) {
     />
 
     <!-- Main content area -->
-    <div class="flex flex-1 flex-col overflow-hidden pl-7">
+    <div class="flex flex-1 flex-col overflow-hidden">
       <!-- Tab bar -->
       <NoteTabBar
         :tabs="notes.openTabs.value"
@@ -103,9 +106,15 @@ async function handleSetSessionLog(path: string) {
         @close="notes.closeTab($event)"
       />
 
+      <!-- Pinned tools toolbar -->
+      <ToolbarStrip @open-modal="activeModalTool = $event" />
+
       <!-- Editor -->
       <NoteEditor :api-online="apiOnline" />
     </div>
+
+    <!-- Toolbar tool modal (overlay) -->
+    <ToolbarModal :tool-id="activeModalTool" @close="activeModalTool = null" />
 
     <!-- Rename dialog (overlay) -->
     <div

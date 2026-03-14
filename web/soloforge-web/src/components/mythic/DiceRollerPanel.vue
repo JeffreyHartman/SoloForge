@@ -8,6 +8,8 @@ import { useMythic } from '../../composables/useMythic'
 import { useToolActions } from '../../composables/useToolActions'
 import { diceRollToMarkdown, copyToClipboard } from '../../composables/useRollMarkdown'
 
+withDefaults(defineProps<{ mode?: 'full' | 'toolbar' }>(), { mode: 'full' })
+
 const { diceExpression, diceResult, rollDice, loading } = useMythic()
 const { apiOnline, runAction } = useToolActions()
 
@@ -28,10 +30,11 @@ async function handleCopy() {
 </script>
 
 <template>
-  <BaseCard title="Dice Roller">
+  <BaseCard v-if="mode === 'full'" title="Dice Roller">
     <template #header>
       <div class="text-xs text-[var(--color-text-dimmed)]">2d6+1, d20, 1d8-2</div>
     </template>
+    <template v-if="$slots.pin" #pin><slot name="pin" /></template>
 
     <div class="grid grid-cols-1 gap-3">
       <BaseInput
@@ -86,4 +89,44 @@ async function handleCopy() {
       </div>
     </div>
   </BaseCard>
+
+  <!-- Compact toolbar mode -->
+  <div v-else class="space-y-3">
+    <div class="grid grid-cols-1 gap-3">
+      <BaseInput
+        v-model="diceExpression"
+        label="Expression"
+        placeholder="2d6+1"
+        @enter="handleRoll(diceExpression)"
+      />
+
+      <div class="flex flex-wrap gap-2">
+        <button
+          v-for="die in QUICK_DICE"
+          :key="die"
+          type="button"
+          class="rounded-full border border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)] px-3 py-1 text-xs font-semibold text-[var(--color-text-primary)] shadow-sm transition hover:bg-[var(--color-bg-hover)]"
+          :aria-label="`Roll 1${die}`"
+          @click="handleRoll('1' + die)"
+        >
+          {{ die }}
+        </button>
+      </div>
+
+      <BaseButton
+        :disabled="loading.diceRoll || !apiOnline"
+        :loading="loading.diceRoll"
+        @click="handleRoll(diceExpression)"
+      >
+        Roll
+      </BaseButton>
+    </div>
+
+    <div v-if="diceResult" class="rounded-xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-3">
+      <div class="text-base font-semibold text-[var(--color-text-primary)]">{{ diceResult.roll.summary }}</div>
+      <div v-if="diceResult.breakdown" class="mt-1 rounded-lg bg-[var(--color-bg-muted)] px-2 py-1.5 font-mono text-[12px] leading-5 text-[var(--color-text-secondary)]">
+        {{ diceResult.breakdown }}
+      </div>
+    </div>
+  </div>
 </template>

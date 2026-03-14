@@ -8,6 +8,8 @@ import { useCampaign } from '../../composables/useCampaign'
 import { useToolActions } from '../../composables/useToolActions'
 import { sceneCheckToMarkdown, copyToClipboard } from '../../composables/useRollMarkdown'
 
+withDefaults(defineProps<{ mode?: 'full' | 'toolbar' }>(), { mode: 'full' })
+
 const { sceneContext, sceneResult, runSceneCheck, loading } = useMythic()
 const { session } = useCampaign()
 const { apiOnline, runAction } = useToolActions()
@@ -29,10 +31,11 @@ async function handleCopy() {
 </script>
 
 <template>
-  <BaseCard title="Scene Check">
+  <BaseCard v-if="mode === 'full'" title="Scene Check">
     <template #header>
       <div class="text-xs text-[var(--color-text-dimmed)]">Chaos {{ session.chaos }}</div>
     </template>
+    <template v-if="$slots.pin" #pin><slot name="pin" /></template>
 
     <div class="grid grid-cols-1 gap-3">
       <BaseInput
@@ -112,4 +115,56 @@ async function handleCopy() {
       </div>
     </div>
   </BaseCard>
+
+  <!-- Compact toolbar mode -->
+  <div v-else class="space-y-3">
+    <div class="grid grid-cols-1 gap-3">
+      <BaseInput
+        v-model="sceneContext"
+        label="Scene context (optional)"
+        placeholder="What is the scene setup?"
+        @enter="handleRoll"
+      />
+
+      <BaseButton
+        :disabled="loading.sceneCheck || !apiOnline"
+        :loading="loading.sceneCheck"
+        @click="handleRoll"
+      >
+        Check scene
+      </BaseButton>
+    </div>
+
+    <div v-if="sceneResult" class="rounded-xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-3">
+      <div
+        class="text-base font-semibold"
+        :class="
+          sceneResult.scene.result === 'Normal Scene'
+            ? 'text-[var(--color-text-success)]'
+            : sceneResult.scene.result.includes('Altered')
+              ? 'text-[var(--color-text-warning)]'
+              : sceneResult.scene.result.includes('Interrupt')
+                ? 'text-[var(--color-text-danger)]'
+                : 'text-[var(--color-text-primary)]'
+        "
+      >
+        {{ sceneResult.scene.result }}
+      </div>
+      <div class="mt-0.5 text-xs text-[var(--color-text-muted)]">
+        Roll {{ sceneResult.scene.roll }} · Chaos {{ sceneResult.chaos }}
+      </div>
+
+      <div v-if="sceneResult.scene.sceneAdjustment" class="mt-2 rounded-lg border border-[var(--color-border-warning)] bg-[var(--color-bg-warning-subtle)] p-2">
+        <div class="text-xs font-semibold text-[var(--color-text-warning)]">Scene adjustment</div>
+        <div class="mt-0.5 text-sm font-semibold text-[var(--color-text-primary)]">{{ sceneResult.scene.sceneAdjustment }}</div>
+      </div>
+
+      <div v-if="sceneResult.scene.randomEvent" class="mt-2 rounded-lg border border-[var(--color-border-info)] bg-[var(--color-bg-info)] p-2">
+        <div class="text-xs font-semibold text-[var(--color-text-info)]">Random event</div>
+        <div class="mt-0.5 text-sm font-semibold text-[var(--color-text-primary)]">
+          {{ sceneResult.scene.randomEvent.eventFocus }}: {{ sceneResult.scene.randomEvent.eventAction }}
+        </div>
+      </div>
+    </div>
+  </div>
 </template>

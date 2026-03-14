@@ -16,6 +16,7 @@ import { useNotes } from './composables/useNotes'
 
 import AppHeader from './components/layout/AppHeader.vue'
 import AppNav from './components/layout/AppNav.vue'
+import ToastContainer from './components/common/ToastContainer.vue'
 import DashboardView from './views/DashboardView.vue'
 import ToolsView from './views/ToolsView.vue'
 import AdventureView from './views/AdventureView.vue'
@@ -276,5 +277,7 @@ onMounted(() => {
         @refresh="historyState.refreshHistory"
       />
     </main>
+
+    <ToastContainer />
   </div>
 </template>

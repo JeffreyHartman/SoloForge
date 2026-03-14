@@ -60,6 +60,7 @@ async function handleAddNpc() {
         Roll
       </BaseButton>
     </template>
+    <template v-if="$slots.pin" #pin><slot name="pin" /></template>
 
     <div v-if="randomResult" class="group/result rounded-2xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-4">
       <button

@@ -10,6 +10,8 @@ import { useTables } from '../../composables/useTables'
 import { useToolActions } from '../../composables/useToolActions'
 import { meaningToMarkdown, quickSetToMarkdown, copyToClipboard } from '../../composables/useRollMarkdown'
 
+withDefaults(defineProps<{ mode?: 'full' | 'toolbar' }>(), { mode: 'full' })
+
 const {
   meaningMode, meaningContext, meaningTableId, meaningFusionTable1, meaningFusionTable2,
   meaningQuickSetId, meaningResult, meaningMeta, quickSetResult, runMeaning, loading,
@@ -52,10 +54,11 @@ const modes: { id: MeaningMode; label: string }[] = [
 </script>
 
 <template>
-  <BaseCard title="Meaning">
+  <BaseCard v-if="mode === 'full'" title="Meaning">
     <template #header>
       <div class="text-xs text-[var(--color-text-dimmed)]">Action/Description/Tables/Fusion/Quick Sets</div>
     </template>
+    <template v-if="$slots.pin" #pin><slot name="pin" /></template>
 
     <div class="flex flex-wrap gap-2" role="group" aria-label="Meaning mode">
       <button
@@ -167,4 +170,84 @@ const modes: { id: MeaningMode; label: string }[] = [
       </div>
     </div>
   </BaseCard>
+
+  <!-- Compact toolbar mode -->
+  <div v-else class="space-y-3">
+    <div class="flex flex-wrap gap-2" role="group" aria-label="Meaning mode">
+      <button
+        v-for="m in modes"
+        :key="m.id"
+        type="button"
+        :aria-pressed="meaningMode === m.id"
+        class="rounded-full px-3 py-1 text-xs font-semibold shadow-sm transition"
+        :class="
+          meaningMode === m.id
+            ? 'bg-[var(--color-bg-accent)] text-[var(--color-text-inverted)]'
+            : 'border border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)] text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]'
+        "
+        @click="meaningMode = m.id"
+      >
+        {{ m.label }}
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 gap-3">
+      <BaseInput
+        v-model="meaningContext"
+        label="Context (optional)"
+        placeholder="What are you trying to understand?"
+        @enter="handleRoll"
+      />
+
+      <div v-if="meaningMode === 'table'">
+        <BaseSelect v-model="meaningTableId" label="Table" :groups="tableGroups" />
+      </div>
+
+      <div v-else-if="meaningMode === 'fusion'" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <BaseSelect v-model="meaningFusionTable1" label="Table 1" :groups="tableGroups" />
+        <BaseSelect v-model="meaningFusionTable2" label="Table 2" :groups="tableGroups" />
+      </div>
+
+      <div v-else-if="meaningMode === 'quickSet'">
+        <BaseSelect v-model="meaningQuickSetId" label="Quick set" :options="quickSets.map(q => ({ value: q.id, label: q.name }))" />
+      </div>
+
+      <BaseButton
+        :disabled="loading.meaning || !apiOnline"
+        :loading="loading.meaning"
+        @click="handleRoll"
+      >
+        Roll
+      </BaseButton>
+    </div>
+
+    <div v-if="meaningResult" class="rounded-xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-3">
+      <div class="text-base font-semibold text-[var(--color-text-primary)]">{{ meaningResult.combined }}</div>
+      <div class="mt-0.5 text-xs text-[var(--color-text-muted)]">
+        <span v-if="meaningMeta">{{ meaningMeta }}</span>
+        <span v-else>{{ meaningResult.tableName }}</span>
+      </div>
+      <div class="mt-2 grid grid-cols-2 gap-2">
+        <div class="rounded-lg bg-[var(--color-bg-muted)] px-2 py-1.5">
+          <div class="text-[11px] font-medium text-[var(--color-text-dimmed)]">Word 1</div>
+          <div class="text-sm font-semibold text-[var(--color-text-primary)]">{{ meaningResult.word1 }}</div>
+        </div>
+        <div class="rounded-lg bg-[var(--color-bg-muted)] px-2 py-1.5">
+          <div class="text-[11px] font-medium text-[var(--color-text-dimmed)]">Word 2</div>
+          <div class="text-sm font-semibold text-[var(--color-text-primary)]">{{ meaningResult.word2 }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="quickSetResult" class="rounded-xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-3">
+      <div class="text-sm font-semibold text-[var(--color-text-primary)]">{{ quickSetResult.quickSet.name }}</div>
+      <div class="mt-0.5 text-xs text-[var(--color-text-muted)]">{{ quickSetResult.quickSet.description }}</div>
+      <div class="mt-2 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-muted)] p-2">
+        <div v-for="r in quickSetResult.results" :key="r.label" class="py-0.5 text-sm">
+          <span class="font-semibold text-[var(--color-text-primary)]">{{ r.label }}:</span>
+          <span class="text-[var(--color-text-secondary)]"> {{ r.combined }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>

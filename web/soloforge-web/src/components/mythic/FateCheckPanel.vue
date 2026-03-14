@@ -10,6 +10,8 @@ import { useCampaign } from '../../composables/useCampaign'
 import { useToolActions } from '../../composables/useToolActions'
 import { fateCheckToMarkdown, copyToClipboard } from '../../composables/useRollMarkdown'
 
+withDefaults(defineProps<{ mode?: 'full' | 'toolbar' }>(), { mode: 'full' })
+
 const { fateOdds, fateQuestion, fateResult, runFateCheck, loading } = useMythic()
 const { session } = useCampaign()
 const { apiOnline, runAction } = useToolActions()
@@ -31,10 +33,11 @@ async function handleCopy() {
 </script>
 
 <template>
-  <BaseCard title="Fate Check">
+  <BaseCard v-if="mode === 'full'" title="Fate Check">
     <template #header>
       <div class="text-xs text-[var(--color-text-dimmed)]">Chaos {{ session.chaos }}</div>
     </template>
+    <template v-if="$slots.pin" #pin><slot name="pin" /></template>
 
     <div class="grid grid-cols-1 gap-3">
       <BaseSelect v-model="fateOdds" label="Odds" :options="ODDS_OPTIONS" />
@@ -113,4 +116,55 @@ async function handleCopy() {
       </div>
     </div>
   </BaseCard>
+
+  <!-- Compact toolbar mode -->
+  <div v-else class="space-y-3">
+    <div class="grid grid-cols-1 gap-3">
+      <BaseSelect v-model="fateOdds" label="Odds" :options="ODDS_OPTIONS" />
+
+      <BaseInput
+        v-model="fateQuestion"
+        label="Question (optional)"
+        placeholder="Does the guard notice me?"
+        @enter="handleRoll"
+      />
+
+      <BaseButton
+        :disabled="loading.fateCheck || !apiOnline"
+        :loading="loading.fateCheck"
+        @click="handleRoll"
+      >
+        Roll
+      </BaseButton>
+    </div>
+
+    <div v-if="fateResult" class="rounded-xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-3">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div
+            class="text-base font-semibold"
+            :class="
+              fateResult.fate.result.includes('Yes')
+                ? 'text-[var(--color-text-success)]'
+                : fateResult.fate.result.includes('No')
+                  ? 'text-[var(--color-text-danger)]'
+                  : 'text-[var(--color-text-primary)]'
+            "
+          >
+            {{ fateResult.fate.result }}
+          </div>
+          <div class="mt-0.5 text-xs text-[var(--color-text-muted)]">
+            Roll {{ fateResult.fate.roll }} · Odds {{ fateResult.odds }} · Chaos {{ fateResult.chaos }}
+          </div>
+        </div>
+      </div>
+
+      <div v-if="fateResult.randomEvent" class="mt-2 rounded-lg border border-[var(--color-border-warning)] bg-[var(--color-bg-warning-subtle)] p-2">
+        <div class="text-xs font-semibold text-[var(--color-text-warning)]">Random event</div>
+        <div class="mt-0.5 text-sm font-semibold text-[var(--color-text-primary)]">
+          {{ fateResult.randomEvent.eventFocus }}: {{ fateResult.randomEvent.eventAction }}
+        </div>
+      </div>
+    </div>
+  </div>
 </template>

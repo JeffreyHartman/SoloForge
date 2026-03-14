@@ -74,29 +74,27 @@ function cancelCreate() {
 </script>
 
 <template>
-  <!-- Toggle button (always visible) -->
-  <button
-    class="absolute top-3 z-30 rounded-r-lg border border-l-0 border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)] px-1.5 py-3 text-[var(--color-text-dimmed)] shadow-sm transition-all duration-300 ease-in-out hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]"
-    :style="{ left: open ? '280px' : '0' }"
-    :aria-expanded="open"
-    aria-label="Toggle notes sidebar"
-    @click="$emit('update:open', !open)"
-  >
-    <svg
-      class="h-4 w-4 transition-transform duration-200"
-      :class="{ 'rotate-180': !open }"
-      viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"
-    >
-      <path d="M10 4l-4 4 4 4" />
-    </svg>
-  </button>
-
-  <!-- Sidebar drawer -->
+  <!-- Sidebar area: expanded drawer or collapsed toggle strip -->
   <div
     class="shrink-0 overflow-hidden transition-all duration-300 ease-in-out"
-    :style="{ width: open ? '280px' : '0px' }"
+    :style="{ width: open ? '280px' : '36px' }"
   >
-    <div class="flex h-full w-[280px] flex-col border-r border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)]" :inert="!open">
+    <!-- Collapsed state: just the toggle arrow -->
+    <div v-if="!open" class="flex h-full w-[36px] flex-col items-center border-r border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)] pt-2">
+      <button
+        class="rounded-lg p-1.5 text-[var(--color-text-dimmed)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition"
+        :aria-expanded="false"
+        aria-label="Open notes sidebar"
+        @click="$emit('update:open', true)"
+      >
+        <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M6 4l4 4-4 4" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Expanded state: full sidebar -->
+    <div v-else class="flex h-full w-[280px] flex-col border-r border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)]">
       <!-- Header -->
       <div class="flex items-center justify-between border-b border-[var(--color-border-primary)] px-3 py-2.5">
         <span class="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Notes</span>
@@ -120,6 +118,17 @@ function cancelCreate() {
             <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
               <path d="M2 5a1.5 1.5 0 011.5-1.5H6l1.5 1.5H12.5A1.5 1.5 0 0114 6.5V11a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 11V5z" />
               <path d="M8 7v4M6 9h4" />
+            </svg>
+          </button>
+          <button
+            class="rounded p-1 text-[var(--color-text-dimmed)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] transition"
+            title="Collapse sidebar"
+            aria-label="Collapse notes sidebar"
+            :aria-expanded="true"
+            @click="$emit('update:open', false)"
+          >
+            <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 4l-4 4 4 4" />
             </svg>
           </button>
         </div>
