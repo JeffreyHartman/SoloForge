@@ -182,9 +182,7 @@ function commitSeparatorLabel() {
               Dice
             </button>
             <button
-             <button
               v-for="sub in getPinnableTool('dice-roller')?.subActions ?? []"
-              :key="sub.id"
               :key="sub.id"
               type="button"
               class="rounded-full border border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-text-primary)] shadow-sm transition hover:bg-[var(--color-bg-hover)]"

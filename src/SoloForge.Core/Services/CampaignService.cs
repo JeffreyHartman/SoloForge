@@ -34,7 +34,7 @@ public sealed class CampaignService
     /// <summary>
     /// Path to the global settings file.
     /// </summary>
-    public string SettingsPath => Path.Combine(SavesDirectory, "settings.json");
+    public string SettingsPath => Path.Combine(SavesDirectory, "GlobalSettings.json");
 
     public CampaignService(Session session, AdventureStateManager stateManager, HistoryService historyService)
         : this(session, stateManager, historyService, null)
@@ -207,7 +207,7 @@ public sealed class CampaignService
 
         foreach (var file in Directory.GetFiles(SavesDirectory, "*.json"))
         {
-            if (Path.GetFileName(file) == "settings.json")
+            if (Path.GetFileName(file) == "GlobalSettings.json")
                 continue;
 
             var fileName = Path.GetFileNameWithoutExtension(file);
@@ -315,7 +315,10 @@ public sealed class CampaignService
 
     private void SaveGlobalSettings(GlobalSettings settings)
     {
-        var json = JsonSerializer.Serialize(settings, JsonOptions);
+        var existing = LoadGlobalSettings();
+        existing.LastPlayedCampaignId = settings.LastPlayedCampaignId;
+
+        var json = JsonSerializer.Serialize(existing, JsonOptions);
         File.WriteAllText(SettingsPath, json);
     }
 

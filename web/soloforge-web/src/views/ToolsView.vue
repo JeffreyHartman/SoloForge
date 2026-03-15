@@ -5,18 +5,15 @@ import MythicWorkspace from '../components/tools/MythicWorkspace.vue'
 import NameGeneratorPage from '../components/tools/NameGeneratorPage.vue'
 import ComingSoonPage from '../components/tools/ComingSoonPage.vue'
 
-const { activePage, sidebarOpen } = useToolNav()
+const { activePage } = useToolNav()
 </script>
 
 <template>
-  <div class="relative flex min-h-[calc(100vh-10rem)]">
+  <div class="flex min-h-[calc(100vh-10rem)]">
     <ToolsSidebar />
 
     <!-- Content area -->
-    <div
-      class="min-w-0 flex-1 transition-all duration-300 ease-in-out"
-      :style="{ paddingLeft: sidebarOpen ? '36px' : '28px' }"
-    >
+    <div class="min-w-0 flex-1">
       <MythicWorkspace v-if="activePage === 'mythic-2e'" />
       <NameGeneratorPage v-else-if="activePage === 'name-generator'" />
       <ComingSoonPage v-else :page-id="activePage" />

@@ -22,7 +22,6 @@ defineEmits<{
 const expanded = ref(true)
 
 const isSessionLog = computed(() => props.node.path === props.sessionLogPath)
-const indent = (props.depth ?? 0) * 16
 </script>
 
 <template>
@@ -31,7 +30,6 @@ const indent = (props.depth ?? 0) * 16
     <div
       v-if="node.isFolder"
       class="group/node relative flex items-center gap-1 rounded-md px-2 py-1 text-sm cursor-pointer select-none transition-colors hover:bg-[var(--color-bg-hover)]"
-      :style="{ paddingLeft: `${indent + 8}px` }"
       role="treeitem"
       :aria-expanded="expanded"
       tabindex="0"
@@ -55,7 +53,7 @@ const indent = (props.depth ?? 0) * 16
       <span class="truncate text-[var(--color-text-primary)]">{{ node.name }}</span>
 
       <!-- Folder actions (hover) -->
-      <div class="ml-auto flex items-center gap-0.5 opacity-0 group-hover/node:opacity-100 group-focus-within/node:opacity-100 transition-opacity">
+      <div class="ml-auto flex items-center gap-0.5 opacity-0 pointer-events-none group-hover/node:opacity-100 group-hover/node:pointer-events-auto group-focus-within/node:opacity-100 group-focus-within/node:pointer-events-auto transition-opacity">
         <button
           class="rounded p-0.5 text-[var(--color-text-dimmed)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)] focus:opacity-100 transition"
           title="New note"
@@ -90,8 +88,13 @@ const indent = (props.depth ?? 0) * 16
       </div>
     </div>
 
-    <!-- Folder children -->
-    <div v-if="node.isFolder && expanded" role="group">
+    <!-- Folder children (visual panel) -->
+    <div
+      v-if="node.isFolder && expanded && node.children.length > 0"
+      role="group"
+      class="ml-2 mt-0.5 mb-0.5 py-0.5 rounded-r-md border-l-2 border-[var(--color-border-secondary)]"
+      style="background-color: color-mix(in srgb, var(--color-text-primary) 4%, transparent)"
+    >
       <NoteTreeNode
         v-for="child in node.children"
         :key="child.path"
@@ -109,14 +112,22 @@ const indent = (props.depth ?? 0) * 16
       />
     </div>
 
+    <!-- Empty folder indicator -->
+    <div
+      v-if="node.isFolder && expanded && node.children.length === 0"
+      class="ml-2 mt-0.5 mb-0.5 rounded-r-md border-l-2 border-[var(--color-border-secondary)] py-1.5 pl-3 text-[11px] text-[var(--color-text-dimmed)] italic"
+      style="background-color: color-mix(in srgb, var(--color-text-primary) 4%, transparent)"
+    >
+      Empty
+    </div>
+
     <!-- File node -->
     <div
       v-if="!node.isFolder"
-      class="group/node relative flex items-center gap-1.5 rounded-md px-2 py-1 text-sm cursor-pointer select-none transition-colors"
+      class="group/node relative flex items-center gap-1.5 rounded-md pl-[26px] pr-2 py-1 text-sm cursor-pointer select-none transition-colors"
       :class="activePath === node.path
         ? 'bg-[var(--color-bg-accent)] text-[var(--color-text-inverted)]'
         : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'"
-      :style="{ paddingLeft: `${indent + 24}px` }"
       role="treeitem"
       :aria-selected="activePath === node.path"
       tabindex="0"
@@ -144,7 +155,7 @@ const indent = (props.depth ?? 0) * 16
       <!-- File actions (hover) -->
       <div
         class="ml-auto flex items-center gap-0.5 transition-opacity"
-        :class="activePath === node.path ? 'opacity-70 hover:opacity-100' : 'opacity-0 group-hover/node:opacity-100 group-focus-within/node:opacity-100'"
+        :class="activePath === node.path ? 'opacity-70 hover:opacity-100' : 'opacity-0 pointer-events-none group-hover/node:opacity-100 group-hover/node:pointer-events-auto group-focus-within/node:opacity-100 group-focus-within/node:pointer-events-auto'"
       >
         <button
           v-if="!isSessionLog"
