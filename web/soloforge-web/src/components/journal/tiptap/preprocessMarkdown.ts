@@ -12,7 +12,7 @@ const KNOWN_ROLL_TYPES = new Set([
   'Dice Roll',
 ])
 
-function encodeAttr(s: string): string {
+export function encodeAttr(s: string): string {
   return s
     .replace(/&/g, '&amp;')
     .replace(/"/g, '&quot;')
@@ -21,7 +21,7 @@ function encodeAttr(s: string): string {
     .replace(/\n/g, '&#10;')
 }
 
-function parseTableFields(tableText: string): { rollType: string; fields: Record<string, string> } | null {
+export function parseTableFields(tableText: string): { rollType: string; fields: Record<string, string> } | null {
   const lines = tableText.split('\n')
   if (lines.length < 3) return null
 

@@ -31,12 +31,22 @@ dotnet test
 # Run a single .NET test
 dotnet test tests/SoloForge.Core.Tests --filter "FullyQualifiedName~Namespace.Class.Method"
 
+# Run frontend unit tests (Vitest + jsdom)
+npm --prefix web/soloforge-web run test
+
+# Run frontend unit tests in watch mode
+npm --prefix web/soloforge-web run test:watch
+
+# Run frontend unit tests with coverage
+npm --prefix web/soloforge-web run test:coverage
+
 # Run Playwright e2e tests (from web/soloforge-web/)
 # Requires both API and Vite dev server — start-dev.sh is launched automatically
 npm --prefix web/soloforge-web run test:e2e
 ```
 
 - .NET test project: `tests/SoloForge.Core.Tests`
+- Frontend unit tests: `web/soloforge-web/src/**/__tests__/` (Vitest + jsdom)
 - E2E test directory: `web/soloforge-web/e2e/` (Playwright + Chromium)
 
 ## Lint / Format
@@ -95,6 +105,32 @@ Engine calls produce result records -> `HistoryService.AddEntry` logs them -> `J
 - Always include appropriate ARIA attributes (`aria-label`, `aria-pressed`, `aria-expanded`, `role`, `tabindex`, etc.) on interactive elements — buttons, toggles, selects, custom controls. Low effort, keeps the app accessible.
 - Sanitize all `v-html` bindings with DOMPurify
 - Use CSS custom properties (`var(--color-*)`) for theming, not Tailwind `dark:` variants
+
+## Frontend Unit Testing (Vitest)
+
+Tests live in colocated `__tests__/` directories next to source files. Config: `web/soloforge-web/vitest.config.ts`.
+
+**Test locations:**
+- `web/soloforge-web/src/composables/__tests__/` — composable unit tests
+- `web/soloforge-web/src/components/journal/tiptap/__tests__/` — Tiptap utility tests
+
+**When to add unit tests:**
+- Any new composable with business logic (validation, data transformation, state management)
+- Pure utility functions (formatters, parsers, encoders)
+- Bug fixes in composable logic — add a regression test
+
+**When NOT to unit test (use e2e instead):**
+- Thin API wrappers with no branching logic (e.g., `useCampaign`, `useHistory`, `useAdventure`)
+- Vue component rendering behavior
+- Multi-composable orchestration (e.g., `useToolActions`)
+
+**How to write them:**
+- Use explicit imports: `import { describe, it, expect } from 'vitest'`
+- For composables with module-level singleton state (refs declared outside the function), use `vi.resetModules()` + dynamic `await import(...)` in `beforeEach` to isolate tests
+- For localStorage-dependent composables, create a mock storage with `vi.stubGlobal('localStorage', mockStorage)` before the dynamic import
+- For timer-based composables (debounce, auto-dismiss), use `vi.useFakeTimers()` and `vi.advanceTimersByTimeAsync()`
+- For API-dependent composables, mock with `vi.mock('../useApi')` and `vi.mocked(apiSend).mockResolvedValue(...)`
+- Vue `ref()`/`computed()` work standalone in Vitest without a Vue app instance — no `@vue/test-utils` mount needed for composable tests
 
 ## E2E Testing (Playwright)
 

@@ -28,7 +28,7 @@ const KNOWN_ROLL_TYPES: ReadonlySet<string> = new Set<RollType>([
   'Dice Roll',
 ])
 
-function hashId(raw: string, index: number): string {
+export function hashId(raw: string, index: number): string {
   let hash = 0
   const str = raw.slice(0, 120) + ':' + index
   for (let i = 0; i < str.length; i++) {
@@ -38,7 +38,7 @@ function hashId(raw: string, index: number): string {
   return 's' + Math.abs(hash).toString(36)
 }
 
-function parseTableFields(tableText: string): { rollType: RollType; fields: Record<string, string> } | null {
+export function parseTableFields(tableText: string): { rollType: RollType; fields: Record<string, string> } | null {
   const lines = tableText.split('\n')
   if (lines.length < 3) return null
 
@@ -59,7 +59,7 @@ function parseTableFields(tableText: string): { rollType: RollType; fields: Reco
   return { rollType: rollType as RollType, fields }
 }
 
-function parseSegments(text: string): JournalSegment[] {
+export function parseSegments(text: string): JournalSegment[] {
   if (!text.trim()) return []
 
   const lines = text.split('\n')
