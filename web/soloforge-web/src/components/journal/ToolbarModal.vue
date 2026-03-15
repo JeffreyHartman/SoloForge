@@ -42,10 +42,10 @@ const toolLabel = computed(() => {
         </button>
       </div>
 
-      <FateCheckPanel v-if="toolId === 'fate-check'" mode="toolbar" />
-      <SceneCheckPanel v-else-if="toolId === 'scene-check'" mode="toolbar" />
-      <MeaningPanel v-else-if="toolId === 'meaning'" mode="toolbar" />
-      <DiceRollerPanel v-else-if="toolId === 'dice-roller'" mode="toolbar" />
+      <FateCheckPanel v-if="toolId === 'fate-check'" mode="toolbar" @rolled="emit('close')" />
+      <SceneCheckPanel v-else-if="toolId === 'scene-check'" mode="toolbar" @rolled="emit('close')" />
+      <MeaningPanel v-else-if="toolId === 'meaning'" mode="toolbar" @rolled="emit('close')" />
+      <DiceRollerPanel v-else-if="toolId === 'dice-roller'" mode="toolbar" @rolled="emit('close')" />
     </div>
   </div>
 </template>

@@ -6,18 +6,26 @@ import BaseInput from '../common/BaseInput.vue'
 import { useMythic } from '../../composables/useMythic'
 import { useCampaign } from '../../composables/useCampaign'
 import { useToolActions } from '../../composables/useToolActions'
+import { useResultBanner, formatSceneResult } from '../../composables/useResultBanner'
 import { sceneCheckToMarkdown, copyToClipboard } from '../../composables/useRollMarkdown'
 
-withDefaults(defineProps<{ mode?: 'full' | 'toolbar' }>(), { mode: 'full' })
+const props = withDefaults(defineProps<{ mode?: 'full' | 'toolbar' }>(), { mode: 'full' })
+
+const emit = defineEmits<{ rolled: [] }>()
 
 const { sceneContext, sceneResult, runSceneCheck, loading } = useMythic()
 const { session } = useCampaign()
 const { apiOnline, runAction } = useToolActions()
+const { showBanner } = useResultBanner()
 
 const copied = ref(false)
 
-function handleRoll() {
-  void runAction(() => runSceneCheck())
+async function handleRoll() {
+  await runAction(() => runSceneCheck())
+  if (sceneResult.value && props.mode === 'toolbar') {
+    showBanner(formatSceneResult(sceneResult.value))
+    emit('rolled')
+  }
 }
 
 async function handleCopy() {
@@ -133,38 +141,6 @@ async function handleCopy() {
       >
         Check scene
       </BaseButton>
-    </div>
-
-    <div v-if="sceneResult" class="rounded-xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-3">
-      <div
-        class="text-base font-semibold"
-        :class="
-          sceneResult.scene.result === 'Normal Scene'
-            ? 'text-[var(--color-text-success)]'
-            : sceneResult.scene.result.includes('Altered')
-              ? 'text-[var(--color-text-warning)]'
-              : sceneResult.scene.result.includes('Interrupt')
-                ? 'text-[var(--color-text-danger)]'
-                : 'text-[var(--color-text-primary)]'
-        "
-      >
-        {{ sceneResult.scene.result }}
-      </div>
-      <div class="mt-0.5 text-xs text-[var(--color-text-muted)]">
-        Roll {{ sceneResult.scene.roll }} · Chaos {{ sceneResult.chaos }}
-      </div>
-
-      <div v-if="sceneResult.scene.sceneAdjustment" class="mt-2 rounded-lg border border-[var(--color-border-warning)] bg-[var(--color-bg-warning-subtle)] p-2">
-        <div class="text-xs font-semibold text-[var(--color-text-warning)]">Scene adjustment</div>
-        <div class="mt-0.5 text-sm font-semibold text-[var(--color-text-primary)]">{{ sceneResult.scene.sceneAdjustment }}</div>
-      </div>
-
-      <div v-if="sceneResult.scene.randomEvent" class="mt-2 rounded-lg border border-[var(--color-border-info)] bg-[var(--color-bg-info)] p-2">
-        <div class="text-xs font-semibold text-[var(--color-text-info)]">Random event</div>
-        <div class="mt-0.5 text-sm font-semibold text-[var(--color-text-primary)]">
-          {{ sceneResult.scene.randomEvent.eventFocus }}: {{ sceneResult.scene.randomEvent.eventAction }}
-        </div>
-      </div>
     </div>
   </div>
 </template>

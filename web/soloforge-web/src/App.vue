@@ -13,10 +13,12 @@ import {
   useMythic,
 } from './composables'
 import { useNotes } from './composables/useNotes'
+import { useResultBanner } from './composables/useResultBanner'
 
 import AppHeader from './components/layout/AppHeader.vue'
 import AppNav from './components/layout/AppNav.vue'
 import ToastContainer from './components/common/ToastContainer.vue'
+import ResultBanner from './components/common/ResultBanner.vue'
 import DashboardView from './views/DashboardView.vue'
 import ToolsView from './views/ToolsView.vue'
 import AdventureView from './views/AdventureView.vue'
@@ -34,6 +36,7 @@ const historyState = useHistory()
 const adventure = useAdventure()
 const tables = useTables()
 const mythic = useMythic()
+const { clearLastEvent } = useResultBanner()
 
 // View navigation
 const currentView = ref<ViewName>('dashboard')
@@ -103,6 +106,7 @@ async function loadCampaign(id: string) {
       notesState.refreshTree(campaign.currentCampaignId.value),
     ])
     mythic.clearResults()
+    clearLastEvent()
   } catch (err) {
     setError(err)
   }
@@ -278,6 +282,7 @@ onMounted(() => {
       />
     </main>
 
+    <ResultBanner />
     <ToastContainer />
   </div>
 </template>

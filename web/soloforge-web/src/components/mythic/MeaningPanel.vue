@@ -8,9 +8,12 @@ import BaseSelect from '../common/BaseSelect.vue'
 import { useMythic } from '../../composables/useMythic'
 import { useTables } from '../../composables/useTables'
 import { useToolActions } from '../../composables/useToolActions'
+import { useResultBanner, formatMeaningResult, formatQuickSetResult } from '../../composables/useResultBanner'
 import { meaningToMarkdown, quickSetToMarkdown, copyToClipboard } from '../../composables/useRollMarkdown'
 
-withDefaults(defineProps<{ mode?: 'full' | 'toolbar' }>(), { mode: 'full' })
+const props = withDefaults(defineProps<{ mode?: 'full' | 'toolbar' }>(), { mode: 'full' })
+
+const emit = defineEmits<{ rolled: [] }>()
 
 const {
   meaningMode, meaningContext, meaningTableId, meaningFusionTable1, meaningFusionTable2,
@@ -18,12 +21,22 @@ const {
 } = useMythic()
 const { tableGroups, quickSets } = useTables()
 const { apiOnline, runAction } = useToolActions()
+const { showBanner } = useResultBanner()
 
 const copiedMeaning = ref(false)
 const copiedQuickSet = ref(false)
 
-function handleRoll() {
-  void runAction(() => runMeaning())
+async function handleRoll() {
+  await runAction(() => runMeaning())
+  if (props.mode === 'toolbar') {
+    if (meaningResult.value) {
+      showBanner(formatMeaningResult(meaningResult.value, meaningMeta.value))
+      emit('rolled')
+    } else if (quickSetResult.value) {
+      showBanner(formatQuickSetResult(quickSetResult.value))
+      emit('rolled')
+    }
+  }
 }
 
 async function handleCopyMeaning() {
@@ -219,35 +232,6 @@ const modes: { id: MeaningMode; label: string }[] = [
       >
         Roll
       </BaseButton>
-    </div>
-
-    <div v-if="meaningResult" class="rounded-xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-3">
-      <div class="text-base font-semibold text-[var(--color-text-primary)]">{{ meaningResult.combined }}</div>
-      <div class="mt-0.5 text-xs text-[var(--color-text-muted)]">
-        <span v-if="meaningMeta">{{ meaningMeta }}</span>
-        <span v-else>{{ meaningResult.tableName }}</span>
-      </div>
-      <div class="mt-2 grid grid-cols-2 gap-2">
-        <div class="rounded-lg bg-[var(--color-bg-muted)] px-2 py-1.5">
-          <div class="text-[11px] font-medium text-[var(--color-text-dimmed)]">Word 1</div>
-          <div class="text-sm font-semibold text-[var(--color-text-primary)]">{{ meaningResult.word1 }}</div>
-        </div>
-        <div class="rounded-lg bg-[var(--color-bg-muted)] px-2 py-1.5">
-          <div class="text-[11px] font-medium text-[var(--color-text-dimmed)]">Word 2</div>
-          <div class="text-sm font-semibold text-[var(--color-text-primary)]">{{ meaningResult.word2 }}</div>
-        </div>
-      </div>
-    </div>
-
-    <div v-if="quickSetResult" class="rounded-xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-3">
-      <div class="text-sm font-semibold text-[var(--color-text-primary)]">{{ quickSetResult.quickSet.name }}</div>
-      <div class="mt-0.5 text-xs text-[var(--color-text-muted)]">{{ quickSetResult.quickSet.description }}</div>
-      <div class="mt-2 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-muted)] p-2">
-        <div v-for="r in quickSetResult.results" :key="r.label" class="py-0.5 text-sm">
-          <span class="font-semibold text-[var(--color-text-primary)]">{{ r.label }}:</span>
-          <span class="text-[var(--color-text-secondary)]"> {{ r.combined }}</span>
-        </div>
-      </div>
     </div>
   </div>
 </template>

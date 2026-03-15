@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useToolbarPrefs } from '../../composables/useToolbarPrefs'
-import { useToast } from '../../composables/useToast'
 import { useMythic } from '../../composables/useMythic'
 import { useToolActions } from '../../composables/useToolActions'
+import { useResultBanner, formatRandomResult, formatDiceResult } from '../../composables/useResultBanner'
 import { getPinnableTool } from '../../tools/pinnableTools'
 import type { ToolbarItem } from '../../composables/useToolbarPrefs'
 
@@ -12,9 +12,9 @@ const emit = defineEmits<{
 }>()
 
 const { prefs, moveItem, addSeparator, removeItem, updateSeparatorLabel } = useToolbarPrefs()
-const { addToast } = useToast()
 const { runRandomEvent, randomResult, rollDice, diceResult } = useMythic()
 const { runAction, apiOnline } = useToolActions()
+const { showBanner } = useResultBanner()
 
 const editMode = ref(false)
 const dragIndex = ref<number | null>(null)
@@ -38,25 +38,17 @@ async function runInstant(toolId: string) {
       await runRandomEvent()
     })
     if (randomResult.value) {
-      addToast({
-        title: randomResult.value.eventFocus,
-        detail: randomResult.value.eventAction,
-        variant: 'info',
-      })
+      showBanner(formatRandomResult(randomResult.value))
     }
   }
 }
 
-async function handleQuickDice(expression: string, label: string) {
+async function handleQuickDice(expression: string) {
   await runAction(async () => {
     await rollDice(expression)
   })
   if (diceResult.value) {
-    addToast({
-      title: `${label} → ${diceResult.value.roll.total}`,
-      detail: diceResult.value.roll.summary,
-      variant: 'info',
-    })
+    showBanner(formatDiceResult(diceResult.value))
   }
 }
 
@@ -188,7 +180,7 @@ function commitSeparatorLabel() {
               class="rounded-full border border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)] px-2 py-0.5 text-[11px] font-semibold text-[var(--color-text-primary)] shadow-sm transition hover:bg-[var(--color-bg-hover)]"
               :disabled="!apiOnline"
               :aria-label="`Roll ${sub.expression}`"
-              @click="handleQuickDice(sub.expression, sub.label)"
+              @click="handleQuickDice(sub.expression)"
             >
               {{ sub.label }}
             </button>

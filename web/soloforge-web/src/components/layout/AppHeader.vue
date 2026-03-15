@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ThemePicker from './ThemePicker.vue'
+import LastEvent from './LastEvent.vue'
 
 defineProps<{
   campaignName: string
@@ -29,6 +30,8 @@ defineEmits<{
       </div>
 
       <div class="flex items-center gap-2">
+        <LastEvent />
+
         <div class="rounded-2xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] px-3 py-2 text-center shadow-sm">
           <div class="text-[11px] font-medium text-[var(--color-text-dimmed)]">Chaos</div>
           <div class="mt-0.5 text-lg font-semibold tabular-nums text-[var(--color-text-primary)]">{{ chaos }}</div>

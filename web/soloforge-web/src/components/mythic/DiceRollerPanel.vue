@@ -6,17 +6,25 @@ import BaseButton from '../common/BaseButton.vue'
 import BaseInput from '../common/BaseInput.vue'
 import { useMythic } from '../../composables/useMythic'
 import { useToolActions } from '../../composables/useToolActions'
+import { useResultBanner, formatDiceResult } from '../../composables/useResultBanner'
 import { diceRollToMarkdown, copyToClipboard } from '../../composables/useRollMarkdown'
 
-withDefaults(defineProps<{ mode?: 'full' | 'toolbar' }>(), { mode: 'full' })
+const props = withDefaults(defineProps<{ mode?: 'full' | 'toolbar' }>(), { mode: 'full' })
+
+const emit = defineEmits<{ rolled: [] }>()
 
 const { diceExpression, diceResult, rollDice, loading } = useMythic()
 const { apiOnline, runAction } = useToolActions()
+const { showBanner } = useResultBanner()
 
 const copied = ref(false)
 
-function handleRoll(expr?: string) {
-  void runAction(() => rollDice(expr))
+async function handleRoll(expr?: string) {
+  await runAction(() => rollDice(expr))
+  if (diceResult.value && props.mode === 'toolbar') {
+    showBanner(formatDiceResult(diceResult.value))
+    emit('rolled')
+  }
 }
 
 async function handleCopy() {
@@ -120,13 +128,6 @@ async function handleCopy() {
       >
         Roll
       </BaseButton>
-    </div>
-
-    <div v-if="diceResult" class="rounded-xl border border-[var(--color-border-card)] bg-[var(--color-bg-card-solid)] p-3">
-      <div class="text-base font-semibold text-[var(--color-text-primary)]">{{ diceResult.roll.summary }}</div>
-      <div v-if="diceResult.breakdown" class="mt-1 rounded-lg bg-[var(--color-bg-muted)] px-2 py-1.5 font-mono text-[12px] leading-5 text-[var(--color-text-secondary)]">
-        {{ diceResult.breakdown }}
-      </div>
     </div>
   </div>
 </template>
