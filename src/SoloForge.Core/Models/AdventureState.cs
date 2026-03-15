@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace SoloForge.Console.Models;
+namespace SoloForge.Core.Models;
 
 /// <summary>
 /// Represents the current adventure state including characters and plot threads.

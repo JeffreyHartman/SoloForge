@@ -1,4 +1,4 @@
-namespace SoloForge.Console.Models;
+namespace SoloForge.Core.Models;
 
 /// <summary>
 /// Application-level settings that persist across campaigns.

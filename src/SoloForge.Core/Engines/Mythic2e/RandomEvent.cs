@@ -1,7 +1,7 @@
-using SoloForge.Console.Models;
-using SoloForge.Console.Services;
+using SoloForge.Core.Models;
+using SoloForge.Core.Services;
 
-namespace SoloForge.Console.Engines.Mythic2e;
+namespace SoloForge.Core.Engines.Mythic2e;
 
 /// <summary>
 /// Implements the Mythic 2e Random Event system.

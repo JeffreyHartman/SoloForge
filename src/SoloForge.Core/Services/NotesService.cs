@@ -1,7 +1,7 @@
 using Serilog;
-using SoloForge.Console.Models;
+using SoloForge.Core.Models;
 
-namespace SoloForge.Console.Services;
+namespace SoloForge.Core.Services;
 
 /// <summary>
 /// Manages a directory-based notes vault per campaign.

@@ -1,4 +1,4 @@
-namespace SoloForge.Console.Services;
+namespace SoloForge.Core.Services;
 
 public sealed class TableServiceWordSource : ITableWordSource
 {

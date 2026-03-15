@@ -1,4 +1,4 @@
-namespace SoloForge.Console.Models;
+namespace SoloForge.Core.Models;
 
 /// <summary>
 /// Types of log entries that can be recorded in the journal.

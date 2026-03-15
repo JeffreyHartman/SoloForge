@@ -1,4 +1,4 @@
-namespace SoloForge.Console.Models;
+namespace SoloForge.Core.Models;
 
 /// <summary>
 /// Represents a configurable "Quick Set" - a collection of table rolls

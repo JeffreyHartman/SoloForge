@@ -1,6 +1,6 @@
-using SoloForge.Console.Models;
+using SoloForge.Core.Models;
 
-namespace SoloForge.Console.Services;
+namespace SoloForge.Core.Services;
 
 public sealed class TemplateServiceRenderer : ITemplateRenderer
 {

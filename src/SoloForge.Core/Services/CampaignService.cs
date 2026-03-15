@@ -1,9 +1,9 @@
 using System.Text.Json;
 using Serilog;
-using SoloForge.Console.Core;
-using SoloForge.Console.Models;
+using SoloForge.Core.Core;
+using SoloForge.Core.Models;
 
-namespace SoloForge.Console.Services;
+namespace SoloForge.Core.Services;
 
 /// <summary>
 /// Orchestrates campaign persistence across Session, AdventureStateManager, and HistoryService.
@@ -335,14 +335,6 @@ public sealed class CampaignService
             var candidate = Path.Combine(current.FullName, "saves");
             if (Directory.Exists(candidate))
                 return candidate;
-
-            // If we find src/SoloForge.Console, create saves there
-            var srcCandidate = Path.Combine(current.FullName, "src", "SoloForge.Console", "saves");
-            if (Directory.Exists(Path.GetDirectoryName(srcCandidate)))
-            {
-                Directory.CreateDirectory(srcCandidate);
-                return srcCandidate;
-            }
 
             current = current.Parent;
         }

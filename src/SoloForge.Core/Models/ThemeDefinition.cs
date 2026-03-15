@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace SoloForge.Console.Models;
+namespace SoloForge.Core.Models;
 
 /// <summary>
 /// Root container for themes loaded from themes.json.

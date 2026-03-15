@@ -1,6 +1,6 @@
-using SoloForge.Console.Models;
+using SoloForge.Core.Models;
 
-namespace SoloForge.Console.Tests;
+namespace SoloForge.Core.Tests;
 
 public class DiceExpressionTests
 {

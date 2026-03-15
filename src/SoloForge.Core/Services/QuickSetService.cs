@@ -1,8 +1,8 @@
 using System.Text.Json;
 using Serilog;
-using SoloForge.Console.Models;
+using SoloForge.Core.Models;
 
-namespace SoloForge.Console.Services;
+namespace SoloForge.Core.Services;
 
 /// <summary>
 /// Service for loading and managing Quick Sets - configurable table roll collections.

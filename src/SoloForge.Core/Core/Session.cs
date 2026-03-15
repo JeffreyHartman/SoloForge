@@ -1,4 +1,4 @@
-namespace SoloForge.Console.Core;
+namespace SoloForge.Core.Core;
 
 /// <summary>
 /// Session state container for chaos factor, engine, and theme.

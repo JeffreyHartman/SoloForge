@@ -1,6 +1,6 @@
 using System.Linq;
 
-namespace SoloForge.Console.Models;
+namespace SoloForge.Core.Models;
 
 public sealed record DiceRollResult(
     DiceExpression Expression,

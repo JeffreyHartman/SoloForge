@@ -1,5 +1,5 @@
 using SoloForge.Api.Models;
-using SoloForge.Console.Services;
+using SoloForge.Core.Services;
 
 namespace SoloForge.Api.Endpoints;
 

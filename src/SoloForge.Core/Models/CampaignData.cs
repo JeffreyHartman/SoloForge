@@ -1,4 +1,4 @@
-namespace SoloForge.Console.Models;
+namespace SoloForge.Core.Models;
 
 /// <summary>
 /// Root DTO for campaign JSON serialization.

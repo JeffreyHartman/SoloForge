@@ -1,6 +1,6 @@
 using SoloForge.Api.Models;
-using SoloForge.Console.Core;
-using SoloForge.Console.Services;
+using SoloForge.Core.Core;
+using SoloForge.Core.Services;
 
 namespace SoloForge.Api.Endpoints;
 

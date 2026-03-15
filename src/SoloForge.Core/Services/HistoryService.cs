@@ -1,6 +1,6 @@
-using SoloForge.Console.Models;
+using SoloForge.Core.Models;
 
-namespace SoloForge.Console.Services;
+namespace SoloForge.Core.Services;
 
 /// <summary>
 /// Manages the in-memory history/journal of campaign events.

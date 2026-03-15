@@ -1,7 +1,7 @@
-using SoloForge.Console.Engines.Mythic2e;
-using SoloForge.Console.Services;
+using SoloForge.Core.Engines.Mythic2e;
+using SoloForge.Core.Services;
 
-namespace SoloForge.Console.Tests;
+namespace SoloForge.Core.Tests;
 
 public class SceneCheckTests
 {
@@ -24,7 +24,7 @@ public class SceneCheckTests
         var rng = new Mock<IRng>();
         rng.Setup(r => r.Next(1, 11)).Returns(4);
 
-        var eventResult = new SoloForge.Console.Models.RandomEventResult("Focus", "Action");
+        var eventResult = new SoloForge.Core.Models.RandomEventResult("Focus", "Action");
         var result = SceneCheck.PerformCheck(chaosFactor: 5, rng: rng.Object, randomEventGenerator: () => eventResult);
 
         result.Result.Should().Be("Interrupt Scene!");

@@ -1,4 +1,4 @@
-namespace SoloForge.Console.Models;
+namespace SoloForge.Core.Models;
 
 /// <summary>
 /// Represents a file or folder in a campaign's notes vault.

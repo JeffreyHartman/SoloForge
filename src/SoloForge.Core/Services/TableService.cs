@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.RegularExpressions;
 
-namespace SoloForge.Console.Services;
+namespace SoloForge.Core.Services;
 
 /// <summary>
 /// Provides dynamic discovery, caching, and access to word tables from the data directory.

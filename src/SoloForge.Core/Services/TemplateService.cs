@@ -1,8 +1,8 @@
 using System.Text.RegularExpressions;
 using Serilog;
-using SoloForge.Console.Models;
+using SoloForge.Core.Models;
 
-namespace SoloForge.Console.Services;
+namespace SoloForge.Core.Services;
 
 /// <summary>
 /// Service for loading and processing markdown templates for log entries.
@@ -222,11 +222,6 @@ public sealed partial class TemplateService
             var templatesPath = Path.Combine(currentDir.FullName, "templates");
             if (Directory.Exists(templatesPath))
                 return templatesPath;
-
-            // Also check src/SoloForge.Console for development
-            var srcPath = Path.Combine(currentDir.FullName, "src", "SoloForge.Console", "templates");
-            if (Directory.Exists(srcPath))
-                return srcPath;
 
             currentDir = currentDir.Parent;
         }

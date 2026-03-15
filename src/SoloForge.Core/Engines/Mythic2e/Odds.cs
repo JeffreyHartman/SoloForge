@@ -1,4 +1,4 @@
-namespace SoloForge.Console.Engines.Mythic2e;
+namespace SoloForge.Core.Engines.Mythic2e;
 
 /// <summary>
 /// Represents the nine odds levels in Mythic 2e Fate Check system.

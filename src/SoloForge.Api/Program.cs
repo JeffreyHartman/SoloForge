@@ -3,8 +3,8 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http.Json;
 
 using SoloForge.Api.Endpoints;
-using SoloForge.Console.Core;
-using SoloForge.Console.Services;
+using SoloForge.Core.Core;
+using SoloForge.Core.Services;
 
 AppLogger.Initialize();
 

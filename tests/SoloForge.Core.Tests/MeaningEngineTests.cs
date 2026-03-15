@@ -1,7 +1,7 @@
-using SoloForge.Console.Engines.Mythic2e;
-using SoloForge.Console.Services;
+using SoloForge.Core.Engines.Mythic2e;
+using SoloForge.Core.Services;
 
-namespace SoloForge.Console.Tests;
+namespace SoloForge.Core.Tests;
 
 public class MeaningEngineTests
 {

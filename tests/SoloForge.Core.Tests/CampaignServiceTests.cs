@@ -1,7 +1,7 @@
-using SoloForge.Console.Core;
-using SoloForge.Console.Services;
+using SoloForge.Core.Core;
+using SoloForge.Core.Services;
 
-namespace SoloForge.Console.Tests;
+namespace SoloForge.Core.Tests;
 
 public class CampaignServiceTests
 {

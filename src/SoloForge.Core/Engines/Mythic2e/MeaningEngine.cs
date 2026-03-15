@@ -1,6 +1,6 @@
-using SoloForge.Console.Services;
+using SoloForge.Core.Services;
 
-namespace SoloForge.Console.Engines.Mythic2e;
+namespace SoloForge.Core.Engines.Mythic2e;
 
 /// <summary>
 /// Implements the Mythic 2e "Discovering Meaning" system for generating

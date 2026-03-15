@@ -2,7 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Serilog;
 using Serilog.Events;
 
-namespace SoloForge.Console.Services;
+namespace SoloForge.Core.Services;
 
 /// <summary>
 /// Application logger service using Serilog.
@@ -122,16 +122,9 @@ public static class AppLogger
 
         while (currentDir != null)
         {
-            // Look for the solution or project file
-            if (File.Exists(Path.Combine(currentDir.FullName, "SoloForge.Console.csproj")) ||
-                File.Exists(Path.Combine(currentDir.FullName, "src", "SoloForge.Console", "SoloForge.Console.csproj")))
-            {
-                // Return the repo root (parent of src)
-                var srcPath = Path.Combine(currentDir.FullName, "src");
-                if (Directory.Exists(srcPath))
-                    return currentDir.FullName;
-                return currentDir.Parent?.FullName;
-            }
+            // Look for the solution file at repo root
+            if (File.Exists(Path.Combine(currentDir.FullName, "SoloForge.slnx")))
+                return currentDir.FullName;
 
             currentDir = currentDir.Parent;
         }
@@ -149,10 +142,6 @@ public static class AppLogger
             var settingsPath = Path.Combine(currentDir.FullName, "appsettings.json");
             if (File.Exists(settingsPath))
                 return settingsPath;
-
-            var srcPath = Path.Combine(currentDir.FullName, "src", "SoloForge.Console", "appsettings.json");
-            if (File.Exists(srcPath))
-                return srcPath;
 
             currentDir = currentDir.Parent;
         }

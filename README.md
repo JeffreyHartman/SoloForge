@@ -20,7 +20,6 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 - **src/SoloForge.Core** — Shared library: Mythic 2e engines, models, and services
 - **src/SoloForge.Api** — ASP.NET minimal API backend (http://localhost:5137)
-- **src/SoloForge.Console** — Terminal.Gui console app (legacy)
 - **web/soloforge-web** — Vue 3 + TypeScript + Tailwind CSS frontend
 - **data/** — Word tables, quick sets, and theme definitions
 - **tests/** — xunit tests

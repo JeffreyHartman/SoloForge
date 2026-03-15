@@ -1,6 +1,6 @@
 using System.Linq;
 
-namespace SoloForge.Console.Models;
+namespace SoloForge.Core.Models;
 
 public sealed record DiceExpression(IReadOnlyList<DiceTerm> Terms, int Modifier)
 {
