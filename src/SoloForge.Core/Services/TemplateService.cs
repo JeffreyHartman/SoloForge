@@ -213,21 +213,10 @@ public sealed partial class TemplateService
 
     private static string FindTemplatesDirectory()
     {
-        // Look for templates directory relative to executable
-        var baseDir = AppContext.BaseDirectory;
-        var currentDir = new DirectoryInfo(baseDir);
-
-        while (currentDir != null)
-        {
-            var templatesPath = Path.Combine(currentDir.FullName, "templates");
-            if (Directory.Exists(templatesPath))
-                return templatesPath;
-
-            currentDir = currentDir.Parent;
-        }
-
-        // Return default path even if it doesn't exist
-        return Path.Combine(baseDir, "templates");
+        var root = AppLogger.FindProjectRoot();
+        return root != null
+            ? Path.Combine(root, "templates")
+            : Path.Combine(AppContext.BaseDirectory, "templates");
     }
 
     #region Default Templates

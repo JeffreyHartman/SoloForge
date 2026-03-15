@@ -324,22 +324,11 @@ public sealed class CampaignService
 
     private static string FindOrCreateSavesDirectory()
     {
-        // Try relative to executable first
-        var baseDir = AppContext.BaseDirectory;
-        var savesDir = Path.Combine(baseDir, "saves");
+        var root = AppLogger.FindProjectRoot();
+        var savesDir = root != null
+            ? Path.Combine(root, "saves")
+            : Path.Combine(AppContext.BaseDirectory, "saves");
 
-        // Walk up looking for existing saves directory or src folder
-        var current = new DirectoryInfo(baseDir);
-        while (current != null)
-        {
-            var candidate = Path.Combine(current.FullName, "saves");
-            if (Directory.Exists(candidate))
-                return candidate;
-
-            current = current.Parent;
-        }
-
-        // Default: create next to executable
         Directory.CreateDirectory(savesDir);
         return savesDir;
     }

@@ -98,31 +98,24 @@ public static class AppLogger
 
     private static string GetLogPath()
     {
-        // Store logs in a 'logs' directory relative to the app
-        var baseDir = AppContext.BaseDirectory;
+        var root = FindProjectRoot();
+        var logDir = root != null
+            ? Path.Combine(root, "logs")
+            : Path.Combine(AppContext.BaseDirectory, "logs");
 
-        // For development, try to find project root
-        var projectRoot = FindProjectRoot();
-        if (projectRoot != null)
-        {
-            var devLogDir = Path.Combine(projectRoot, "logs");
-            Directory.CreateDirectory(devLogDir);
-            return Path.Combine(devLogDir, "soloforge-.log");
-        }
-
-        // Production: use app directory
-        var logDir = Path.Combine(baseDir, "logs");
         Directory.CreateDirectory(logDir);
         return Path.Combine(logDir, "soloforge-.log");
     }
 
-    private static string? FindProjectRoot()
+    /// <summary>
+    /// Returns the repo root (directory containing SoloForge.slnx), or null in production.
+    /// </summary>
+    public static string? FindProjectRoot()
     {
         var currentDir = new DirectoryInfo(AppContext.BaseDirectory);
 
         while (currentDir != null)
         {
-            // Look for the solution file at repo root
             if (File.Exists(Path.Combine(currentDir.FullName, "SoloForge.slnx")))
                 return currentDir.FullName;
 
@@ -134,18 +127,15 @@ public static class AppLogger
 
     private static string? FindSettingsFile()
     {
-        var baseDir = AppContext.BaseDirectory;
-        var currentDir = new DirectoryInfo(baseDir);
-
-        while (currentDir != null)
+        var root = FindProjectRoot();
+        if (root != null)
         {
-            var settingsPath = Path.Combine(currentDir.FullName, "appsettings.json");
-            if (File.Exists(settingsPath))
-                return settingsPath;
-
-            currentDir = currentDir.Parent;
+            var rootSettings = Path.Combine(root, "appsettings.json");
+            if (File.Exists(rootSettings))
+                return rootSettings;
         }
 
-        return null;
+        var local = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+        return File.Exists(local) ? local : null;
     }
 }
