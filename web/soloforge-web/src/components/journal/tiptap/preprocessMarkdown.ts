@@ -45,6 +45,17 @@ function parseTableFields(tableText: string): { rollType: string; fields: Record
 export function preprocessForWysiwyg(markdown: string): string {
   if (!markdown) return ''
 
+  // Preserve extra blank lines by converting them to <p></p> tags.
+  // markdown-it collapses consecutive blank lines into a single paragraph
+  // break, so we replace each extra blank line with an HTML empty paragraph
+  // that tiptap will parse as an empty paragraph node.
+  markdown = markdown.replace(/\n{3,}/g, (match) => {
+    // N newlines = N-1 line breaks. Standard paragraph break uses 2 newlines
+    // (1 blank line). Each additional blank line needs an empty <p></p>.
+    const extraBlanks = match.length - 2
+    return '\n\n' + '<p></p>\n\n'.repeat(extraBlanks)
+  })
+
   const lines = markdown.split('\n')
   const result: string[] = []
   let i = 0

@@ -3,7 +3,7 @@ import { ref, watch, onBeforeUnmount, nextTick } from 'vue'
 import { Selection } from '@tiptap/pm/state'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
-import HardBreak from '@tiptap/extension-hard-break'
+import Paragraph from '@tiptap/extension-paragraph'
 import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table'
 import Placeholder from '@tiptap/extension-placeholder'
 import { Markdown } from 'tiptap-markdown'
@@ -32,29 +32,22 @@ const editor = useEditor({
   content: preprocessForWysiwyg(props.content ?? ''),
   editable: !props.disabled,
   extensions: [
-    StarterKit.configure({ hardBreak: false }),
-    HardBreak.extend({
-      addKeyboardShortcuts() {
-        return {
-          // Enter → hard break (single newline) only inside paragraphs.
-          // In headings/other blocks, fall through to default (exits the block).
-          Enter: () => {
-            const { $from } = this.editor.state.selection
-            if ($from.parent.type.name !== 'paragraph') return false
-            return this.editor.commands.setHardBreak()
-          },
-        }
-      },
+    StarterKit,
+    // Override the paragraph markdown serializer so empty paragraphs
+    // produce blank lines instead of being silently collapsed.
+    Paragraph.extend({
       addStorage() {
         return {
           markdown: {
-            serialize(state: any, node: any, parent: any, index: number) {
-              // Only emit newline if there's real content after this break
-              for (let i = index + 1; i < parent.childCount; i++) {
-                if (parent.child(i).type !== node.type) {
-                  state.write('\n')
-                  return
-                }
+            serialize(state: any, node: any) {
+              if (node.childCount === 0) {
+                // Force flushClose for the previous block, then close this one,
+                // so an empty paragraph becomes a blank line in the output.
+                state.write('')
+                state.closeBlock(node)
+              } else {
+                state.renderInline(node)
+                state.closeBlock(node)
               }
             },
             parse: {},
