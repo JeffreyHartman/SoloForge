@@ -25,14 +25,19 @@ npm --prefix web/soloforge-web run dev
 ## Tests
 
 ```bash
-# Run all tests (xunit + FluentAssertions + Moq)
+# Run all .NET tests (xunit + FluentAssertions + Moq)
 dotnet test
 
-# Run a single test
+# Run a single .NET test
 dotnet test tests/SoloForge.Core.Tests --filter "FullyQualifiedName~Namespace.Class.Method"
+
+# Run Playwright e2e tests (from web/soloforge-web/)
+# Requires both API and Vite dev server — start-dev.sh is launched automatically
+npm --prefix web/soloforge-web run test:e2e
 ```
 
-Test project: `tests/SoloForge.Core.Tests`.
+- .NET test project: `tests/SoloForge.Core.Tests`
+- E2E test directory: `web/soloforge-web/e2e/` (Playwright + Chromium)
 
 ## Lint / Format
 
@@ -90,6 +95,22 @@ Engine calls produce result records -> `HistoryService.AddEntry` logs them -> `J
 - Always include appropriate ARIA attributes (`aria-label`, `aria-pressed`, `aria-expanded`, `role`, `tabindex`, etc.) on interactive elements — buttons, toggles, selects, custom controls. Low effort, keeps the app accessible.
 - Sanitize all `v-html` bindings with DOMPurify
 - Use CSS custom properties (`var(--color-*)`) for theming, not Tailwind `dark:` variants
+
+## E2E Testing (Playwright)
+
+Tests live in `web/soloforge-web/e2e/`. Config: `web/soloforge-web/playwright.config.ts`.
+
+**When to add e2e tests:**
+- Any bug fix involving async behavior, race conditions, or UI state that depends on timing
+- New features involving multi-step user interactions (tab switching, navigation, save/load flows)
+- Regressions that are hard to catch with unit tests alone (content syncing between editor modes, auto-save)
+
+**How to write them:**
+- Use API helpers (`page.request.post/get/delete`) for test setup/teardown — faster than UI interactions
+- Use ARIA selectors (`role`, `aria-label`, `aria-selected`) for element targeting — they're stable and already present on all interactive elements
+- For race condition tests, use `page.route()` to intercept and delay API responses to simulate slow networks
+- Keep tests in `Edit` mode (textarea) unless specifically testing WYSIWYG behavior — textarea assertions are simpler and more reliable
+- See `e2e/notes-navigation.spec.ts` as the reference pattern for test structure, helpers, and setup/teardown
 
 ## Data and Templates
 

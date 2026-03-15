@@ -33,88 +33,106 @@ const sidebarOpen = ref(true)
 // === Auto-save internals ===
 let lastSavedContent = ''
 let saving = false
-let pendingSave = false
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 const DEBOUNCE_MS = 3000
 let initialized = false
+let loadAbortController: AbortController | null = null
+let currentSavePromise: Promise<void> | null = null
+let openNoteGeneration = 0
 
 // Cache of tab contents so switching tabs is instant
 const tabContentCache = new Map<string, string>()
 const tabSavedCache = new Map<string, string>()
 
-/** Schedules a debounced save of the active note content. */
+/** Schedules a debounced save, capturing the current path and content at call time. */
 function scheduleSave() {
   if (debounceTimer) clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(() => void executeSave(), DEBOUNCE_MS)
+  const path = activeNotePath.value
+  const content = activeNoteContent.value
+  if (!path) return
+  debounceTimer = setTimeout(() => {
+    currentSavePromise = executeSave(path, content)
+  }, DEBOUNCE_MS)
 }
 
-/** Persists the active note content to the API, handling concurrent save requests. */
-async function executeSave() {
-  const path = activeNotePath.value
-  if (!currentCampaignId.value || !path) return
+/** Persists note content to the API for a specific path. Path and content are captured by the caller to prevent cross-tab contamination. */
+async function executeSave(savePath: string, saveContent: string): Promise<void> {
+  if (!currentCampaignId.value || !savePath) return
+  if (saveContent === (tabSavedCache.get(savePath) ?? '')) {
+    if (activeNotePath.value === savePath) saveStatus.value = 'saved'
+    return
+  }
 
-  while (true) {
-    if (activeNoteContent.value === lastSavedContent) {
-      saveStatus.value = 'saved'
-      return
+  saving = true
+  loading.saveNote = true
+  if (activeNotePath.value === savePath) saveStatus.value = 'saving'
+
+  try {
+    await apiSend<{ saved: boolean }>('/api/notes', 'PUT', {
+      path: savePath,
+      content: saveContent,
+    })
+    tabSavedCache.set(savePath, saveContent)
+    if (activeNotePath.value === savePath) {
+      lastSavedContent = saveContent
+      if (activeNoteContent.value === saveContent) {
+        saveStatus.value = 'saved'
+      } else {
+        saveStatus.value = 'unsaved'
+      }
     }
-    if (saving) {
-      pendingSave = true
-      return
-    }
-
-    saving = true
-    loading.saveNote = true
-    saveStatus.value = 'saving'
-    const contentAtStart = activeNoteContent.value
-    const savePath = path
-
-    try {
-      await apiSend<{ saved: boolean }>('/api/notes', 'PUT', {
-        path: savePath,
-        content: contentAtStart,
-      })
-      lastSavedContent = contentAtStart
-      tabSavedCache.set(savePath, contentAtStart)
-    } catch {
+  } catch {
+    if (activeNotePath.value === savePath) {
       saveStatus.value = 'unsaved'
-      saving = false
-      loading.saveNote = false
-      return
     }
-
+  } finally {
     saving = false
     loading.saveNote = false
-
-    if (!pendingSave && activeNoteContent.value === contentAtStart) {
-      saveStatus.value = 'saved'
-      return
-    }
-    pendingSave = false
   }
 }
 
-/** Immediately triggers a save if there are unsaved changes, cancelling any pending debounce timer. */
-function flushSave() {
+/** Immediately triggers a save if there are unsaved changes, cancelling any pending debounce timer. Returns a promise that resolves when the save completes. */
+async function flushSave(): Promise<void> {
   if (debounceTimer) {
     clearTimeout(debounceTimer)
     debounceTimer = null
   }
-  if (activeNotePath.value && activeNoteContent.value !== lastSavedContent && currentCampaignId.value) {
-    void executeSave()
+  const path = activeNotePath.value
+  const content = activeNoteContent.value
+  if (path && content !== lastSavedContent && currentCampaignId.value) {
+    currentSavePromise = executeSave(path, content)
+    await currentSavePromise
+  } else if (currentSavePromise) {
+    await currentSavePromise
   }
 }
 
-/** Fires a synchronous keepalive save on page unload to prevent data loss. */
+/** Fires keepalive saves on page unload for all tabs with unsaved changes. */
 function onBeforeUnload() {
-  const path = activeNotePath.value
-  if (!path || activeNoteContent.value === lastSavedContent || !currentCampaignId.value) return
-  fetch('/api/notes', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ path, content: activeNoteContent.value }),
-    keepalive: true,
-  })
+  if (!currentCampaignId.value) return
+  // Save active tab
+  const activePath = activeNotePath.value
+  if (activePath && activeNoteContent.value !== lastSavedContent) {
+    fetch('/api/notes', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: activePath, content: activeNoteContent.value }),
+      keepalive: true,
+    })
+  }
+  // Save other tabs with unsaved changes
+  for (const [tabPath, content] of tabContentCache) {
+    if (tabPath === activePath) continue
+    const saved = tabSavedCache.get(tabPath)
+    if (content !== saved) {
+      fetch('/api/notes', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: tabPath, content }),
+        keepalive: true,
+      })
+    }
+  }
 }
 
 // === Public API ===
@@ -166,8 +184,19 @@ export function useNotes() {
 
   /** Opens a note in the editor, adding it to tabs and loading from cache or API. */
   async function openNote(path: string) {
-    // Save current note before switching
-    flushSave()
+    const generation = ++openNoteGeneration
+
+    // Save current note before switching (awaited to ensure correct path is used)
+    await flushSave()
+
+    // If another openNote was called while we were saving, bail out
+    if (generation !== openNoteGeneration) return
+
+    // Abort any in-flight note load
+    if (loadAbortController) {
+      loadAbortController.abort()
+      loadAbortController = null
+    }
 
     // Add to tabs if not already open
     if (!openTabs.value.includes(path)) {
@@ -178,31 +207,50 @@ export function useNotes() {
 
     // Check cache first
     if (tabContentCache.has(path)) {
+      // Set lastSavedContent BEFORE activeNoteContent so the watcher sees correct state
+      lastSavedContent = tabSavedCache.get(path) ?? tabContentCache.get(path)!
       activeNoteContent.value = tabContentCache.get(path)!
-      lastSavedContent = tabSavedCache.get(path) ?? activeNoteContent.value
       saveStatus.value = activeNoteContent.value === lastSavedContent ? 'saved' : 'unsaved'
       return
     }
 
-    // Load from API
+    // Load from API with abort support
     loading.note = true
+    loadAbortController = new AbortController()
+    const { signal } = loadAbortController
+
     try {
-      const result = await apiGet<{ path: string; content: string }>(`/api/notes?path=${encodeURIComponent(path)}`)
-      activeNoteContent.value = result.content ?? ''
-      lastSavedContent = activeNoteContent.value
-      tabContentCache.set(path, activeNoteContent.value)
-      tabSavedCache.set(path, lastSavedContent)
+      const result = await apiGet<{ path: string; content: string }>(
+        `/api/notes?path=${encodeURIComponent(path)}`,
+        { signal },
+      )
+
+      // If another openNote was called during the fetch, just cache and bail
+      if (generation !== openNoteGeneration) {
+        tabContentCache.set(path, result.content ?? '')
+        tabSavedCache.set(path, result.content ?? '')
+        return
+      }
+
+      const content = result.content ?? ''
+      lastSavedContent = content
+      activeNoteContent.value = content
+      tabContentCache.set(path, content)
+      tabSavedCache.set(path, content)
       saveStatus.value = 'saved'
+    } catch (e: unknown) {
+      if (e instanceof DOMException && e.name === 'AbortError') return
+      throw e
     } finally {
       loading.note = false
     }
   }
 
   /** Closes a tab, flushing saves and switching to an adjacent tab if the closed tab was active. */
-  function closeTab(path: string) {
+  async function closeTab(path: string) {
     // If closing the active tab, save first
     if (path === activeNotePath.value) {
-      flushSave()
+      await flushSave()
     }
 
     const idx = openTabs.value.indexOf(path)
@@ -216,7 +264,7 @@ export function useNotes() {
       if (openTabs.value.length > 0) {
         // Switch to the nearest tab
         const newIdx = Math.min(idx, openTabs.value.length - 1)
-        void openNote(openTabs.value[newIdx])
+        await openNote(openTabs.value[newIdx])
       } else {
         activeNotePath.value = null
         activeNoteContent.value = ''
@@ -245,7 +293,7 @@ export function useNotes() {
     loading.delete = true
     try {
       await apiSend(`/api/notes?path=${encodeURIComponent(path)}`, 'DELETE')
-      closeTab(path)
+      await closeTab(path)
       await refreshTree(currentCampaignId.value)
     } finally {
       loading.delete = false
@@ -273,7 +321,7 @@ export function useNotes() {
       // Close any open tabs that were in this folder
       for (const tab of [...openTabs.value]) {
         if (tab === path || tab.startsWith(path + '/')) {
-          closeTab(tab)
+          await closeTab(tab)
         }
       }
       await refreshTree(currentCampaignId.value)
@@ -360,6 +408,25 @@ export function useNotes() {
     return name.endsWith('.md') ? name.slice(0, -3) : name
   })
 
+  /**
+   * Resolves a wiki-link path against the known note paths.
+   * If the path contains a `/` it's already qualified — return as-is.
+   * Otherwise, search allPaths for a matching filename (case-insensitive).
+   * Prefers a root-level exact match over a subdirectory match.
+   */
+  function resolveNotePath(path: string): string {
+    if (path.includes('/')) return path
+    const lower = path.toLowerCase()
+
+    // Prefer root-level exact match (path === filename, no directory prefix)
+    const rootMatch = allPaths.value.find(p => p.toLowerCase() === lower)
+    if (rootMatch) return rootMatch
+
+    // Fall back to any file with matching filename
+    const match = allPaths.value.find(p => (p.split('/').pop() ?? '').toLowerCase() === lower)
+    return match ?? path
+  }
+
   return {
     // State
     tree,
@@ -383,6 +450,7 @@ export function useNotes() {
     deleteFolder,
     moveItem,
     setSessionLog,
+    resolveNotePath,
     flushSave,
     reloadActiveNote,
     invalidateTabCache,

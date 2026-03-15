@@ -2,7 +2,6 @@ import { reactive, watch } from 'vue'
 
 export interface JournalPrefs {
   mode: 'edit' | 'preview'
-  split: boolean
   enhanced: boolean
   fontFamily: 'mono' | 'sans' | 'serif'
   fontSize: number
@@ -12,7 +11,6 @@ const STORAGE_KEY = 'soloforge-journal-prefs'
 
 const DEFAULTS: JournalPrefs = {
   mode: 'edit',
-  split: false,
   enhanced: true,
   fontFamily: 'mono',
   fontSize: 14,

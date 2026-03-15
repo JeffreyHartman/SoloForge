@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import BaseCard from '../common/BaseCard.vue'
 import BaseButton from '../common/BaseButton.vue'
 import JournalToolbar from './JournalToolbar.vue'
-import JournalPreview from './JournalPreview.vue'
+import WysiwygEditor from './WysiwygEditor.vue'
 import { useJournal } from '../../composables/useJournal'
-import { useJournalParser } from '../../composables/useJournalParser'
 import { useJournalPrefs, FONT_FAMILIES } from '../../composables/useJournalPrefs'
 
 const props = defineProps<{
@@ -20,44 +19,14 @@ defineEmits<{
   reload: []
 }>()
 
+const wysiwygRef = ref<InstanceType<typeof WysiwygEditor> | null>(null)
 const { saveStatus, flushSave } = useJournal()
 const { prefs } = useJournalPrefs()
-const { segments, deleteSegment } = useJournalParser(content)
-
-// Collapse state
-const collapsedIds = reactive(new Set<string>())
-
-function toggleCollapse(id: string) {
-  if (collapsedIds.has(id)) collapsedIds.delete(id)
-  else collapsedIds.add(id)
-}
-
-function collapseAll() {
-  for (const seg of segments.value) {
-    if (seg.type === 'roll') collapsedIds.add(seg.id)
-  }
-}
-
-function expandAll() {
-  collapsedIds.clear()
-}
-
-function handleDelete(id: string) {
-  deleteSegment(id)
-  collapsedIds.delete(id)
-}
-
-const emptyMessage = computed(() =>
-  props.campaignId ? 'Nothing in the journal yet.' : 'Load or create a campaign first.'
-)
 
 const fontStyle = computed(() => ({
   fontFamily: FONT_FAMILIES[prefs.fontFamily] ?? FONT_FAMILIES.mono,
   fontSize: `${prefs.fontSize}px`,
 }))
-
-const showPreview = computed(() => prefs.mode === 'preview' || prefs.split)
-const showCollapseControls = computed(() => showPreview.value && prefs.enhanced)
 
 const statusText = computed(() => {
   if (saveStatus.value === 'saving') return 'Saving...'
@@ -74,15 +43,10 @@ const statusClass = computed(() => {
 // Keyboard shortcuts
 function onKeydown(e: KeyboardEvent) {
   const mod = e.ctrlKey || e.metaKey
-  if (!mod || e.key.toLowerCase() !== 'e') return
+  if (!mod || e.shiftKey || e.key.toLowerCase() !== 'e') return
 
   e.preventDefault()
-  if (e.shiftKey) {
-    prefs.split = !prefs.split
-  } else {
-    prefs.split = false
-    prefs.mode = prefs.mode === 'edit' ? 'preview' : 'edit'
-  }
+  prefs.mode = prefs.mode === 'edit' ? 'preview' : 'edit'
 }
 
 onMounted(() => document.addEventListener('keydown', onKeydown))
@@ -110,50 +74,18 @@ onUnmounted(() => {
 
     <JournalToolbar
       :mode="prefs.mode"
-      :split="prefs.split"
       :enhanced="prefs.enhanced"
       :font-family="prefs.fontFamily"
       :font-size="prefs.fontSize"
-      :show-collapse-controls="showCollapseControls"
       @update:mode="prefs.mode = $event"
-      @update:split="prefs.split = $event"
       @update:enhanced="prefs.enhanced = $event"
       @update:font-family="prefs.fontFamily = $event"
       @update:font-size="prefs.fontSize = $event"
-      @collapse-all="collapseAll"
-      @expand-all="expandAll"
     />
 
-    <!-- Split view: editor + preview side by side -->
-    <div v-if="prefs.split" class="flex h-[calc(100vh-20rem)] min-h-[420px] gap-3">
-      <textarea
-        v-model="content"
-        aria-label="Journal content"
-        class="h-full flex-1 resize-none rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] p-4 leading-relaxed text-[var(--color-text-primary)] shadow-sm outline-none transition placeholder:text-[var(--color-text-dimmed)] focus:border-[var(--color-text-dimmed)] focus:shadow"
-        :style="fontStyle"
-        :placeholder="campaignId ? 'Write your journal in markdown...' : 'Load or create a campaign first.'"
-        :disabled="!campaignId"
-        @blur="flushSave"
-      />
-      <div
-        class="h-full flex-1 overflow-y-auto rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] p-4 shadow-sm"
-        :style="fontStyle"
-      >
-        <JournalPreview
-          :content="content"
-          :enhanced="prefs.enhanced"
-          :segments="segments"
-          :collapsed-ids="collapsedIds"
-          :empty-message="emptyMessage"
-          @toggle="toggleCollapse"
-          @delete="handleDelete"
-        />
-      </div>
-    </div>
-
-    <!-- Edit mode (single pane) -->
+    <!-- Edit mode -->
     <textarea
-      v-else-if="prefs.mode === 'edit'"
+      v-if="prefs.mode === 'edit'"
       v-model="content"
       aria-label="Journal content"
       class="h-[calc(100vh-20rem)] min-h-[420px] w-full resize-none rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] p-4 leading-relaxed text-[var(--color-text-primary)] shadow-sm outline-none transition placeholder:text-[var(--color-text-dimmed)] focus:border-[var(--color-text-dimmed)] focus:shadow"
@@ -163,20 +95,21 @@ onUnmounted(() => {
       @blur="flushSave"
     />
 
-    <!-- Preview mode (single pane) -->
+    <!-- Preview / WYSIWYG mode (single pane) -->
     <div
       v-else
-      class="h-[calc(100vh-20rem)] min-h-[420px] overflow-y-auto rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] p-4 shadow-sm"
+      class="flex h-[calc(100vh-20rem)] min-h-[420px] flex-col overflow-y-auto rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] p-4 shadow-sm outline-none transition focus-within:border-[var(--color-text-dimmed)] focus-within:shadow"
       :style="fontStyle"
+      @click.self="wysiwygRef?.focusEnd()"
     >
-      <JournalPreview
+      <WysiwygEditor
+        ref="wysiwygRef"
         :content="content"
-        :enhanced="prefs.enhanced"
-        :segments="segments"
-        :collapsed-ids="collapsedIds"
-        :empty-message="emptyMessage"
-        @toggle="toggleCollapse"
-        @delete="handleDelete"
+        :font-style="fontStyle"
+        :disabled="!campaignId"
+        :placeholder="campaignId ? 'Write your journal in markdown...' : 'Load or create a campaign first.'"
+        aria-label="Journal content"
+        @update:content="content = $event"
       />
     </div>
 

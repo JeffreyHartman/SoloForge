@@ -28,8 +28,12 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ```bash
 dotnet build              # Build all .NET projects
-dotnet test               # Run tests
+dotnet test               # Run .NET unit tests
 ./start-dev.sh            # Run API + frontend dev servers
+
+# E2E tests (Playwright — launches dev servers automatically)
+cd web/soloforge-web
+npm run test:e2e
 ```
 
 ## How It Works

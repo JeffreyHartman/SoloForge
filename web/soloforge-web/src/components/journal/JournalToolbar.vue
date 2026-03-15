@@ -3,25 +3,20 @@ import type { JournalPrefs } from '../../composables/useJournalPrefs'
 
 defineProps<{
   mode: JournalPrefs['mode']
-  split: boolean
   enhanced: boolean
   fontFamily: JournalPrefs['fontFamily']
   fontSize: number
-  showCollapseControls: boolean
   autoJournalEvents?: boolean
   autoJournalDiceRolls?: boolean
 }>()
 
 defineEmits<{
   'update:mode': [value: JournalPrefs['mode']]
-  'update:split': [value: boolean]
   'update:enhanced': [value: boolean]
   'update:fontFamily': [value: JournalPrefs['fontFamily']]
   'update:fontSize': [value: number]
   'update:autoJournalEvents': [value: boolean]
   'update:autoJournalDiceRolls': [value: boolean]
-  collapseAll: []
-  expandAll: []
 }>()
 
 const platform = (navigator as any).userAgentData?.platform ?? navigator.platform ?? ''
@@ -35,42 +30,31 @@ const mod = isMac ? '\u2318' : 'Ctrl+'
     <div class="inline-flex overflow-hidden rounded-lg border border-[var(--color-border-primary)]">
       <button
         class="px-3 py-1.5 font-medium transition"
-        :class="!split && mode === 'edit'
+        :class="mode === 'edit'
           ? 'bg-[var(--color-bg-accent)] text-[var(--color-text-inverted)]'
           : 'bg-[var(--color-bg-card-solid)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)]'"
-        :aria-pressed="!split && mode === 'edit'"
+        :aria-pressed="mode === 'edit'"
         :title="`Edit mode (${mod}E)`"
-        @click="$emit('update:split', false); $emit('update:mode', 'edit')"
+        @click="$emit('update:mode', 'edit')"
       >
         Edit
       </button>
       <button
         class="px-3 py-1.5 font-medium transition"
-        :class="!split && mode === 'preview'
+        :class="mode === 'preview'
           ? 'bg-[var(--color-bg-accent)] text-[var(--color-text-inverted)]'
           : 'bg-[var(--color-bg-card-solid)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)]'"
-        :aria-pressed="!split && mode === 'preview'"
+        :aria-pressed="mode === 'preview'"
         :title="`Preview mode (${mod}E)`"
-        @click="$emit('update:split', false); $emit('update:mode', 'preview')"
+        @click="$emit('update:mode', 'preview')"
       >
         Preview
       </button>
-      <button
-        class="px-3 py-1.5 font-medium transition"
-        :class="split
-          ? 'bg-[var(--color-bg-accent)] text-[var(--color-text-inverted)]'
-          : 'bg-[var(--color-bg-card-solid)] text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)]'"
-        :aria-pressed="split"
-        :title="`Split view (${mod}Shift+E)`"
-        @click="$emit('update:split', !split)"
-      >
-        Split
-      </button>
     </div>
 
-    <!-- Enhanced rendering toggle (visible when preview is showing) -->
+    <!-- Enhanced rendering toggle (visible in preview mode) -->
     <label
-      v-if="mode === 'preview' || split"
+      v-if="mode === 'preview'"
       class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)] px-2.5 py-1.5 text-[var(--color-text-muted)] transition hover:bg-[var(--color-bg-hover)]"
     >
       <input
@@ -110,22 +94,6 @@ const mod = isMac ? '\u2318' : 'Ctrl+'
       />
       <span>Auto-log dice</span>
     </label>
-
-    <!-- Collapse / Expand all -->
-    <template v-if="showCollapseControls">
-      <button
-        class="rounded-lg px-2 py-1.5 text-[var(--color-text-muted)] transition hover:bg-[var(--color-bg-hover)]"
-        @click="$emit('collapseAll')"
-      >
-        Collapse all
-      </button>
-      <button
-        class="rounded-lg px-2 py-1.5 text-[var(--color-text-muted)] transition hover:bg-[var(--color-bg-hover)]"
-        @click="$emit('expandAll')"
-      >
-        Expand all
-      </button>
-    </template>
 
     <!-- Spacer -->
     <div class="flex-1" />

@@ -1,23 +1,23 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import JournalToolbar from '../journal/JournalToolbar.vue'
-import JournalPreview from '../journal/JournalPreview.vue'
+import WysiwygEditor from '../journal/WysiwygEditor.vue'
 import WikiLinkAutocomplete from './WikiLinkAutocomplete.vue'
-import { useJournalParser } from '../../composables/useJournalParser'
 import { useJournalPrefs, FONT_FAMILIES } from '../../composables/useJournalPrefs'
 import { useNotes } from '../../composables/useNotes'
 import { useCampaign } from '../../composables/useCampaign'
 import { apiSend } from '../../composables/useApi'
+import { useToast } from '../../composables/useToast'
 
 const props = defineProps<{
   apiOnline: boolean
 }>()
 
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
-const splitTextareaRef = ref<HTMLTextAreaElement | null>(null)
-
-const { activeNotePath, activeNoteContent, activeNoteFileName, saveStatus, allPaths, openNote, flushSave } = useNotes()
+const wysiwygRef = ref<InstanceType<typeof WysiwygEditor> | null>(null)
+const { activeNotePath, activeNoteContent, activeNoteFileName, saveStatus, allPaths, openNote, resolveNotePath, flushSave } = useNotes()
 const { currentCampaign, refreshState } = useCampaign()
+const { addToast } = useToast()
 
 async function updateJournalPref(key: 'autoJournalEvents' | 'autoJournalDiceRolls', value: boolean) {
   await apiSend('/api/campaigns/journal-prefs', 'PUT', { [key]: value })
@@ -26,48 +26,21 @@ async function updateJournalPref(key: 'autoJournalEvents' | 'autoJournalDiceRoll
 
 /** Navigates to a wiki-linked note by opening it in the editor. */
 async function handleNavigate(path: string) {
-  await openNote(path)
-}
-
-// Current textarea (split vs single)
-const currentTextarea = computed(() => splitTextareaRef.value ?? textareaRef.value)
-const { prefs } = useJournalPrefs()
-const { segments, deleteSegment } = useJournalParser(activeNoteContent)
-
-// Collapse state for roll panels (must be reactive for Vue to detect Set mutations)
-const collapsedIds = reactive(new Set<string>())
-
-/** Toggles the collapsed/expanded state of a roll panel segment. */
-function toggleCollapse(id: string) {
-  if (collapsedIds.has(id)) collapsedIds.delete(id)
-  else collapsedIds.add(id)
-}
-
-/** Collapses all roll panel segments into compact view. */
-function collapseAll() {
-  for (const seg of segments.value) {
-    if (seg.type === 'roll') collapsedIds.add(seg.id)
+  try {
+    const resolved = resolveNotePath(path)
+    await openNote(resolved)
+  } catch {
+    const name = path.endsWith('.md') ? path.slice(0, -3) : path
+    addToast({ title: 'Note not found', detail: `"${name}" does not exist.`, variant: 'warning' })
   }
 }
 
-/** Expands all roll panel segments to show full details. */
-function expandAll() {
-  collapsedIds.clear()
-}
-
-/** Deletes a roll panel segment from the note content and cleans up its collapse state. */
-function handleDelete(id: string) {
-  deleteSegment(id)
-  collapsedIds.delete(id)
-}
+const { prefs } = useJournalPrefs()
 
 const fontStyle = computed(() => ({
   fontFamily: FONT_FAMILIES[prefs.fontFamily] ?? FONT_FAMILIES.mono,
   fontSize: `${prefs.fontSize}px`,
 }))
-
-const showPreview = computed(() => prefs.mode === 'preview' || prefs.split)
-const showCollapseControls = computed(() => showPreview.value && prefs.enhanced)
 
 const statusText = computed(() => {
   if (saveStatus.value === 'saving') return 'Saving...'
@@ -87,12 +60,8 @@ function onKeydown(e: KeyboardEvent) {
   if (!mod || e.key.toLowerCase() !== 'e') return
 
   e.preventDefault()
-  if (e.shiftKey) {
-    prefs.split = !prefs.split
-  } else {
-    prefs.split = false
-    prefs.mode = prefs.mode === 'edit' ? 'preview' : 'edit'
-  }
+  if (e.shiftKey) return
+  prefs.mode = prefs.mode === 'edit' ? 'preview' : 'edit'
 }
 
 onMounted(() => document.addEventListener('keydown', onKeydown))
@@ -119,22 +88,17 @@ onUnmounted(() => {
       <div class="flex-1">
         <JournalToolbar
           :mode="prefs.mode"
-          :split="prefs.split"
           :enhanced="prefs.enhanced"
           :font-family="prefs.fontFamily"
           :font-size="prefs.fontSize"
-          :show-collapse-controls="showCollapseControls"
           :auto-journal-events="currentCampaign?.autoJournalEvents"
           :auto-journal-dice-rolls="currentCampaign?.autoJournalDiceRolls"
           @update:mode="prefs.mode = $event"
-          @update:split="prefs.split = $event"
           @update:enhanced="prefs.enhanced = $event"
           @update:font-family="prefs.fontFamily = $event"
           @update:font-size="prefs.fontSize = $event"
           @update:auto-journal-events="updateJournalPref('autoJournalEvents', $event)"
           @update:auto-journal-dice-rolls="updateJournalPref('autoJournalDiceRolls', $event)"
-          @collapse-all="collapseAll"
-          @expand-all="expandAll"
         />
       </div>
       <span class="shrink-0 text-xs transition-colors" :class="statusClass">{{ statusText }}</span>
@@ -142,37 +106,9 @@ onUnmounted(() => {
 
     <!-- Editor area -->
     <div class="flex-1 overflow-hidden px-4 py-3">
-      <!-- Split view -->
-      <div v-if="prefs.split" class="flex h-full gap-3">
-        <textarea
-          ref="splitTextareaRef"
-          v-model="activeNoteContent"
-          :aria-label="`Edit ${activeNoteFileName}`"
-          class="h-full flex-1 resize-none rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] p-4 leading-relaxed text-[var(--color-text-primary)] shadow-sm outline-none transition placeholder:text-[var(--color-text-dimmed)] focus:border-[var(--color-text-dimmed)] focus:shadow"
-          :style="fontStyle"
-          placeholder="Start writing..."
-          @blur="flushSave"
-        />
-        <div
-          class="h-full flex-1 overflow-y-auto rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] p-4 shadow-sm"
-          :style="fontStyle"
-        >
-          <JournalPreview
-            :content="activeNoteContent"
-            :enhanced="prefs.enhanced"
-            :segments="segments"
-            :collapsed-ids="collapsedIds"
-            empty-message="Start writing to see preview."
-            @toggle="toggleCollapse"
-            @delete="handleDelete"
-            @navigate="handleNavigate"
-          />
-        </div>
-      </div>
-
       <!-- Edit mode -->
       <textarea
-        v-else-if="prefs.mode === 'edit'"
+        v-if="prefs.mode === 'edit'"
         ref="textareaRef"
         v-model="activeNoteContent"
         :aria-label="`Edit ${activeNoteFileName}`"
@@ -182,20 +118,22 @@ onUnmounted(() => {
         @blur="flushSave"
       />
 
-      <!-- Preview mode -->
+      <!-- Preview / WYSIWYG mode -->
       <div
         v-else
-        class="h-full overflow-y-auto rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] p-4 shadow-sm"
+        class="flex h-full flex-col overflow-y-auto rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] p-4 shadow-sm outline-none transition focus-within:border-[var(--color-text-dimmed)] focus-within:shadow"
         :style="fontStyle"
+        @click.self="wysiwygRef?.focusEnd()"
       >
-        <JournalPreview
+        <WysiwygEditor
+          ref="wysiwygRef"
           :content="activeNoteContent"
-          :enhanced="prefs.enhanced"
-          :segments="segments"
-          :collapsed-ids="collapsedIds"
-          empty-message="Start writing to see preview."
-          @toggle="toggleCollapse"
-          @delete="handleDelete"
+          :font-style="fontStyle"
+          :disabled="!activeNotePath"
+          placeholder="Start writing..."
+          :all-paths="allPaths"
+          :aria-label="`Edit ${activeNoteFileName}`"
+          @update:content="activeNoteContent = $event"
           @navigate="handleNavigate"
         />
       </div>
@@ -203,9 +141,9 @@ onUnmounted(() => {
 
     <!-- Wiki-link autocomplete -->
     <WikiLinkAutocomplete
-      v-if="activeNotePath && (prefs.mode === 'edit' || prefs.split)"
+      v-if="activeNotePath && prefs.mode === 'edit'"
       :all-paths="allPaths"
-      :textarea="currentTextarea"
+      :textarea="textareaRef"
       :model-value="activeNoteContent"
       @update:model-value="activeNoteContent = $event"
     />

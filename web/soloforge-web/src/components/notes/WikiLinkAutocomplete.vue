@@ -119,13 +119,26 @@ function checkForTrigger() {
   query.value = between
   show.value = true
 
-  // Position the dropdown
+  // Position the dropdown, flipping above if near bottom of screen
   const coords = getCaretCoords(ta, triggerIdx)
-  dropdownStyle.value = {
-    position: 'fixed',
-    top: `${coords.top + 24}px`,
-    left: `${coords.left}px`,
-    zIndex: '100',
+  const dropdownHeight = 240 // max-h-60 = 15rem ≈ 240px
+  const spaceBelow = window.innerHeight - (coords.top + 24)
+  const spaceAbove = coords.top
+
+  if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
+    dropdownStyle.value = {
+      position: 'fixed',
+      bottom: `${window.innerHeight - coords.top + 4}px`,
+      left: `${coords.left}px`,
+      zIndex: '100',
+    }
+  } else {
+    dropdownStyle.value = {
+      position: 'fixed',
+      top: `${coords.top + 24}px`,
+      left: `${coords.left}px`,
+      zIndex: '100',
+    }
   }
 }
 

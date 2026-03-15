@@ -3,8 +3,8 @@ import { ref } from 'vue'
 const apiOnline = ref<boolean | null>(null)
 const errorMessage = ref<string | null>(null)
 
-export async function apiGet<T>(path: string): Promise<T> {
-  const resp = await fetch(path, { headers: { Accept: 'application/json' } })
+export async function apiGet<T>(path: string, options?: { signal?: AbortSignal }): Promise<T> {
+  const resp = await fetch(path, { headers: { Accept: 'application/json' }, signal: options?.signal })
   if (!resp.ok) {
     const text = await resp.text().catch(() => '')
     throw new Error(text || `${resp.status} ${resp.statusText}`)
