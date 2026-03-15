@@ -8,6 +8,8 @@ defineProps<{
   fontFamily: JournalPrefs['fontFamily']
   fontSize: number
   showCollapseControls: boolean
+  autoJournalEvents?: boolean
+  autoJournalDiceRolls?: boolean
 }>()
 
 defineEmits<{
@@ -16,6 +18,8 @@ defineEmits<{
   'update:enhanced': [value: boolean]
   'update:fontFamily': [value: JournalPrefs['fontFamily']]
   'update:fontSize': [value: number]
+  'update:autoJournalEvents': [value: boolean]
+  'update:autoJournalDiceRolls': [value: boolean]
   collapseAll: []
   expandAll: []
 }>()
@@ -76,6 +80,35 @@ const mod = isMac ? '\u2318' : 'Ctrl+'
         @change="$emit('update:enhanced', ($event.target as HTMLInputElement).checked)"
       />
       <span>Enhanced</span>
+    </label>
+
+    <!-- Auto-log toggles -->
+    <label
+      v-if="autoJournalEvents !== undefined"
+      class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)] px-2.5 py-1.5 text-[var(--color-text-muted)] transition hover:bg-[var(--color-bg-hover)]"
+    >
+      <input
+        type="checkbox"
+        :checked="autoJournalEvents"
+        class="accent-[var(--color-bg-accent)]"
+        aria-label="Auto-log events to journal"
+        @change="$emit('update:autoJournalEvents', ($event.target as HTMLInputElement).checked)"
+      />
+      <span>Auto-log events</span>
+    </label>
+
+    <label
+      v-if="autoJournalDiceRolls !== undefined"
+      class="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)] px-2.5 py-1.5 text-[var(--color-text-muted)] transition hover:bg-[var(--color-bg-hover)]"
+    >
+      <input
+        type="checkbox"
+        :checked="autoJournalDiceRolls"
+        class="accent-[var(--color-bg-accent)]"
+        aria-label="Auto-log dice rolls to journal"
+        @change="$emit('update:autoJournalDiceRolls', ($event.target as HTMLInputElement).checked)"
+      />
+      <span>Auto-log dice</span>
     </label>
 
     <!-- Collapse / Expand all -->

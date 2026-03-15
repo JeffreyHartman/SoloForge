@@ -60,6 +60,19 @@ public record CampaignData
     /// </summary>
     public List<PlotThread> ClosedThreads { get; init; } = [];
 
+    // === Journal Preferences ===
+
+    /// <summary>
+    /// Whether mythic events (fate checks, scene checks, random events, meaning)
+    /// are automatically appended to the journal.
+    /// </summary>
+    public bool AutoJournalEvents { get; set; } = true;
+
+    /// <summary>
+    /// Whether dice rolls are automatically appended to the journal.
+    /// </summary>
+    public bool AutoJournalDiceRolls { get; set; } = true;
+
     // === Notes ===
 
     /// <summary>

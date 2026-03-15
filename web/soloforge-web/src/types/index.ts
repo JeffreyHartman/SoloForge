@@ -20,6 +20,8 @@ export interface CampaignInfo {
   createdAt: string
   lastPlayed: string
   historyCount: number
+  autoJournalEvents: boolean
+  autoJournalDiceRolls: boolean
 }
 
 export interface CampaignSummary {

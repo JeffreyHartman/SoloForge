@@ -6,6 +6,8 @@ import WikiLinkAutocomplete from './WikiLinkAutocomplete.vue'
 import { useJournalParser } from '../../composables/useJournalParser'
 import { useJournalPrefs, FONT_FAMILIES } from '../../composables/useJournalPrefs'
 import { useNotes } from '../../composables/useNotes'
+import { useCampaign } from '../../composables/useCampaign'
+import { apiSend } from '../../composables/useApi'
 
 const props = defineProps<{
   apiOnline: boolean
@@ -15,6 +17,12 @@ const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const splitTextareaRef = ref<HTMLTextAreaElement | null>(null)
 
 const { activeNotePath, activeNoteContent, activeNoteFileName, saveStatus, allPaths, openNote, flushSave } = useNotes()
+const { currentCampaign, refreshState } = useCampaign()
+
+async function updateJournalPref(key: 'autoJournalEvents' | 'autoJournalDiceRolls', value: boolean) {
+  await apiSend('/api/campaigns/journal-prefs', 'PUT', { [key]: value })
+  await refreshState()
+}
 
 /** Navigates to a wiki-linked note by opening it in the editor. */
 async function handleNavigate(path: string) {
@@ -116,11 +124,15 @@ onUnmounted(() => {
           :font-family="prefs.fontFamily"
           :font-size="prefs.fontSize"
           :show-collapse-controls="showCollapseControls"
+          :auto-journal-events="currentCampaign?.autoJournalEvents"
+          :auto-journal-dice-rolls="currentCampaign?.autoJournalDiceRolls"
           @update:mode="prefs.mode = $event"
           @update:split="prefs.split = $event"
           @update:enhanced="prefs.enhanced = $event"
           @update:font-family="prefs.fontFamily = $event"
           @update:font-size="prefs.fontSize = $event"
+          @update:auto-journal-events="updateJournalPref('autoJournalEvents', $event)"
+          @update:auto-journal-dice-rolls="updateJournalPref('autoJournalDiceRolls', $event)"
           @collapse-all="collapseAll"
           @expand-all="expandAll"
         />

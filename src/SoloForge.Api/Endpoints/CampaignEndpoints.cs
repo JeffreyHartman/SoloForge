@@ -83,6 +83,37 @@ internal static class CampaignEndpoints
             return Results.Json(EndpointHelpers.BuildStateResponse(session, campaignService, stateManager, historyService));
         });
 
+        app.MapPut("/campaigns/journal-prefs", async (
+            HttpRequest request,
+            CancellationToken ct,
+            CampaignService campaignService) =>
+        {
+            var current = campaignService.CurrentCampaign;
+            if (current == null)
+            {
+                return Results.Json(new { error = "no campaign loaded" }, statusCode: StatusCodes.Status400BadRequest);
+            }
+
+            var body = await EndpointHelpers.ReadBodyAsync<UpdateJournalPrefsRequest>(request, ct);
+            if (body == null)
+            {
+                return Results.Json(new { error = "invalid request body" }, statusCode: StatusCodes.Status400BadRequest);
+            }
+
+            if (body.AutoJournalEvents.HasValue)
+                current.AutoJournalEvents = body.AutoJournalEvents.Value;
+            if (body.AutoJournalDiceRolls.HasValue)
+                current.AutoJournalDiceRolls = body.AutoJournalDiceRolls.Value;
+
+            campaignService.Save();
+
+            return Results.Json(new
+            {
+                autoJournalEvents = current.AutoJournalEvents,
+                autoJournalDiceRolls = current.AutoJournalDiceRolls
+            });
+        });
+
         app.MapDelete("/campaigns/{deleteCampaignIdText}", (
             string deleteCampaignIdText,
             CampaignService campaignService,

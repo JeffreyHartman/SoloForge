@@ -34,3 +34,5 @@ public sealed record NoteMoveRequest(string? OldPath, string? NewPath);
 public sealed record FolderCreateRequest(string? Path);
 
 public sealed record SetSessionLogRequest(string? Path);
+
+public sealed record UpdateJournalPrefsRequest(bool? AutoJournalEvents, bool? AutoJournalDiceRolls);

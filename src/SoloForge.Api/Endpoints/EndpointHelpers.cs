@@ -43,7 +43,9 @@ internal static class EndpointHelpers
                     name = current.Name,
                     createdAt = current.CreatedAt,
                     lastPlayed = current.LastPlayed,
-                    historyCount = current.History.Count
+                    historyCount = current.History.Count,
+                    autoJournalEvents = current.AutoJournalEvents,
+                    autoJournalDiceRolls = current.AutoJournalDiceRolls
                 },
             adventure = new
             {
@@ -81,6 +83,11 @@ internal static class EndpointHelpers
     {
         var current = campaignService.CurrentCampaign;
         if (current == null) return;
+
+        if (entry.Type == LogType.DiceRoll && !current.AutoJournalDiceRolls)
+            return;
+        if (entry.Type != LogType.DiceRoll && entry.Type != LogType.Note && !current.AutoJournalEvents)
+            return;
 
         var sessionLogPath = current.SessionLogPath;
         var currentText = notesService.ReadNote(current.Id, sessionLogPath)

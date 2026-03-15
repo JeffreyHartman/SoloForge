@@ -10,6 +10,8 @@ public sealed class JournalPanel : FrameView
     private readonly CampaignService _campaignService;
     private readonly JournalService _journalService;
 
+    private readonly CheckBox _eventsCheckBox;
+    private readonly CheckBox _diceRollsCheckBox;
     private readonly TextView _textView;
 
     private System.Timers.Timer? _saveTimer;
@@ -29,10 +31,29 @@ public sealed class JournalPanel : FrameView
         CanFocus = true;
         Visible = false;
 
-        _textView = new TextView
+        _eventsCheckBox = new CheckBox
         {
             X = 0,
             Y = 0,
+            Text = "Auto-log events",
+            CheckedState = CheckState.Checked
+        };
+
+        _diceRollsCheckBox = new CheckBox
+        {
+            X = Pos.Right(_eventsCheckBox) + 2,
+            Y = 0,
+            Text = "Auto-log dice rolls",
+            CheckedState = CheckState.Checked
+        };
+
+        _eventsCheckBox.CheckedStateChanging += OnEventsToggleChanged;
+        _diceRollsCheckBox.CheckedStateChanging += OnDiceRollsToggleChanged;
+
+        _textView = new TextView
+        {
+            X = 0,
+            Y = 1,
             Width = Dim.Fill(),
             Height = Dim.Fill(),
             ReadOnly = false,
@@ -40,7 +61,7 @@ public sealed class JournalPanel : FrameView
             CanFocus = true
         };
 
-        Add(_textView);
+        Add(_eventsCheckBox, _diceRollsCheckBox, _textView);
 
         ApplyTheme();
 
@@ -66,6 +87,8 @@ public sealed class JournalPanel : FrameView
     public void ApplyTheme()
     {
         ColorScheme = UiThemes.Instance.ActiveDefault;
+        _eventsCheckBox.ColorScheme = UiThemes.Instance.ActiveDefault;
+        _diceRollsCheckBox.ColorScheme = UiThemes.Instance.ActiveDefault;
         _textView.ColorScheme = UiThemes.Instance.ActiveDefault;
         SetNeedsLayout();
     }
@@ -86,6 +109,22 @@ public sealed class JournalPanel : FrameView
 
     public void AppendEntry(LogEntry entry)
     {
+        var campaign = _campaignService.CurrentCampaign;
+        if (campaign == null)
+        {
+            return;
+        }
+
+        if (entry.Type == LogType.DiceRoll && !campaign.AutoJournalDiceRolls)
+        {
+            return;
+        }
+
+        if (entry.Type != LogType.DiceRoll && entry.Type != LogType.Note && !campaign.AutoJournalEvents)
+        {
+            return;
+        }
+
         AppendMarkdown(_journalService.ToMarkdown(entry));
     }
 
@@ -124,6 +163,17 @@ public sealed class JournalPanel : FrameView
     {
         _loadedCampaignId = campaign.Id;
 
+        _suppressChangeTracking = true;
+        try
+        {
+            _eventsCheckBox.CheckedState = campaign.AutoJournalEvents ? CheckState.Checked : CheckState.UnChecked;
+            _diceRollsCheckBox.CheckedState = campaign.AutoJournalDiceRolls ? CheckState.Checked : CheckState.UnChecked;
+        }
+        finally
+        {
+            _suppressChangeTracking = false;
+        }
+
         var content = _journalService.LoadOrCreate(campaign.Id, campaign.Name);
 
         _suppressChangeTracking = true;
@@ -139,6 +189,30 @@ public sealed class JournalPanel : FrameView
         }
 
         ApplyTheme();
+    }
+
+    private void OnEventsToggleChanged(object? sender, CancelEventArgs<CheckState> e)
+    {
+        var campaign = _campaignService.CurrentCampaign;
+        if (campaign == null)
+        {
+            return;
+        }
+
+        campaign.AutoJournalEvents = e.NewValue == CheckState.Checked;
+        _campaignService.Save();
+    }
+
+    private void OnDiceRollsToggleChanged(object? sender, CancelEventArgs<CheckState> e)
+    {
+        var campaign = _campaignService.CurrentCampaign;
+        if (campaign == null)
+        {
+            return;
+        }
+
+        campaign.AutoJournalDiceRolls = e.NewValue == CheckState.Checked;
+        _campaignService.Save();
     }
 
     private void OnTextChanged(object? sender, EventArgs e)
