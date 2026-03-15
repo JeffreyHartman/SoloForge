@@ -53,7 +53,7 @@ const fieldEntries = computed(() => Object.entries(props.segment.fields))
 </script>
 
 <template>
-  <div class="group/roll relative my-2">
+  <div class="group/roll relative my-4 max-w-2xl">
     <!-- Collapsed -->
     <div
       v-if="collapsed"

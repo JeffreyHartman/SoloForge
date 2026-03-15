@@ -18,16 +18,16 @@ public class JournalTextComposerTests
 
         var result = JournalTextComposer.AppendMarkdown(current, "Next");
 
-        result.Should().Be("# Title\n\nExisting\n\nNext\n");
+        result.Should().Be("# Title\n\nExisting\n\n\nNext\n");
     }
 
     [Fact]
     public void AppendMarkdown_WhenCurrentAlreadyEndsWithBlankLine_DoesNotAddExtraBlankLine()
     {
-        var current = "Existing\n\n";
+        var current = "Existing\n\n\n";
 
         var result = JournalTextComposer.AppendMarkdown(current, "Next");
 
-        result.Should().Be("Existing\n\nNext\n");
+        result.Should().Be("Existing\n\n\nNext\n");
     }
 }

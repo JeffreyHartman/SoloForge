@@ -7,9 +7,9 @@ public static class JournalTextComposer
         currentText ??= string.Empty;
         markdown ??= string.Empty;
 
-        if (!string.IsNullOrWhiteSpace(currentText) && !currentText.EndsWith("\n\n", StringComparison.Ordinal))
+        if (!string.IsNullOrWhiteSpace(currentText) && !currentText.EndsWith("\n\n\n", StringComparison.Ordinal))
         {
-            currentText = currentText.TrimEnd() + "\n\n";
+            currentText = currentText.TrimEnd() + "\n\n\n";
         }
 
         return currentText + markdown + "\n";
