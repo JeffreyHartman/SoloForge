@@ -9,7 +9,7 @@ const { activePage } = useToolNav()
 </script>
 
 <template>
-  <div class="flex min-h-[calc(100vh-10rem)]">
+  <div class="flex min-h-[calc(100vh-10rem)] gap-4">
     <ToolsSidebar />
 
     <!-- Content area -->

@@ -96,7 +96,7 @@ async function handleSetSessionLog(path: string) {
     />
 
     <!-- Main content area -->
-    <div class="flex flex-1 flex-col overflow-hidden">
+    <div class="flex flex-1 flex-col overflow-hidden pl-1">
       <!-- Tab bar -->
       <NoteTabBar
         :tabs="notes.openTabs.value"

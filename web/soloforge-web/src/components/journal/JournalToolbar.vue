@@ -30,7 +30,7 @@ const mod = isMac ? '\u2318' : 'Ctrl+'
 </script>
 
 <template>
-  <div class="mb-3 flex flex-wrap items-center gap-2 text-xs">
+  <div class="flex flex-wrap items-center gap-2 text-xs">
     <!-- Mode toggle -->
     <div class="inline-flex overflow-hidden rounded-lg border border-[var(--color-border-primary)]">
       <button

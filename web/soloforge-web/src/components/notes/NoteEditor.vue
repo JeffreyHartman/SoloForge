@@ -115,7 +115,7 @@ onUnmounted(() => {
 
   <div v-else class="flex flex-1 flex-col overflow-hidden">
     <!-- Toolbar row -->
-    <div class="flex items-center gap-3 px-4 pt-3">
+    <div class="flex items-center gap-3 border-b border-[var(--color-border-primary)] px-4 py-2">
       <div class="flex-1">
         <JournalToolbar
           :mode="prefs.mode"
@@ -141,7 +141,7 @@ onUnmounted(() => {
     </div>
 
     <!-- Editor area -->
-    <div class="flex-1 overflow-hidden px-4 pb-4">
+    <div class="flex-1 overflow-hidden px-4 py-3">
       <!-- Split view -->
       <div v-if="prefs.split" class="flex h-full gap-3">
         <textarea

@@ -216,13 +216,13 @@ onMounted(() => {
       @navigate="currentView = $event"
     />
 
-    <div v-if="errorMessage" class="relative mx-auto max-w-[1400px] px-4 pt-4">
+    <div v-if="errorMessage" class="relative mx-auto max-w-[2200px] px-4 pt-4">
       <div class="rounded-2xl border border-[var(--color-border-danger)] bg-[var(--color-bg-danger)] px-4 py-3 text-sm text-[var(--color-text-danger)]">
         {{ errorMessage }}
       </div>
     </div>
 
-    <main class="relative mx-auto max-w-[1400px] px-4 pb-12 pt-6">
+    <main class="relative mx-auto max-w-[2200px] px-4 pb-12 pt-6">
       <DashboardView
         v-if="currentView === 'dashboard'"
         :campaigns="campaign.campaigns.value"

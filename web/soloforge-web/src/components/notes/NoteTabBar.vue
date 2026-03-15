@@ -47,7 +47,7 @@ function displayName(path: string): string {
 <template>
   <div
     v-if="tabs.length > 0"
-    class="flex items-end gap-px overflow-x-auto border-b border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)] px-1"
+    class="flex items-end gap-px overflow-x-auto border-b border-[var(--color-border-primary)] bg-[var(--color-bg-card-solid)] px-2"
     role="tablist"
     aria-label="Open notes"
   >
