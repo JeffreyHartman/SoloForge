@@ -42,16 +42,16 @@ export function parseTableFields(tableText: string): { rollType: RollType; field
   const lines = tableText.split('\n')
   if (lines.length < 3) return null
 
-  const headerMatch = lines[0].match(/^\|\s*(.+?)\s*\|/)
-  if (!headerMatch) return null
+  const headerMatch = lines[0]?.match(/^\|\s*(.+?)\s*\|/)
+  if (!headerMatch?.[1]) return null
 
   const rollType = headerMatch[1].replace(/&nbsp;/g, '').replace(/\s+/g, ' ').trim()
   if (!KNOWN_ROLL_TYPES.has(rollType)) return null
 
   const fields: Record<string, string> = {}
   for (let i = 2; i < lines.length; i++) {
-    const cellMatch = lines[i].match(/^\|\s*\*{1,2}([^*]+)\*{1,2}\s*\|\s*(.*?)\s*\|/)
-    if (cellMatch) {
+    const cellMatch = lines[i]?.match(/^\|\s*\*{1,2}([^*]+)\*{1,2}\s*\|\s*(.*?)\s*\|/)
+    if (cellMatch?.[1] && cellMatch[2] !== undefined) {
       fields[cellMatch[1].trim()] = cellMatch[2].trim()
     }
   }
@@ -86,8 +86,8 @@ export function parseSegments(text: string): JournalSegment[] {
   }
 
   while (i < lines.length) {
-    if (textLines.length === 0) textStartOffset = lineOffsets[i]
-    const line = lines[i]
+    if (textLines.length === 0) textStartOffset = lineOffsets[i]!
+    const line = lines[i]!
 
     // Note blockquote
     if (/^>\s*\*\*Note:\*\*/.test(line)) {
@@ -98,18 +98,18 @@ export function parseSegments(text: string): JournalSegment[] {
         rollType: 'Note',
         fields: { Note: line.replace(/^>\s*\*\*Note:\*\*\s*/, '') },
         raw: line,
-        offset: lineOffsets[i],
+        offset: lineOffsets[i]!,
       })
       i++
       continue
     }
 
     // Table block: line starts with | and next line is a separator row
-    if (/^\|/.test(line) && i + 1 < lines.length && /^\|[\s:|-]+\|/.test(lines[i + 1])) {
-      const tableOffset = lineOffsets[i]
+    if (/^\|/.test(line) && i + 1 < lines.length && /^\|[\s:|-]+\|/.test(lines[i + 1]!)) {
+      const tableOffset = lineOffsets[i]!
       const tableLines: string[] = []
-      while (i < lines.length && /^\|/.test(lines[i])) {
-        tableLines.push(lines[i])
+      while (i < lines.length && /^\|/.test(lines[i]!)) {
+        tableLines.push(lines[i]!)
         i++
       }
 

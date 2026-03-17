@@ -44,7 +44,7 @@ function isPinned(id: string): boolean {
 
 function moveItem(from: number, to: number) {
   if (from < 0 || from >= prefs.items.length || to < 0 || to >= prefs.items.length) return
-  const [item] = prefs.items.splice(from, 1)
+  const [item] = prefs.items.splice(from, 1) as [ToolbarItem]
   prefs.items.splice(to, 0, item)
 }
 

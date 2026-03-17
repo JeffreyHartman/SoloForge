@@ -16,7 +16,7 @@ describe('useNameGenerator', () => {
   it('clamps count to pool size', async () => {
     const { useNameGenerator } = await import('../useNameGenerator')
     const { count, results, generate, selectedStyle } = useNameGenerator()
-    const poolSize = selectedStyle.value.names.length
+    const poolSize = selectedStyle.value!.names.length
     count.value = poolSize + 100
     generate()
     expect(results.value).toHaveLength(poolSize)

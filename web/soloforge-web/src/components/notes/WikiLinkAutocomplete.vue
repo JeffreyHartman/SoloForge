@@ -188,7 +188,7 @@ function onKeydown(e: KeyboardEvent) {
   } else if (e.key === 'Tab' || e.key === 'Enter') {
     if (filtered.value.length > 0) {
       e.preventDefault()
-      insertSelection(filtered.value[selectedIndex.value])
+      insertSelection(filtered.value[selectedIndex.value]!)
     }
   } else if (e.key === 'Escape') {
     e.preventDefault()

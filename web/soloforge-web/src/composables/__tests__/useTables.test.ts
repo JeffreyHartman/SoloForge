@@ -26,11 +26,11 @@ describe('useTables', () => {
 
       expect(tableGroups.value).toHaveLength(2)
       // Categories sorted alphabetically
-      expect(tableGroups.value[0].label).toBe('Core')
-      expect(tableGroups.value[1].label).toBe('Elements')
+      expect(tableGroups.value[0]!.label).toBe('Core')
+      expect(tableGroups.value[1]!.label).toBe('Elements')
       // Items sorted by displayName within category
-      expect(tableGroups.value[0].items[0].displayName).toBe('Alpha')
-      expect(tableGroups.value[0].items[1].displayName).toBe('Bravo')
+      expect(tableGroups.value[0]!.items[0]!.displayName).toBe('Alpha')
+      expect(tableGroups.value[0]!.items[1]!.displayName).toBe('Bravo')
     })
 
     it('uses fallback category based on isElement', () => {

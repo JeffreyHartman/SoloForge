@@ -222,3 +222,27 @@ export const ODDS_OPTIONS: OddsOption[] = [
 ]
 
 export const QUICK_DICE = ['d4', 'd6', 'd8', 'd10', 'd12', 'd20', 'd100'] as const
+
+// Combat Tracker Types
+
+export type CombatantType = 'PC' | 'NPC'
+export type CombatantStatus = 'active' | 'dead'
+
+export interface Combatant {
+  id: string
+  type: CombatantType
+  initiative: number | null
+  name: string
+  currentHp: number
+  maxHp: number
+  ac: number | null
+  conditions: string
+  status: CombatantStatus
+}
+
+export interface CombatTrackerState {
+  combatants: Combatant[]
+  activeCombatantId: string | null
+  round: number
+  started: boolean
+}

@@ -88,7 +88,7 @@ test.describe('Notes tab navigation race conditions', () => {
     // Open Note A and type distinctive content
     await openNoteInSidebar(page, 'E2E Test Note A')
     const editor = editorTextarea(page)
-    await editor.waitFor()
+    await expect(editor).toHaveValue(CONTENT_A, { timeout: 5_000 })
 
     const marker = 'UNIQUE-MARKER-' + Date.now()
     await editor.fill(marker)
@@ -118,7 +118,7 @@ test.describe('Notes tab navigation race conditions', () => {
     // Open Note A and type new content
     await openNoteInSidebar(page, 'E2E Test Note A')
     const editor = editorTextarea(page)
-    await editor.waitFor()
+    await expect(editor).toHaveValue(CONTENT_A, { timeout: 5_000 })
 
     const newContent = 'Saved content for A - ' + Date.now()
     await editor.fill(newContent)

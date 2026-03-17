@@ -32,7 +32,6 @@ const sidebarOpen = ref(true)
 
 // === Auto-save internals ===
 let lastSavedContent = ''
-let saving = false
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 const DEBOUNCE_MS = 3000
 let initialized = false
@@ -63,7 +62,6 @@ async function executeSave(savePath: string, saveContent: string): Promise<void>
     return
   }
 
-  saving = true
   loading.saveNote = true
   if (activeNotePath.value === savePath) saveStatus.value = 'saving'
 
@@ -86,7 +84,6 @@ async function executeSave(savePath: string, saveContent: string): Promise<void>
       saveStatus.value = 'unsaved'
     }
   } finally {
-    saving = false
     loading.saveNote = false
   }
 }
@@ -264,7 +261,7 @@ export function useNotes() {
       if (openTabs.value.length > 0) {
         // Switch to the nearest tab
         const newIdx = Math.min(idx, openTabs.value.length - 1)
-        await openNote(openTabs.value[newIdx])
+        await openNote(openTabs.value[newIdx]!)
       } else {
         activeNotePath.value = null
         activeNoteContent.value = ''

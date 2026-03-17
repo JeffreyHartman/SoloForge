@@ -77,8 +77,8 @@ describe('parseSegments', () => {
   it('parses plain text as a single text segment', () => {
     const segments = parseSegments('Hello world')
     expect(segments).toHaveLength(1)
-    expect(segments[0].type).toBe('text')
-    expect(segments[0].raw).toBe('Hello world')
+    expect(segments[0]!.type).toBe('text')
+    expect(segments[0]!.raw).toBe('Hello world')
   })
 
   it('parses a roll table into a roll segment', () => {
@@ -90,10 +90,10 @@ describe('parseSegments', () => {
 
     const segments = parseSegments(text)
     expect(segments).toHaveLength(1)
-    expect(segments[0].type).toBe('roll')
-    if (segments[0].type === 'roll') {
-      expect(segments[0].rollType).toBe('Fate Check')
-      expect(segments[0].fields['Result']).toBe('Yes')
+    expect(segments[0]!.type).toBe('roll')
+    if (segments[0]!.type === 'roll') {
+      expect(segments[0]!.rollType).toBe('Fate Check')
+      expect(segments[0]!.fields['Result']).toBe('Yes')
     }
   })
 
@@ -101,10 +101,10 @@ describe('parseSegments', () => {
     const text = '> **Note:** This is important'
     const segments = parseSegments(text)
     expect(segments).toHaveLength(1)
-    expect(segments[0].type).toBe('roll')
-    if (segments[0].type === 'roll') {
-      expect(segments[0].rollType).toBe('Note')
-      expect(segments[0].fields['Note']).toBe('This is important')
+    expect(segments[0]!.type).toBe('roll')
+    if (segments[0]!.type === 'roll') {
+      expect(segments[0]!.rollType).toBe('Note')
+      expect(segments[0]!.fields['Note']).toBe('This is important')
     }
   })
 
@@ -121,9 +121,9 @@ describe('parseSegments', () => {
 
     const segments = parseSegments(text)
     expect(segments).toHaveLength(3)
-    expect(segments[0].type).toBe('text')
-    expect(segments[1].type).toBe('roll')
-    expect(segments[2].type).toBe('text')
+    expect(segments[0]!.type).toBe('text')
+    expect(segments[1]!.type).toBe('roll')
+    expect(segments[2]!.type).toBe('text')
   })
 
   it('tracks offsets correctly', () => {
@@ -142,7 +142,7 @@ describe('parseSegments', () => {
     ].join('\n')
     const segments = parseSegments(text)
     expect(segments).toHaveLength(1)
-    expect(segments[0].type).toBe('text')
+    expect(segments[0]!.type).toBe('text')
   })
 })
 

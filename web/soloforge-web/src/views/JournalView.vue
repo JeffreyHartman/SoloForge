@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import NotesSidebar from '../components/notes/NotesSidebar.vue'
 import NoteTabBar from '../components/notes/NoteTabBar.vue'
 import NoteEditor from '../components/notes/NoteEditor.vue'
 import ToolbarStrip from '../components/journal/ToolbarStrip.vue'
 import ToolbarModal from '../components/journal/ToolbarModal.vue'
+import CombatRightPanel from '../components/combat/CombatRightPanel.vue'
 import { useNotes } from '../composables/useNotes'
 
 defineProps<{
@@ -17,6 +18,52 @@ const notes = useNotes()
 const renameTarget = ref<string | null>(null)
 const renameValue = ref('')
 const activeModalTool = ref<string | null>(null)
+
+// Combat panel state
+const combatPanelOpen = ref(loadPanelOpen())
+const combatPanelWidth = ref(loadPanelWidth())
+const sidebarWasOpen = ref(false)
+
+function loadPanelOpen(): boolean {
+  try {
+    return localStorage.getItem('soloforge-journal-combat-panel-open') === 'true'
+  } catch { /* ignore */ }
+  return false
+}
+
+function loadPanelWidth(): number {
+  try {
+    const stored = localStorage.getItem('soloforge-journal-combat-panel-width')
+    if (stored) {
+      const num = Number(stored)
+      if (Number.isFinite(num)) return Math.max(280, Math.min(600, num))
+    }
+  } catch { /* ignore */ }
+  return 400
+}
+
+watch(combatPanelOpen, (val) => {
+  localStorage.setItem('soloforge-journal-combat-panel-open', String(val))
+})
+
+watch(combatPanelWidth, (val) => {
+  localStorage.setItem('soloforge-journal-combat-panel-width', String(val))
+})
+
+// Auto-collapse sidebar when combat panel is open
+if (combatPanelOpen.value) {
+  sidebarWasOpen.value = notes.sidebarOpen.value
+  notes.sidebarOpen.value = false
+}
+
+watch(combatPanelOpen, (open) => {
+  if (open) {
+    sidebarWasOpen.value = notes.sidebarOpen.value
+    notes.sidebarOpen.value = false
+  } else {
+    notes.sidebarOpen.value = sidebarWasOpen.value
+  }
+})
 
 /** Opens the rename dialog pre-filled with the current name. */
 function startRename(path: string) {
@@ -97,14 +144,35 @@ async function handleSetSessionLog(path: string) {
 
     <!-- Main content area -->
     <div class="flex flex-1 flex-col overflow-hidden pl-1">
-      <!-- Tab bar -->
-      <NoteTabBar
-        :tabs="notes.openTabs.value"
-        :active-tab="notes.activeNotePath.value"
-        :session-log-path="notes.sessionLogPath.value"
-        @select="notes.openNote($event)"
-        @close="notes.closeTab($event)"
-      />
+      <!-- Tab bar with combat toggle -->
+      <div class="flex items-center">
+        <NoteTabBar
+          class="min-w-0 flex-1"
+          :tabs="notes.openTabs.value"
+          :active-tab="notes.activeNotePath.value"
+          :session-log-path="notes.sessionLogPath.value"
+          @select="notes.openNote($event)"
+          @close="notes.closeTab($event)"
+        />
+        <button
+          type="button"
+          class="mx-1 shrink-0 rounded-lg p-1.5 transition"
+          :class="combatPanelOpen
+            ? 'bg-[var(--color-bg-accent)] text-[var(--color-text-inverted)]'
+            : 'text-[var(--color-text-dimmed)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-hover)]'"
+          :aria-label="combatPanelOpen ? 'Close combat tracker' : 'Open combat tracker'"
+          :aria-pressed="combatPanelOpen"
+          @click="combatPanelOpen = !combatPanelOpen"
+        >
+          <!-- Sword and shield icon -->
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+            <!-- Shield -->
+            <path d="M5 3.5C5 3.5 8.5 2.5 10 2.5c1.5 0 5 1 5 1v8c0 3.5-5 6.5-5 6.5s-5-3-5-6.5v-8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+            <!-- Sword -->
+            <path d="M16 2l2 2-7 7-2-2 7-7zm-7 7l-1.5 1.5M8.5 10.5L7 12m1.5-1.5L7 9m3 3l-1.5 1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none" />
+          </svg>
+        </button>
+      </div>
 
       <!-- Pinned tools toolbar -->
       <ToolbarStrip @open-modal="activeModalTool = $event" />
@@ -112,6 +180,14 @@ async function handleSetSessionLog(path: string) {
       <!-- Editor -->
       <NoteEditor :api-online="apiOnline" />
     </div>
+
+    <!-- Combat right panel -->
+    <CombatRightPanel
+      v-if="combatPanelOpen"
+      :width="combatPanelWidth"
+      @update:width="combatPanelWidth = $event"
+      @close="combatPanelOpen = false"
+    />
 
     <!-- Toolbar tool modal (overlay) -->
     <ToolbarModal :tool-id="activeModalTool" @close="activeModalTool = null" />

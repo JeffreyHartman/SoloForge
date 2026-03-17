@@ -98,7 +98,7 @@ const currentTheme = computed(() =>
   WEB_THEMES.find(t => t.id === currentThemeId.value) ?? WEB_THEMES[1]
 )
 
-const isDark = computed(() => currentTheme.value.isDark)
+const isDark = computed(() => currentTheme.value!.isDark)
 
 function applyTheme(id: string) {
   const theme = WEB_THEMES.find(t => t.id === id)

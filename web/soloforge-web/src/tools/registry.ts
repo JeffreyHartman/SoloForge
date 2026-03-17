@@ -10,9 +10,17 @@ export const TOOL_GROUPS: ToolGroup[] = [
     ],
   },
   {
+    id: 'trackers',
+    name: 'Trackers',
+    sortOrder: 1,
+    pages: [
+      { id: 'combat-tracker', name: 'Combat Tracker' },
+    ],
+  },
+  {
     id: 'general',
     name: 'General',
-    sortOrder: 1,
+    sortOrder: 2,
     pages: [
       { id: 'name-generator', name: 'Name Generator' },
     ],
@@ -20,7 +28,7 @@ export const TOOL_GROUPS: ToolGroup[] = [
   {
     id: 'npcs',
     name: 'NPCs',
-    sortOrder: 2,
+    sortOrder: 3,
     pages: [
       { id: 'une', name: 'UNE', comingSoon: true },
     ],
@@ -28,7 +36,7 @@ export const TOOL_GROUPS: ToolGroup[] = [
   {
     id: 'world-building',
     name: 'World Building',
-    sortOrder: 3,
+    sortOrder: 4,
     pages: [
       { id: 'settlements', name: 'Settlements', comingSoon: true },
       { id: 'regions', name: 'Regions', comingSoon: true },

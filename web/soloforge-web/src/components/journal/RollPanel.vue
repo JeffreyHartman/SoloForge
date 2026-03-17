@@ -33,7 +33,7 @@ const STYLES: Record<string, RollStyle> = {
   'Note':          { border: 'var(--color-roll-note)',    color: 'var(--color-roll-note-text)',    bg: 'var(--color-roll-note-bg)',    label: 'Note' },
 }
 
-const style = computed(() => STYLES[props.segment.rollType] ?? STYLES['Note'])
+const style = computed(() => STYLES[props.segment.rollType] ?? STYLES['Note']!)
 
 const summary = computed(() => {
   const f = props.segment.fields

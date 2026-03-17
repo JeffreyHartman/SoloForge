@@ -233,7 +233,7 @@ function createSuggestionRenderer() {
       if (event.key === 'Enter' || event.key === 'Tab') {
         if (currentItems.length > 0) {
           event.preventDefault()
-          currentCommand?.(currentItems[selectedIndex])
+          currentCommand?.(currentItems[selectedIndex]!)
           return true
         }
       }

@@ -15,8 +15,8 @@ describe('useToast', () => {
     const { toasts, addToast } = useToast()
     addToast({ title: 'Saved', variant: 'success' })
     expect(toasts).toHaveLength(1)
-    expect(toasts[0].id).toMatch(/^toast-/)
-    expect(toasts[0].title).toBe('Saved')
+    expect(toasts[0]!.id).toMatch(/^toast-/)
+    expect(toasts[0]!.title).toBe('Saved')
   })
 
   it('generates incrementing IDs', async () => {
@@ -24,7 +24,7 @@ describe('useToast', () => {
     const { toasts, addToast } = useToast()
     addToast({ title: 'A', variant: 'info' })
     addToast({ title: 'B', variant: 'info' })
-    expect(toasts[0].id).not.toBe(toasts[1].id)
+    expect(toasts[0]!.id).not.toBe(toasts[1]!.id)
   })
 
   it('auto-dismisses after 4000ms', async () => {
@@ -40,7 +40,7 @@ describe('useToast', () => {
     const { useToast } = await import('../useToast')
     const { toasts, addToast, dismissToast } = useToast()
     addToast({ title: 'A', variant: 'info' })
-    const id = toasts[0].id
+    const id = toasts[0]!.id
     dismissToast(id)
     expect(toasts).toHaveLength(0)
   })
