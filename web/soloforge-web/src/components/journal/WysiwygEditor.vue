@@ -13,13 +13,16 @@ import { WikiLinkMark } from './tiptap/WikiLinkMark'
 import { createWikiLinkSuggestion } from './tiptap/wikiLinkSuggestion'
 import { preprocessForWysiwyg } from './tiptap/preprocessMarkdown'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   content: string | undefined
   fontStyle: Record<string, string | undefined>
   disabled: boolean
   placeholder: string
   allPaths?: string[]
-}>()
+  enhanced?: boolean
+}>(), {
+  enhanced: true,
+})
 
 const emit = defineEmits<{
   'update:content': [value: string]
@@ -29,7 +32,7 @@ const emit = defineEmits<{
 const isUpdatingFromProp = ref(false)
 
 const editor = useEditor({
-  content: preprocessForWysiwyg(props.content ?? ''),
+  content: preprocessForWysiwyg(props.content ?? '', { enhanced: props.enhanced }),
   editable: !props.disabled,
   extensions: [
     StarterKit,
@@ -124,7 +127,7 @@ watch(() => props.content, (newContent) => {
   if (newContent === currentMarkdown) return
 
   isUpdatingFromProp.value = true
-  const preprocessed = preprocessForWysiwyg(newContent ?? '')
+  const preprocessed = preprocessForWysiwyg(newContent ?? '', { enhanced: props.enhanced })
   editor.value.commands.setContent(preprocessed)
   nextTick(() => {
     isUpdatingFromProp.value = false
@@ -134,6 +137,18 @@ watch(() => props.content, (newContent) => {
 // Watch disabled prop
 watch(() => props.disabled, (disabled) => {
   editor.value?.setEditable(!disabled)
+})
+
+// Watch enhanced prop — re-preprocess content to toggle roll table node rendering
+watch(() => props.enhanced, () => {
+  if (!editor.value) return
+  const currentMarkdown = (editor.value.storage as any).markdown.getMarkdown() as string
+  isUpdatingFromProp.value = true
+  const preprocessed = preprocessForWysiwyg(currentMarkdown, { enhanced: props.enhanced })
+  editor.value.commands.setContent(preprocessed)
+  nextTick(() => {
+    isUpdatingFromProp.value = false
+  })
 })
 
 /** Focus the editor and place the cursor at the end of the document. */

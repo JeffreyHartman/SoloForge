@@ -1,0 +1,4 @@
+Journal
+- Feature: Collapsable headers, like in Obsidian
+- Bug: When I create a header, all the new text below it is styled like a header as well, until i navigate away and come back
+- Bug: Weird formatting issues - When I type things on the Preview, they often end up with weird backslashes in places I don't expect. Escape sequences they look like. 

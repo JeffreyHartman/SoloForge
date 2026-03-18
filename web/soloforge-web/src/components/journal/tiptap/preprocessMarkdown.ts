@@ -42,7 +42,7 @@ export function parseTableFields(tableText: string): { rollType: string; fields:
   return { rollType, fields }
 }
 
-export function preprocessForWysiwyg(markdown: string): string {
+export function preprocessForWysiwyg(markdown: string, options?: { enhanced?: boolean }): string {
   if (!markdown) return ''
 
   // Preserve extra blank lines by converting them to <p></p> tags.
@@ -81,7 +81,7 @@ export function preprocessForWysiwyg(markdown: string): string {
         i++
       }
       const tableRaw = tableLines.join('\n')
-      const parsed = parseTableFields(tableRaw)
+      const parsed = options?.enhanced !== false ? parseTableFields(tableRaw) : null
 
       if (parsed) {
         result.push(
@@ -90,7 +90,7 @@ export function preprocessForWysiwyg(markdown: string): string {
         continue
       }
 
-      // Not a recognized roll table — keep as markdown
+      // Not a recognized roll table (or enhanced is off) — keep as markdown
       result.push(...tableLines)
       continue
     }

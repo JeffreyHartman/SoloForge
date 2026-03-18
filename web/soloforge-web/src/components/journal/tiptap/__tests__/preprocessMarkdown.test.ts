@@ -114,4 +114,38 @@ describe('preprocessForWysiwyg', () => {
     expect(result).not.toContain('data-roll-table')
     expect(result).toContain('| Custom | Table |')
   })
+
+  it('skips roll table conversion when enhanced is false', () => {
+    const input = [
+      '| Fate Check | &nbsp; |',
+      '| ---------- | ------ |',
+      '| **Result** | Yes |',
+    ].join('\n')
+    const result = preprocessForWysiwyg(input, { enhanced: false })
+    expect(result).not.toContain('data-roll-table')
+    expect(result).toContain('| Fate Check | &nbsp; |')
+    expect(result).toContain('| **Result** | Yes |')
+  })
+
+  it('converts roll tables when enhanced is true', () => {
+    const input = [
+      '| Fate Check | &nbsp; |',
+      '| ---------- | ------ |',
+      '| **Result** | Yes |',
+    ].join('\n')
+    const result = preprocessForWysiwyg(input, { enhanced: true })
+    expect(result).toContain('data-roll-table="true"')
+  })
+
+  it('still converts note blocks when enhanced is false', () => {
+    const input = '> **Note:** Important info'
+    const result = preprocessForWysiwyg(input, { enhanced: false })
+    expect(result).toContain('data-note-block="true"')
+  })
+
+  it('still converts wiki-links when enhanced is false', () => {
+    const input = 'See [[My Note]] for details'
+    const result = preprocessForWysiwyg(input, { enhanced: false })
+    expect(result).toContain('data-wiki-link="true"')
+  })
 })

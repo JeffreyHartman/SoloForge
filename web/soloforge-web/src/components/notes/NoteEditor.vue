@@ -130,6 +130,7 @@ onUnmounted(() => {
           :content="activeNoteContent"
           :font-style="fontStyle"
           :disabled="!activeNotePath"
+          :enhanced="prefs.enhanced"
           placeholder="Start writing..."
           :all-paths="allPaths"
           :aria-label="`Edit ${activeNoteFileName}`"
