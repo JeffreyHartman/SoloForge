@@ -3,15 +3,13 @@ import { ref, watch, onBeforeUnmount, nextTick } from 'vue'
 import { Selection } from '@tiptap/pm/state'
 import { useEditor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
-import Paragraph from '@tiptap/extension-paragraph'
 import { Table, TableRow, TableCell, TableHeader } from '@tiptap/extension-table'
 import Placeholder from '@tiptap/extension-placeholder'
-import { Markdown } from 'tiptap-markdown'
+import { Markdown } from '@tiptap/markdown'
 import { RollTableNode } from './tiptap/RollTableNode'
 import { NoteBlockNode } from './tiptap/NoteBlockNode'
 import { WikiLinkMark } from './tiptap/WikiLinkMark'
 import { createWikiLinkSuggestion } from './tiptap/wikiLinkSuggestion'
-import { preprocessForWysiwyg } from './tiptap/preprocessMarkdown'
 
 const props = withDefaults(defineProps<{
   content: string | undefined
@@ -32,43 +30,18 @@ const emit = defineEmits<{
 const isUpdatingFromProp = ref(false)
 
 const editor = useEditor({
-  content: preprocessForWysiwyg(props.content ?? '', { enhanced: props.enhanced }),
+  content: props.content ?? '',
+  contentType: 'markdown',
   editable: !props.disabled,
   extensions: [
     StarterKit,
-    // Override the paragraph markdown serializer so empty paragraphs
-    // produce blank lines instead of being silently collapsed.
-    Paragraph.extend({
-      addStorage() {
-        return {
-          markdown: {
-            serialize(state: any, node: any) {
-              if (node.childCount === 0) {
-                // Force flushClose for the previous block, then close this one,
-                // so an empty paragraph becomes a blank line in the output.
-                state.write('')
-                state.closeBlock(node)
-              } else {
-                state.renderInline(node)
-                state.closeBlock(node)
-              }
-            },
-            parse: {},
-          },
-        }
-      },
-    }),
     Table.configure({ resizable: false }),
     TableRow,
     TableCell,
     TableHeader,
     Placeholder.configure({ placeholder: props.placeholder }),
     Markdown.configure({
-      html: true,
-      tightLists: true,
-      breaks: true,
-      transformPastedText: true,
-      transformCopiedText: true,
+      markedOptions: { gfm: true, breaks: true },
     }),
     RollTableNode,
     NoteBlockNode,
@@ -77,9 +50,14 @@ const editor = useEditor({
       allPaths: () => props.allPaths ?? [],
     }),
   ],
+  onCreate({ editor: ed }) {
+    const storage = ed.storage as any
+    if (storage.rollTable) storage.rollTable.enhanced = props.enhanced
+    if (storage.noteBlock) storage.noteBlock.enhanced = props.enhanced
+  },
   onUpdate({ editor: ed }) {
     if (isUpdatingFromProp.value) return
-    const md = (ed.storage as any).markdown.getMarkdown() as string
+    const md = ed.getMarkdown()
     emit('update:content', md)
   },
   editorProps: {
@@ -105,12 +83,15 @@ const editor = useEditor({
       }
       return false
     },
-    handleKeyDown(_view, event) {
+    handleKeyDown(view, event) {
       if (event.key === 'Enter') {
-        const target = (event.target as HTMLElement).closest('.wiki-link') as HTMLElement | null
-        if (target?.dataset.path) {
+        // Check if the cursor is inside a wiki-link mark
+        const { $from } = view.state.selection
+        const marks = $from.marks()
+        const wikiMark = marks.find(m => m.type.name === 'wikiLink')
+        if (wikiMark) {
           event.preventDefault()
-          emit('navigate', target.dataset.path)
+          emit('navigate', wikiMark.attrs.path)
           return true
         }
       }
@@ -123,12 +104,11 @@ const editor = useEditor({
 watch(() => props.content, (newContent) => {
   if (!editor.value) return
   // Skip if Tiptap already shows this content (avoids cursor reset on feedback loops)
-  const currentMarkdown = (editor.value.storage as any).markdown.getMarkdown() as string
+  const currentMarkdown = editor.value.getMarkdown()
   if (newContent === currentMarkdown) return
 
   isUpdatingFromProp.value = true
-  const preprocessed = preprocessForWysiwyg(newContent ?? '', { enhanced: props.enhanced })
-  editor.value.commands.setContent(preprocessed)
+  editor.value.commands.setContent(newContent ?? '', { contentType: 'markdown' })
   nextTick(() => {
     isUpdatingFromProp.value = false
   })
@@ -139,13 +119,15 @@ watch(() => props.disabled, (disabled) => {
   editor.value?.setEditable(!disabled)
 })
 
-// Watch enhanced prop — re-preprocess content to toggle roll table node rendering
+// Watch enhanced prop — update storage and re-set content to trigger node view re-render
 watch(() => props.enhanced, () => {
   if (!editor.value) return
-  const currentMarkdown = (editor.value.storage as any).markdown.getMarkdown() as string
+  const storage = editor.value.storage as any
+  if (storage.rollTable) storage.rollTable.enhanced = props.enhanced
+  if (storage.noteBlock) storage.noteBlock.enhanced = props.enhanced
+  const currentMarkdown = editor.value.getMarkdown()
   isUpdatingFromProp.value = true
-  const preprocessed = preprocessForWysiwyg(currentMarkdown, { enhanced: props.enhanced })
-  editor.value.commands.setContent(preprocessed)
+  editor.value.commands.setContent(currentMarkdown, { contentType: 'markdown' })
   nextTick(() => {
     isUpdatingFromProp.value = false
   })

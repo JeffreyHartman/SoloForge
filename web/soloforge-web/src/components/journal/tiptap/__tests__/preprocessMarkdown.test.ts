@@ -1,27 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { encodeAttr, parseTableFields, preprocessForWysiwyg } from '../preprocessMarkdown'
-
-describe('encodeAttr', () => {
-  it('encodes ampersands', () => {
-    expect(encodeAttr('a & b')).toBe('a &amp; b')
-  })
-
-  it('encodes double quotes', () => {
-    expect(encodeAttr('say "hello"')).toBe('say &quot;hello&quot;')
-  })
-
-  it('encodes angle brackets', () => {
-    expect(encodeAttr('<div>')).toBe('&lt;div&gt;')
-  })
-
-  it('encodes newlines', () => {
-    expect(encodeAttr('line1\nline2')).toBe('line1&#10;line2')
-  })
-
-  it('handles multiple entities in one string', () => {
-    expect(encodeAttr('a & "b" <c>\nd')).toBe('a &amp; &quot;b&quot; &lt;c&gt;&#10;d')
-  })
-})
+import { parseTableFields, RollTableNode } from '../RollTableNode'
+import { NoteBlockNode } from '../NoteBlockNode'
+import { WikiLinkMark } from '../WikiLinkMark'
 
 describe('parseTableFields', () => {
   it('parses a valid Fate Check table', () => {
@@ -44,108 +24,122 @@ describe('parseTableFields', () => {
   it('returns null for too few lines', () => {
     expect(parseTableFields('| Fate Check |')).toBeNull()
   })
+
+  it('parses all known roll types', () => {
+    for (const type of ['Fate Check', 'Scene Check', 'Random Event', 'Meaning Roll', 'Dice Roll']) {
+      const table = `| ${type} | &nbsp; |\n| --- | --- |\n| **Result** | Value |`
+      const result = parseTableFields(table)
+      expect(result).not.toBeNull()
+      expect(result!.rollType).toBe(type)
+    }
+  })
+
+  it('parses multiple fields', () => {
+    const table = [
+      '| Fate Check | &nbsp; |',
+      '| ---------- | ------ |',
+      '| **Question** | Will it work? |',
+      '| **Odds** | 50/50 |',
+      '| **Result** | Yes |',
+    ].join('\n')
+    const result = parseTableFields(table)
+    expect(result).not.toBeNull()
+    expect(result!.fields['Question']).toBe('Will it work?')
+    expect(result!.fields['Odds']).toBe('50/50')
+    expect(result!.fields['Result']).toBe('Yes')
+  })
 })
 
-describe('preprocessForWysiwyg', () => {
-  it('returns empty string for empty input', () => {
-    expect(preprocessForWysiwyg('')).toBe('')
+describe('RollTableNode tokenizer', () => {
+  const tokenizer = RollTableNode.config.markdownTokenizer!
+
+  it('tokenizes a recognized roll table', () => {
+    const src = '| Fate Check | &nbsp; |\n| ---------- | ------ |\n| **Result** | Yes |\n'
+    const result = tokenizer.tokenize(src, [], {} as any)
+    expect(result).toBeDefined()
+    expect(result!.type).toBe('rollTable')
+    expect(result!.rollType).toBe('Fate Check')
   })
 
-  it('passes through plain text unchanged', () => {
-    expect(preprocessForWysiwyg('Hello world')).toBe('Hello world')
+  it('returns undefined for unrecognized tables', () => {
+    const src = '| Custom | Table |\n| ------ | ----- |\n| Data   | Here  |\n'
+    const result = tokenizer.tokenize(src, [], {} as any)
+    expect(result).toBeUndefined()
   })
 
-  it('preserves extra blank lines with <p></p> tags', () => {
-    const input = 'A\n\n\nB'
-    const result = preprocessForWysiwyg(input)
-    expect(result).toContain('<p></p>')
-    expect(result).toContain('A')
-    expect(result).toContain('B')
+  it('returns undefined for non-table content', () => {
+    const result = tokenizer.tokenize('Hello world', [], {} as any)
+    expect(result).toBeUndefined()
+  })
+})
+
+describe('NoteBlockNode tokenizer', () => {
+  const tokenizer = NoteBlockNode.config.markdownTokenizer!
+
+  it('tokenizes a single-line note', () => {
+    const src = '> **Note:** Important info\n'
+    const result = tokenizer.tokenize(src, [], {} as any)
+    expect(result).toBeDefined()
+    expect(result!.type).toBe('noteBlock')
+    expect(result!.noteText).toBe('Important info')
   })
 
-  it('converts note blockquotes to HTML divs', () => {
-    const input = '> **Note:** Important info'
-    const result = preprocessForWysiwyg(input)
-    expect(result).toContain('data-note-block="true"')
-    expect(result).toContain('Important info')
+  it('tokenizes a multi-line note', () => {
+    const src = '> **Note:** First line\n> Second line\n> Third line\n'
+    const result = tokenizer.tokenize(src, [], {} as any)
+    expect(result).toBeDefined()
+    expect(result!.type).toBe('noteBlock')
+    expect(result!.noteText).toBe('First line\nSecond line\nThird line')
   })
 
-  it('converts roll tables to HTML divs', () => {
-    const input = [
-      '| Fate Check | &nbsp; |',
-      '| ---------- | ------ |',
-      '| **Result** | Yes |',
-    ].join('\n')
-    const result = preprocessForWysiwyg(input)
-    expect(result).toContain('data-roll-table="true"')
-    expect(result).toContain('data-roll-type="Fate Check"')
+  it('stops at non-continuation lines', () => {
+    const src = '> **Note:** A note\n\nRegular text'
+    const result = tokenizer.tokenize(src, [], {} as any)
+    expect(result).toBeDefined()
+    expect(result!.noteText).toBe('A note')
+    expect(result!.raw).not.toContain('Regular text')
   })
 
-  it('converts wiki-links to HTML spans', () => {
-    const input = 'See [[My Note]] for details'
-    const result = preprocessForWysiwyg(input)
-    expect(result).toContain('data-wiki-link="true"')
-    expect(result).toContain('data-path="My Note.md"')
-    expect(result).toContain('My Note')
+  it('returns undefined for regular blockquotes', () => {
+    const result = tokenizer.tokenize('> Just a quote\n', [], {} as any)
+    expect(result).toBeUndefined()
+  })
+})
+
+describe('WikiLinkMark tokenizer', () => {
+  const tokenizer = WikiLinkMark.config.markdownTokenizer!
+
+  it('tokenizes a simple wiki-link', () => {
+    const src = '[[My Note]]'
+    const result = tokenizer.tokenize(src, [], {} as any)
+    expect(result).toBeDefined()
+    expect(result!.type).toBe('wikiLink')
+    expect(result!.path).toBe('My Note.md')
+    expect(result!.display).toBe('My Note')
   })
 
-  it('handles wiki-links with display text', () => {
-    const input = '[[path/to/note|Display Name]]'
-    const result = preprocessForWysiwyg(input)
-    expect(result).toContain('data-path="path/to/note.md"')
-    expect(result).toContain('Display Name')
+  it('tokenizes a wiki-link with display text', () => {
+    const src = '[[path/to/note|Display Name]]'
+    const result = tokenizer.tokenize(src, [], {} as any)
+    expect(result).toBeDefined()
+    expect(result!.path).toBe('path/to/note.md')
+    expect(result!.display).toBe('Display Name')
   })
 
-  it('does not add .md if path already ends with .md', () => {
-    const input = '[[my-note.md]]'
-    const result = preprocessForWysiwyg(input)
-    expect(result).toContain('data-path="my-note.md"')
-    // Should not have double .md
-    expect(result).not.toContain('my-note.md.md')
+  it('does not double-add .md extension', () => {
+    const src = '[[my-note.md]]'
+    const result = tokenizer.tokenize(src, [], {} as any)
+    expect(result).toBeDefined()
+    expect(result!.path).toBe('my-note.md')
   })
 
-  it('keeps unrecognized tables as plain markdown', () => {
-    const input = [
-      '| Custom | Table |',
-      '| ------ | ----- |',
-      '| Data   | Here  |',
-    ].join('\n')
-    const result = preprocessForWysiwyg(input)
-    expect(result).not.toContain('data-roll-table')
-    expect(result).toContain('| Custom | Table |')
+  it('returns undefined for non-wiki-link content', () => {
+    const result = tokenizer.tokenize('Hello world', [], {} as any)
+    expect(result).toBeUndefined()
   })
 
-  it('skips roll table conversion when enhanced is false', () => {
-    const input = [
-      '| Fate Check | &nbsp; |',
-      '| ---------- | ------ |',
-      '| **Result** | Yes |',
-    ].join('\n')
-    const result = preprocessForWysiwyg(input, { enhanced: false })
-    expect(result).not.toContain('data-roll-table')
-    expect(result).toContain('| Fate Check | &nbsp; |')
-    expect(result).toContain('| **Result** | Yes |')
-  })
-
-  it('converts roll tables when enhanced is true', () => {
-    const input = [
-      '| Fate Check | &nbsp; |',
-      '| ---------- | ------ |',
-      '| **Result** | Yes |',
-    ].join('\n')
-    const result = preprocessForWysiwyg(input, { enhanced: true })
-    expect(result).toContain('data-roll-table="true"')
-  })
-
-  it('still converts note blocks when enhanced is false', () => {
-    const input = '> **Note:** Important info'
-    const result = preprocessForWysiwyg(input, { enhanced: false })
-    expect(result).toContain('data-note-block="true"')
-  })
-
-  it('still converts wiki-links when enhanced is false', () => {
-    const input = 'See [[My Note]] for details'
-    const result = preprocessForWysiwyg(input, { enhanced: false })
-    expect(result).toContain('data-wiki-link="true"')
+  it('returns undefined for incomplete brackets', () => {
+    const result = tokenizer.tokenize('[[incomplete', [], {} as any)
+    expect(result).toBeUndefined()
   })
 })

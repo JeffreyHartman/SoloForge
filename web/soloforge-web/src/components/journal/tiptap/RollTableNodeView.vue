@@ -7,6 +7,7 @@ const props = defineProps(nodeViewProps)
 
 const collapsed = ref(true)
 
+const enhanced = computed(() => ((props.editor.storage as any).rollTable?.enhanced ?? true) as boolean)
 const rollType = computed(() => (props.node.attrs.rollType as string) ?? '')
 
 const fields = computed<Record<string, string>>(() => {
@@ -27,7 +28,14 @@ function toggle() {
 </script>
 
 <template>
+  <!-- Non-enhanced: show raw markdown text -->
+  <NodeViewWrapper v-if="!enhanced" class="roll-panel-wysiwyg-raw" :class="{ 'ProseMirror-selectednode': selected }">
+    <pre>{{ node.attrs.raw }}</pre>
+  </NodeViewWrapper>
+
+  <!-- Enhanced: styled panel -->
   <NodeViewWrapper
+    v-else
     class="roll-panel-wysiwyg"
     :class="{
       'ProseMirror-selectednode': selected,

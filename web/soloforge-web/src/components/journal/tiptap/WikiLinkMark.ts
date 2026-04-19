@@ -1,5 +1,5 @@
-import { Mark, mergeAttributes } from '@tiptap/core'
-import { InputRule } from '@tiptap/core'
+import { Mark, mergeAttributes, InputRule } from '@tiptap/core'
+import type { MarkdownToken, MarkdownParseHelpers, JSONContent, MarkdownRendererHelpers, RenderContext } from '@tiptap/core'
 
 export const WikiLinkMark = Mark.create({
   name: 'wikiLink',
@@ -7,7 +7,6 @@ export const WikiLinkMark = Mark.create({
   addAttributes() {
     return {
       path: { default: '' },
-      raw: { default: '' },
     }
   },
 
@@ -18,20 +17,18 @@ export const WikiLinkMark = Mark.create({
         const el = dom as HTMLElement
         return {
           path: el.getAttribute('data-path') ?? '',
-          raw: el.getAttribute('data-raw') ?? '',
         }
       },
     }]
   },
 
   renderHTML({ HTMLAttributes }) {
-    const { path, raw, ...rest } = HTMLAttributes
+    const { path, ...rest } = HTMLAttributes
     return [
       'span',
       mergeAttributes(rest, {
         'data-wiki-link': 'true',
         'data-path': path,
-        'data-raw': raw,
         class: 'wiki-link',
         role: 'link',
         tabindex: '0',
@@ -53,7 +50,7 @@ export const WikiLinkMark = Mark.create({
           const displayPart = pipeIdx >= 0 ? inner.substring(pipeIdx + 1).trim() : inner
           const resolvedPath = pathPart.endsWith('.md') ? pathPart : `${pathPart}.md`
 
-          const mark = this.type.create({ path: resolvedPath, raw: inner })
+          const mark = this.type.create({ path: resolvedPath })
           const { tr } = state
           tr.replaceWith(range.from, range.to, state.schema.text(displayPart, [mark]))
         },
@@ -61,24 +58,53 @@ export const WikiLinkMark = Mark.create({
     ]
   },
 
-  addStorage() {
-    return {
-      markdown: {
-        serialize: {
-          open(_state: any, mark: any) {
-            const raw: string = mark.attrs.raw ?? ''
-            const pipeIdx = raw.indexOf('|')
-            if (pipeIdx >= 0) {
-              return `[[${raw.substring(0, pipeIdx).trim()}|`
-            }
-            return '[['
-          },
-          close: ']]',
-          mixable: false,
-          expelEnclosingWhitespace: true,
-        },
-        parse: {},
-      },
-    }
+  markdownTokenizer: {
+    name: 'wikiLink',
+    level: 'inline',
+    start: (src: string) => {
+      const idx = src.indexOf('[[')
+      return idx >= 0 ? idx : -1
+    },
+    tokenize(src: string): MarkdownToken | undefined {
+      const match = src.match(/^\[\[([^\]\n]+)\]\]/)
+      if (!match) return undefined
+
+      const inner = (match[1] ?? '').trim()
+      if (!inner) return undefined
+
+      const pipeIdx = inner.indexOf('|')
+      const pathPart = pipeIdx >= 0 ? inner.substring(0, pipeIdx).trim() : inner
+      const displayPart = pipeIdx >= 0 ? inner.substring(pipeIdx + 1).trim() : inner
+      const resolvedPath = pathPart.endsWith('.md') ? pathPart : `${pathPart}.md`
+
+      return {
+        type: 'wikiLink',
+        raw: match[0]!,
+        path: resolvedPath,
+        display: displayPart,
+      }
+    },
+  },
+
+  parseMarkdown(token: MarkdownToken, helpers: MarkdownParseHelpers) {
+    return helpers.applyMark('wikiLink', [
+      helpers.createTextNode(token.display ?? token.text ?? ''),
+    ], { path: token.path ?? '' })
+  },
+
+  renderMarkdown(node: JSONContent, helpers: MarkdownRendererHelpers, _ctx: RenderContext) {
+    // For marks, the MarkdownManager calls renderMarkdown with a synthetic node
+    // containing a placeholder. It splits the result around the placeholder to
+    // extract the opening/closing syntax. We use renderChildren() so the
+    // placeholder passes through correctly.
+    //
+    // The opening is always `[[` and closing is always `]]`. The path is stored
+    // in the mark attrs, and we only include it in the output when it differs
+    // from the display text (which the MarkdownManager inserts automatically).
+    // However, since the placeholder makes it impossible to compare display vs
+    // path at render time, we always use the simple form `[[display]]` and let
+    // the parser resolve the path on re-import.
+    const inner = helpers.renderChildren(node)
+    return `[[${inner}]]`
   },
 })
