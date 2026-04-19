@@ -1,0 +1,107 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e7]:
+        - generic [ref=e9]: SF
+        - generic [ref=e10]:
+          - heading "SoloForge" [level=1] [ref=e11]
+          - paragraph [ref=e12]: Default Campaign
+      - generic [ref=e13]:
+        - generic [ref=e14]:
+          - generic [ref=e15]: Chaos
+          - generic [ref=e16]: "5"
+        - generic [ref=e19]: Online
+        - button "Change theme" [ref=e21]:
+          - img [ref=e22]
+          - generic [ref=e28]: Theme
+        - button "Refresh" [ref=e29]
+  - navigation [ref=e30]:
+    - generic [ref=e31]:
+      - button "Dashboard" [ref=e32]:
+        - img [ref=e33]
+        - generic [ref=e35]: Dashboard
+      - button "Tools" [ref=e36]:
+        - img [ref=e37]
+        - generic [ref=e39]: Tools
+      - button "Adventure" [ref=e40]:
+        - img [ref=e41]
+        - generic [ref=e43]: Adventure
+      - button "Journal" [active] [ref=e44]:
+        - img [ref=e45]
+        - generic [ref=e47]: Journal
+      - button "History" [ref=e48]:
+        - img [ref=e49]
+        - generic [ref=e51]: History
+  - main [ref=e52]:
+    - generic [ref=e53]:
+      - generic [ref=e55]:
+        - generic [ref=e56]:
+          - generic [ref=e57]: Notes
+          - generic [ref=e58]:
+            - button "New note" [ref=e59]:
+              - img [ref=e60]
+            - button "New folder" [ref=e62]:
+              - img [ref=e63]
+            - button "Collapse Notes sidebar" [expanded] [ref=e66]:
+              - img [ref=e67]
+        - tree "Notes tree" [ref=e70]:
+          - treeitem "E2E State Note A Set as session log Rename note Delete note" [selected] [ref=e72] [cursor=pointer]:
+            - img [ref=e73]
+            - generic [ref=e75]: E2E State Note A
+            - generic [ref=e76]:
+              - button "Set as session log" [ref=e77]:
+                - img [ref=e78]
+              - button "Rename note" [ref=e80]:
+                - img [ref=e81]
+              - button "Delete note" [ref=e83]:
+                - img [ref=e84]
+          - treeitem "Session Log Log Rename note Delete note" [ref=e87] [cursor=pointer]:
+            - img [ref=e88]
+            - generic [ref=e90]: Session Log
+            - generic [ref=e91]: Log
+            - generic:
+              - button "Rename note":
+                - img
+              - button "Delete note":
+                - img
+      - generic [ref=e92]:
+        - generic [ref=e93]:
+          - tablist "Open notes" [ref=e94]:
+            - tab "E2E State Note A Close E2E State Note A" [selected] [ref=e95] [cursor=pointer]:
+              - generic [ref=e96]: E2E State Note A
+              - button "Close E2E State Note A" [ref=e97]:
+                - img [ref=e98]
+          - button "Open combat tracker" [ref=e100]:
+            - img [ref=e101]
+        - generic [ref=e104]:
+          - generic [ref=e105]:
+            - generic [ref=e107]:
+              - generic [ref=e108]:
+                - button "Edit" [pressed] [ref=e109]
+                - button "Preview" [ref=e110]
+              - generic [ref=e111] [cursor=pointer]:
+                - checkbox "Auto-log events to journal" [checked] [ref=e112]
+                - generic [ref=e113]: Auto-log events
+              - generic [ref=e114] [cursor=pointer]:
+                - checkbox "Auto-log dice rolls to journal" [checked] [ref=e115]
+                - generic [ref=e116]: Auto-log dice
+              - combobox "Journal font family" [ref=e117]:
+                - option "Monospace" [selected]
+                - option "Sans-serif"
+                - option "Serif"
+              - combobox "Journal font size" [ref=e118]:
+                - option "12px"
+                - option "13px"
+                - option "14px" [selected]
+                - option "15px"
+                - option "16px"
+                - option "18px"
+                - option "20px"
+            - generic [ref=e119]: Saved
+          - textbox "Edit E2E State Note A" [ref=e121]:
+            - /placeholder: Start writing...
+            - text: Paragraph 1 of the long test note. Paragraph 2 of the long test note. Paragraph 3 of the long test note. Paragraph 4 of the long test note. Paragraph 5 of the long test note. Paragraph 6 of the long test note. Paragraph 7 of the long test note. Paragraph 8 of the long test note. Paragraph 9 of the long test note. Paragraph 10 of the long test note. Paragraph 11 of the long test note. Paragraph 12 of the long test note. Paragraph 13 of the long test note. Paragraph 14 of the long test note. Paragraph 15 of the long test note. Paragraph 16 of the long test note. Paragraph 17 of the long test note. Paragraph 18 of the long test note. Paragraph 19 of the long test note. Paragraph 20 of the long test note. Paragraph 21 of the long test note. Paragraph 22 of the long test note. Paragraph 23 of the long test note. Paragraph 24 of the long test note. Paragraph 25 of the long test note. Paragraph 26 of the long test note. Paragraph 27 of the long test note. Paragraph 28 of the long test note. Paragraph 29 of the long test note. Paragraph 30 of the long test note. Paragraph 31 of the long test note. Paragraph 32 of the long test note. Paragraph 33 of the long test note. Paragraph 34 of the long test note. Paragraph 35 of the long test note. Paragraph 36 of the long test note. Paragraph 37 of the long test note. Paragraph 38 of the long test note. Paragraph 39 of the long test note. Paragraph 40 of the long test note. Paragraph 41 of the long test note. Paragraph 42 of the long test note. Paragraph 43 of the long test note. Paragraph 44 of the long test note. Paragraph 45 of the long test note. Paragraph 46 of the long test note. Paragraph 47 of the long test note. Paragraph 48 of the long test note. Paragraph 49 of the long test note. Paragraph 50 of the long test note.
+```
