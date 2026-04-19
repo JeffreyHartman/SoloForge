@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onActivated, onDeactivated, watch } from 'vue'
 import JournalToolbar from '../journal/JournalToolbar.vue'
 import WysiwygEditor from '../journal/WysiwygEditor.vue'
 import WikiLinkAutocomplete from './WikiLinkAutocomplete.vue'
@@ -95,8 +95,15 @@ function onKeydown(e: KeyboardEvent) {
   prefs.mode = prefs.mode === 'edit' ? 'preview' : 'edit'
 }
 
-onMounted(() => document.addEventListener('keydown', onKeydown))
-onUnmounted(() => {
+// Under <KeepAlive>, onActivated/onDeactivated fire on nav in/out while the
+// component remains cached. onActivated also fires right after onMounted on
+// the first visit, and onDeactivated fires right before onUnmounted on final
+// teardown. Using these hooks for the keydown listener means Ctrl+E only
+// toggles Journal mode while Journal is the active view.
+onActivated(() => {
+  document.addEventListener('keydown', onKeydown)
+})
+onDeactivated(() => {
   document.removeEventListener('keydown', onKeydown)
   flushSave()
 })
