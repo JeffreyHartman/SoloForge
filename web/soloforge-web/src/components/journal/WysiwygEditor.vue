@@ -130,7 +130,7 @@ watch([() => props.content, () => props.contentKey], ([newContent]) => {
   } else if (isPureAppend(currentMarkdown, newContent ?? '')) {
     const suffix = (newContent ?? '').slice(currentMarkdown.length)
     const endPos = editor.value.state.doc.content.size
-    editor.value.commands.insertContentAt(endPos, suffix, { contentType: 'markdown' })
+    editor.value.commands.insertContentAt(endPos, suffix, { contentType: 'markdown', updateSelection: false })
   } else {
     editor.value.commands.setContent(newContent ?? '', { contentType: 'markdown' })
   }
