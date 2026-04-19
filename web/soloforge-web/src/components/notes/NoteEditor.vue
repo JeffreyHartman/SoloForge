@@ -43,8 +43,14 @@ const STICKY_SCROLL_THRESHOLD = 80
 
 // Sticky scroll: when activeNoteContent changes (e.g., a tool appends a roll
 // result), auto-scroll to the new bottom only if the user was already near
-// the bottom before the change. Sync flush captures the pre-update scroll
-// position; rAF schedules the scroll after Tiptap and Vue have both rendered.
+// the bottom before the change. rAF schedules the scroll after Tiptap and Vue
+// have both rendered.
+//
+// flush: 'sync' is load-bearing. It fires this watcher before Vue propagates
+// the new content to WysiwygEditor's prop watcher, so scrollHeight still
+// reflects the PRE-append document height when wasNearBottom is computed.
+// Changing to 'post' or the default flush would read the POST-append height
+// and break the "was near bottom" check.
 watch(activeNoteContent, () => {
   const el = scrollContainerRef.value
   if (!el) return
