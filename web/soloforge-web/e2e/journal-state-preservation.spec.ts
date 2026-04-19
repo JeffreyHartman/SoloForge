@@ -80,6 +80,29 @@ async function reloadActiveNote(page: Page) {
   })
 }
 
+/** Returns the scroll state of the WYSIWYG scroll container. */
+async function wysiwygScrollState(page: Page): Promise<{ scrollTop: number; scrollHeight: number; clientHeight: number }> {
+  return page.evaluate(() => {
+    const editor = document.querySelector('.wysiwyg-editor')
+    const container = editor?.parentElement as HTMLElement | null
+    if (!container) return { scrollTop: 0, scrollHeight: 0, clientHeight: 0 }
+    return {
+      scrollTop: container.scrollTop,
+      scrollHeight: container.scrollHeight,
+      clientHeight: container.clientHeight,
+    }
+  })
+}
+
+/** Scrolls the WYSIWYG container to its bottom. */
+async function scrollWysiwygToBottom(page: Page) {
+  await page.evaluate(() => {
+    const editor = document.querySelector('.wysiwyg-editor')
+    const container = editor?.parentElement as HTMLElement | null
+    if (container) container.scrollTop = container.scrollHeight
+  })
+}
+
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------
@@ -172,5 +195,28 @@ test.describe('Journal state preservation across nav', () => {
     expect(cursorAfter).not.toBeNull()
     expect(cursorAfter!.anchorNodeText).toBe(cursorBefore!.anchorNodeText)
     expect(cursorAfter!.offset).toBe(cursorBefore!.offset)
+  })
+
+  test('sticky scroll follows append when user was near the bottom', async ({ page }) => {
+    await openNoteInSidebar(page, 'E2E State Note A')
+    await editorTextarea(page).waitFor()
+    await waitForSaved(page)
+    await toggleToWysiwyg(page)
+
+    const root = wysiwygRoot(page)
+    await expect(root).toBeVisible()
+
+    await scrollWysiwygToBottom(page)
+    const before = await wysiwygScrollState(page)
+    expect(before.scrollHeight - before.scrollTop - before.clientHeight).toBeLessThan(80)
+
+    await appendToNoteViaApi(page, NOTE_A, '\n\nFresh append at the bottom.')
+    await reloadActiveNote(page)
+    await expect(root).toContainText('Fresh append at the bottom.', { timeout: 5_000 })
+
+    await page.waitForTimeout(100) // rAF settle
+    const after = await wysiwygScrollState(page)
+    expect(after.scrollHeight - after.scrollTop - after.clientHeight).toBeLessThan(80)
+    expect(after.scrollHeight).toBeGreaterThan(before.scrollHeight)
   })
 })
