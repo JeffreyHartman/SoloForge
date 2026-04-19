@@ -29,7 +29,7 @@ function onTextareaScroll() {
 function onWysiwygScroll() {
   if (scrollContainerRef.value) savedWysiwygScrollTop = scrollContainerRef.value.scrollTop
 }
-const { activeNotePath, activeNoteContent, activeNoteFileName, saveStatus, allPaths, openNote, resolveNotePath, flushSave } = useNotes()
+const { activeNotePath, activeNoteContent, activeNoteFileName, saveStatus, allPaths, openNote, resolveNotePath, flushSave, reloadActiveNote } = useNotes()
 const { currentCampaign, refreshState } = useCampaign()
 const { addToast } = useToast()
 
@@ -138,6 +138,9 @@ watch(scrollContainerRef, (newEl, oldEl) => {
 // On reactivation, the watch(textareaRef) callback fires and restores scrollTop.
 onActivated(() => {
   document.addEventListener('keydown', onKeydown)
+  if (import.meta.env.DEV) {
+    (window as unknown as { __soloforgeReloadActiveNote?: () => Promise<void> }).__soloforgeReloadActiveNote = reloadActiveNote
+  }
   // After reactivation the refs may still point to the cached elements.
   // Restore scroll via nextTick + rAF to run after Vue's DOM patch.
   const taScroll = savedTextareaScrollTop
@@ -152,6 +155,9 @@ onActivated(() => {
 onDeactivated(() => {
   document.removeEventListener('keydown', onKeydown)
   flushSave()
+  if (import.meta.env.DEV) {
+    delete (window as unknown as { __soloforgeReloadActiveNote?: () => Promise<void> }).__soloforgeReloadActiveNote
+  }
 })
 </script>
 
