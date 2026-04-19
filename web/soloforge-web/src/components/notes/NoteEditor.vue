@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import JournalToolbar from '../journal/JournalToolbar.vue'
 import WysiwygEditor from '../journal/WysiwygEditor.vue'
 import WikiLinkAutocomplete from './WikiLinkAutocomplete.vue'
 import { useJournalPrefs, FONT_FAMILIES } from '../../composables/useJournalPrefs'
+import { isNearBottom } from '../journal/editorState'
 import { useNotes } from '../../composables/useNotes'
 import { useCampaign } from '../../composables/useCampaign'
 import { apiSend } from '../../composables/useApi'
@@ -15,6 +16,7 @@ const props = defineProps<{
 
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const wysiwygRef = ref<InstanceType<typeof WysiwygEditor> | null>(null)
+const scrollContainerRef = ref<HTMLElement | null>(null)
 const { activeNotePath, activeNoteContent, activeNoteFileName, saveStatus, allPaths, openNote, resolveNotePath, flushSave } = useNotes()
 const { currentCampaign, refreshState } = useCampaign()
 const { addToast } = useToast()
@@ -36,6 +38,29 @@ async function handleNavigate(path: string) {
 }
 
 const { prefs } = useJournalPrefs()
+
+const STICKY_SCROLL_THRESHOLD = 80
+
+// Sticky scroll: when activeNoteContent changes (e.g., a tool appends a roll
+// result), auto-scroll to the new bottom only if the user was already near
+// the bottom before the change. Sync flush captures the pre-update scroll
+// position; rAF schedules the scroll after Tiptap and Vue have both rendered.
+watch(activeNoteContent, () => {
+  const el = scrollContainerRef.value
+  if (!el) return
+  const wasNearBottom = isNearBottom(
+    el.scrollTop,
+    el.scrollHeight,
+    el.clientHeight,
+    STICKY_SCROLL_THRESHOLD,
+  )
+  if (!wasNearBottom) return
+  requestAnimationFrame(() => {
+    const current = scrollContainerRef.value
+    if (!current) return
+    current.scrollTop = current.scrollHeight
+  })
+}, { flush: 'sync' })
 
 const fontStyle = computed(() => ({
   fontFamily: FONT_FAMILIES[prefs.fontFamily] ?? FONT_FAMILIES.mono,
@@ -121,6 +146,7 @@ onUnmounted(() => {
       <!-- Preview / WYSIWYG mode -->
       <div
         v-else
+        ref="scrollContainerRef"
         class="flex h-full flex-col overflow-y-auto rounded-2xl border border-[var(--color-border-primary)] bg-[var(--color-bg-input)] p-4 shadow-sm outline-none transition focus-within:border-[var(--color-text-dimmed)] focus-within:shadow"
         :style="fontStyle"
         @click.self="wysiwygRef?.focusEnd()"
