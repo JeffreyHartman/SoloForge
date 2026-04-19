@@ -111,8 +111,14 @@ const NOTE_A = 'E2E State Note A.md'
 // A long note so there is room to scroll. 50 paragraphs, one per line.
 const LONG_CONTENT = Array.from({ length: 50 }, (_, i) => `Paragraph ${i + 1} of the long test note.`).join('\n\n')
 
+const NOTE_B = 'E2E State Note B.md'
+// Note B's content is the same as Note A's first 3 paragraphs — a strict
+// prefix of Note A's content. Exercises the contentKey branch.
+const SHORT_CONTENT = Array.from({ length: 3 }, (_, i) => `Paragraph ${i + 1} of the long test note.`).join('\n\n')
+
 test.beforeEach(async ({ page }) => {
   await createNoteViaApi(page, NOTE_A, LONG_CONTENT)
+  await createNoteViaApi(page, NOTE_B, SHORT_CONTENT)
   await page.goto('/')
   await page.waitForLoadState('networkidle')
   await goToJournal(page)
@@ -121,6 +127,7 @@ test.beforeEach(async ({ page }) => {
 
 test.afterEach(async ({ page }) => {
   await deleteNoteViaApi(page, NOTE_A)
+  await deleteNoteViaApi(page, NOTE_B)
 })
 
 // ---------------------------------------------------------------------------
@@ -244,5 +251,30 @@ test.describe('Journal state preservation across nav', () => {
     await page.waitForTimeout(100)
     const after = await wysiwygScrollState(page)
     expect(after.scrollTop).toBeLessThan(50) // still at/near top
+  })
+
+  test('note switch replaces content even when one is a prefix of the other', async ({ page }) => {
+    // Open Note B (short) first
+    await openNoteInSidebar(page, 'E2E State Note B')
+    await editorTextarea(page).waitFor()
+    await expect(editorTextarea(page)).toHaveValue(SHORT_CONTENT, { timeout: 5_000 })
+    await toggleToWysiwyg(page)
+
+    // Verify short content shown in WYSIWYG
+    const root = wysiwygRoot(page)
+    await expect(root).toContainText('Paragraph 3 of the long test note.')
+    // Note A's long content has paragraphs beyond 3 — verify they are NOT present
+    await expect(root).not.toContainText('Paragraph 4 of the long test note.')
+
+    // Switch to Note A (long, which starts with the same content as B)
+    await openNoteInSidebar(page, 'E2E State Note A')
+    await expect(root).toContainText('Paragraph 50 of the long test note.', { timeout: 5_000 })
+
+    // Switch back to Note B; verify only the first 3 paragraphs are shown,
+    // not the appended paragraphs from A (which would happen if the watcher
+    // incorrectly took the append branch on a note switch).
+    await openNoteInSidebar(page, 'E2E State Note B')
+    await expect(root).toContainText('Paragraph 3 of the long test note.', { timeout: 5_000 })
+    await expect(root).not.toContainText('Paragraph 4 of the long test note.')
   })
 })
