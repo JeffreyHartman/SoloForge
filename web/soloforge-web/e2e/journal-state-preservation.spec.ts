@@ -47,6 +47,39 @@ async function waitForSaved(page: Page) {
   await expect(page.locator('span').filter({ hasText: /^Saved$/ })).toBeVisible({ timeout: 10_000 })
 }
 
+/** Toggles the editor to WYSIWYG (preview) mode via Ctrl+E. */
+async function toggleToWysiwyg(page: Page) {
+  await editorTextarea(page).focus().catch(() => { /* may already be WYSIWYG */ })
+  await page.keyboard.press('Control+E')
+  await page.locator('.wysiwyg-editor [contenteditable="true"]').waitFor({ timeout: 5_000 })
+}
+
+/** Returns the Tiptap contenteditable root. */
+function wysiwygRoot(page: Page) {
+  return page.locator('.wysiwyg-editor [contenteditable="true"]')
+}
+
+/** Appends content to an existing note via the API. */
+async function appendToNoteViaApi(page: Page, path: string, suffix: string) {
+  const current = await readNoteViaApi(page, path)
+  await page.request.put('/api/notes', {
+    data: { path, content: current + suffix },
+  })
+}
+
+/**
+ * Calls the DEV-only test hook exposed by NoteEditor to reload the active
+ * note's content from the API. Mirrors the path used by useToolActions
+ * when a tool appends to the session log.
+ */
+async function reloadActiveNote(page: Page) {
+  await page.evaluate(async () => {
+    const fn = (window as unknown as { __soloforgeReloadActiveNote?: () => Promise<void> }).__soloforgeReloadActiveNote
+    if (!fn) throw new Error('__soloforgeReloadActiveNote not exposed — is DEV mode on?')
+    await fn()
+  })
+}
+
 // ---------------------------------------------------------------------------
 // Fixtures
 // ---------------------------------------------------------------------------
@@ -96,5 +129,48 @@ test.describe('Journal state preservation across nav', () => {
     // Scroll position preserved (within a small tolerance for rendering jitter)
     const scrollAfter = await editorAfter.evaluate((el: HTMLTextAreaElement) => el.scrollTop)
     expect(Math.abs(scrollAfter - scrollBefore)).toBeLessThan(50)
+  })
+
+  test('append preserves cursor position in WYSIWYG mode', async ({ page }) => {
+    await openNoteInSidebar(page, 'E2E State Note A')
+    await editorTextarea(page).waitFor()
+    await waitForSaved(page)
+    await toggleToWysiwyg(page)
+
+    const root = wysiwygRoot(page)
+    await expect(root).toBeVisible()
+
+    // Place cursor in the middle of paragraph 25
+    const middleParagraph = root.locator('p').nth(25)
+    await middleParagraph.click()
+
+    const cursorBefore = await page.evaluate(() => {
+      const sel = window.getSelection()
+      if (!sel || sel.rangeCount === 0) return null
+      const range = sel.getRangeAt(0)
+      return {
+        anchorNodeText: range.startContainer.textContent ?? '',
+        offset: range.startOffset,
+      }
+    })
+    expect(cursorBefore).not.toBeNull()
+
+    // Append via API, then reload via the test hook (mirrors tool refresh path)
+    await appendToNoteViaApi(page, NOTE_A, '\n\nAppended from test.')
+    await reloadActiveNote(page)
+    await expect(root).toContainText('Appended from test.', { timeout: 5_000 })
+
+    const cursorAfter = await page.evaluate(() => {
+      const sel = window.getSelection()
+      if (!sel || sel.rangeCount === 0) return null
+      const range = sel.getRangeAt(0)
+      return {
+        anchorNodeText: range.startContainer.textContent ?? '',
+        offset: range.startOffset,
+      }
+    })
+    expect(cursorAfter).not.toBeNull()
+    expect(cursorAfter!.anchorNodeText).toBe(cursorBefore!.anchorNodeText)
+    expect(cursorAfter!.offset).toBe(cursorBefore!.offset)
   })
 })
