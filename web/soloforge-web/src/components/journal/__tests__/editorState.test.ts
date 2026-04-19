@@ -49,6 +49,11 @@ describe('isNearBottom', () => {
     expect(isNearBottom(841, 1000, 80, threshold)).toBe(true)
   })
 
+  it('returns false at exact threshold boundary (distance equals threshold)', () => {
+    // 80 remaining, threshold 80 → not within (strict <), should be false
+    expect(isNearBottom(840, 1000, 80, threshold)).toBe(false)
+  })
+
   it('returns false beyond threshold', () => {
     // 820 remaining, threshold 80 → false
     expect(isNearBottom(100, 1000, 80, threshold)).toBe(false)
