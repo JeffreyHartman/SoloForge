@@ -104,21 +104,29 @@ const editor = useEditor({
 })
 
 // Watch for external content changes (e.g., auto-appended roll results, tab switches).
+// Also watch contentKey so a note switch to identical content still advances
+// lastContentKey — otherwise the next append on the new note would false-positive
+// into the rebuild branch.
 // Three branches:
 //   1. contentKey changed → note switch, force full rebuild.
 //   2. Content is an append (old is a prefix of new) → insert only the suffix at
 //      doc end, preserving cursor and existing DOM nodes.
 //   3. Otherwise → full rebuild (fallback for replaces, normalization mismatches).
-watch(() => props.content, (newContent) => {
+watch([() => props.content, () => props.contentKey], ([newContent]) => {
   if (!editor.value) return
+
+  // Advance lastContentKey eagerly so a key-only change (no content delta) still
+  // parks the tracker on the new note.
+  const keyChanged = props.contentKey !== lastContentKey.value
+  if (keyChanged) lastContentKey.value = props.contentKey
+
   const currentMarkdown = editor.value.getMarkdown()
   if (newContent === currentMarkdown) return
 
   isUpdatingFromProp.value = true
 
-  if (props.contentKey !== lastContentKey.value) {
+  if (keyChanged) {
     editor.value.commands.setContent(newContent ?? '', { contentType: 'markdown' })
-    lastContentKey.value = props.contentKey
   } else if (isPureAppend(currentMarkdown, newContent ?? '')) {
     const suffix = (newContent ?? '').slice(currentMarkdown.length)
     const endPos = editor.value.state.doc.content.size
