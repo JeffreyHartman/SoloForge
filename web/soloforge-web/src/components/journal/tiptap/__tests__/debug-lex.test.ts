@@ -53,7 +53,8 @@ describe('debug pipe in wiki-link', () => {
   it('checks inline tokens with gfm+breaks', () => {
     const ed = makeEditor({ gfm: true, breaks: true })
     const tokens = ed.storage.markdown.manager.instance.lexer('See [[some/path|Custom Display]] here')
-    console.log('inline tokens:', JSON.stringify(tokens[0]?.tokens, null, 2))
+    const first = tokens[0] as { tokens?: unknown } | undefined
+    console.log('inline tokens:', JSON.stringify(first?.tokens, null, 2))
     ed.destroy()
   })
 })

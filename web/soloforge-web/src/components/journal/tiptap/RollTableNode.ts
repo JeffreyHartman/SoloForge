@@ -77,8 +77,13 @@ export const RollTableNode = Node.create({
     name: 'rollTable',
     level: 'block',
     start: (src: string) => {
-      const idx = src.indexOf('|')
-      return idx >= 0 ? idx : -1
+      // Only match at block boundaries: '|' starting a line followed by a
+      // header row + separator. Returning an index for stray inline '|'
+      // chars makes marked split paragraphs at the pipe, breaking wiki-links
+      // and any other content with a '|' inside a paragraph.
+      const match = src.match(/(?:^|\n)(\|[^\n]+\|\n\|[\s:|-]+\|)/)
+      if (!match) return -1
+      return match[0].startsWith('\n') ? match.index! + 1 : match.index!
     },
     tokenize(src: string): MarkdownToken | undefined {
       // Match a markdown table starting with | on first line and |---| separator on second
