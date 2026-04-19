@@ -10,9 +10,11 @@ import { RollTableNode } from './tiptap/RollTableNode'
 import { NoteBlockNode } from './tiptap/NoteBlockNode'
 import { WikiLinkMark } from './tiptap/WikiLinkMark'
 import { createWikiLinkSuggestion } from './tiptap/wikiLinkSuggestion'
+import { isPureAppend } from './editorState'
 
 const props = withDefaults(defineProps<{
   content: string | undefined
+  contentKey: string
   fontStyle: Record<string, string | undefined>
   disabled: boolean
   placeholder: string
@@ -28,6 +30,7 @@ const emit = defineEmits<{
 }>()
 
 const isUpdatingFromProp = ref(false)
+const lastContentKey = ref(props.contentKey)
 
 const editor = useEditor({
   content: props.content ?? '',
@@ -100,15 +103,30 @@ const editor = useEditor({
   },
 })
 
-// Watch for external content changes (e.g., auto-appended roll results, tab switches)
+// Watch for external content changes (e.g., auto-appended roll results, tab switches).
+// Three branches:
+//   1. contentKey changed → note switch, force full rebuild.
+//   2. Content is an append (old is a prefix of new) → insert only the suffix at
+//      doc end, preserving cursor and existing DOM nodes.
+//   3. Otherwise → full rebuild (fallback for replaces, normalization mismatches).
 watch(() => props.content, (newContent) => {
   if (!editor.value) return
-  // Skip if Tiptap already shows this content (avoids cursor reset on feedback loops)
   const currentMarkdown = editor.value.getMarkdown()
   if (newContent === currentMarkdown) return
 
   isUpdatingFromProp.value = true
-  editor.value.commands.setContent(newContent ?? '', { contentType: 'markdown' })
+
+  if (props.contentKey !== lastContentKey.value) {
+    editor.value.commands.setContent(newContent ?? '', { contentType: 'markdown' })
+    lastContentKey.value = props.contentKey
+  } else if (isPureAppend(currentMarkdown, newContent ?? '')) {
+    const suffix = (newContent ?? '').slice(currentMarkdown.length)
+    const endPos = editor.value.state.doc.content.size
+    editor.value.commands.insertContentAt(endPos, suffix, { contentType: 'markdown' })
+  } else {
+    editor.value.commands.setContent(newContent ?? '', { contentType: 'markdown' })
+  }
+
   nextTick(() => {
     isUpdatingFromProp.value = false
   })
