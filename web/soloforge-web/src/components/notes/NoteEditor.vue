@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onActivated, onDeactivated, watch } from 'vue'
+import { ref, computed, nextTick, onActivated, onDeactivated, watch } from 'vue'
 import JournalToolbar from '../journal/JournalToolbar.vue'
 import WysiwygEditor from '../journal/WysiwygEditor.vue'
 import WikiLinkAutocomplete from './WikiLinkAutocomplete.vue'
@@ -17,6 +17,18 @@ const props = defineProps<{
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const wysiwygRef = ref<InstanceType<typeof WysiwygEditor> | null>(null)
 const scrollContainerRef = ref<HTMLElement | null>(null)
+// Saved scroll positions for when the component is deactivated/reactivated by KeepAlive.
+// onDeactivated fires after the DOM is detached (scrollTop already reset to 0),
+// so we continuously track scroll via a scroll event listener instead.
+let savedTextareaScrollTop = 0
+let savedWysiwygScrollTop = 0
+
+function onTextareaScroll() {
+  if (textareaRef.value) savedTextareaScrollTop = textareaRef.value.scrollTop
+}
+function onWysiwygScroll() {
+  if (scrollContainerRef.value) savedWysiwygScrollTop = scrollContainerRef.value.scrollTop
+}
 const { activeNotePath, activeNoteContent, activeNoteFileName, saveStatus, allPaths, openNote, resolveNotePath, flushSave } = useNotes()
 const { currentCampaign, refreshState } = useCampaign()
 const { addToast } = useToast()
@@ -95,13 +107,47 @@ function onKeydown(e: KeyboardEvent) {
   prefs.mode = prefs.mode === 'edit' ? 'preview' : 'edit'
 }
 
+// Track textarea scroll position continuously via event listener.
+// We cannot read it in onDeactivated because the DOM is already detached by
+// then and the browser has reset scrollTop to 0.
+watch(textareaRef, (newEl, oldEl) => {
+  if (oldEl) oldEl.removeEventListener('scroll', onTextareaScroll)
+  if (newEl) {
+    newEl.addEventListener('scroll', onTextareaScroll, { passive: true })
+    // Restore on re-attach (e.g., after KeepAlive reactivation)
+    newEl.scrollTop = savedTextareaScrollTop
+  }
+})
+
+watch(scrollContainerRef, (newEl, oldEl) => {
+  if (oldEl) oldEl.removeEventListener('scroll', onWysiwygScroll)
+  if (newEl) {
+    newEl.addEventListener('scroll', onWysiwygScroll, { passive: true })
+    newEl.scrollTop = savedWysiwygScrollTop
+  }
+})
+
 // Under <KeepAlive>, onActivated/onDeactivated fire on nav in/out while the
 // component remains cached. onActivated also fires right after onMounted on
 // the first visit, and onDeactivated fires right before onUnmounted on final
 // teardown. Using these hooks for the keydown listener means Ctrl+E only
 // toggles Journal mode while Journal is the active view.
+//
+// Scroll positions are tracked via scroll event listeners (above) because
+// onDeactivated fires after DOM detachment, when scrollTop is already 0.
+// On reactivation, the watch(textareaRef) callback fires and restores scrollTop.
 onActivated(() => {
   document.addEventListener('keydown', onKeydown)
+  // After reactivation the refs may still point to the cached elements.
+  // Restore scroll via nextTick + rAF to run after Vue's DOM patch.
+  const taScroll = savedTextareaScrollTop
+  const wsScroll = savedWysiwygScrollTop
+  void nextTick(() => {
+    requestAnimationFrame(() => {
+      if (textareaRef.value) textareaRef.value.scrollTop = taScroll
+      if (scrollContainerRef.value) scrollContainerRef.value.scrollTop = wsScroll
+    })
+  })
 })
 onDeactivated(() => {
   document.removeEventListener('keydown', onKeydown)
