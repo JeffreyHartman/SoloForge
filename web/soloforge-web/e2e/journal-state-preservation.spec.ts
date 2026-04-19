@@ -277,4 +277,23 @@ test.describe('Journal state preservation across nav', () => {
     await expect(root).toContainText('Paragraph 3 of the long test note.', { timeout: 5_000 })
     await expect(root).not.toContainText('Paragraph 4 of the long test note.')
   })
+
+  test('save flushes when navigating away from Journal', async ({ page }) => {
+    await openNoteInSidebar(page, 'E2E State Note A')
+    const editor = editorTextarea(page)
+    await expect(editor).toHaveValue(LONG_CONTENT, { timeout: 5_000 })
+
+    const newContent = LONG_CONTENT + `\n\nUnique marker ${Date.now()}`
+    await editor.fill(newContent)
+
+    // Navigate away immediately, before the auto-save debounce fires
+    await goToTools(page)
+
+    // Wait a moment for onDeactivated → flushSave to run
+    await page.waitForTimeout(500)
+
+    // Read note content via API; should reflect the edit
+    const saved = await readNoteViaApi(page, NOTE_A)
+    expect(saved).toBe(newContent)
+  })
 })
