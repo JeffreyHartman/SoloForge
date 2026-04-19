@@ -128,6 +128,7 @@ onUnmounted(() => {
         <WysiwygEditor
           ref="wysiwygRef"
           :content="activeNoteContent"
+          :content-key="activeNotePath ?? ''"
           :font-style="fontStyle"
           :disabled="!activeNotePath"
           :enhanced="prefs.enhanced"
