@@ -227,59 +227,61 @@ onMounted(() => {
     </div>
 
     <main class="relative mx-auto max-w-[2200px] px-4 pb-12 pt-6">
-      <DashboardView
-        v-if="currentView === 'dashboard'"
-        :campaigns="campaign.campaigns.value"
-        :current-campaign="campaign.currentCampaign.value"
-        :current-campaign-id="campaign.currentCampaignId.value"
-        :chaos="campaign.session.value.chaos"
-        :loading-campaigns="campaign.loading.campaigns"
-        :loading-create="campaign.loading.createCampaign"
-        :loading-load="campaign.loading.loadCampaign"
-        :loading-delete="campaign.loading.deleteCampaign"
-        :loading-session="session.loading.updateSession"
-        :api-online="apiOnline ?? false"
-        v-model:chaos-draft="session.chaosDraft.value"
-        v-model:engine-draft="session.engineDraft.value"
-        @create-campaign="createCampaign"
-        @load-campaign="loadCampaign"
-        @delete-campaign="deleteCampaign"
-        @update-session="updateSession"
-      />
+      <KeepAlive>
+        <DashboardView
+          v-if="currentView === 'dashboard'"
+          :campaigns="campaign.campaigns.value"
+          :current-campaign="campaign.currentCampaign.value"
+          :current-campaign-id="campaign.currentCampaignId.value"
+          :chaos="campaign.session.value.chaos"
+          :loading-campaigns="campaign.loading.campaigns"
+          :loading-create="campaign.loading.createCampaign"
+          :loading-load="campaign.loading.loadCampaign"
+          :loading-delete="campaign.loading.deleteCampaign"
+          :loading-session="session.loading.updateSession"
+          :api-online="apiOnline ?? false"
+          v-model:chaos-draft="session.chaosDraft.value"
+          v-model:engine-draft="session.engineDraft.value"
+          @create-campaign="createCampaign"
+          @load-campaign="loadCampaign"
+          @delete-campaign="deleteCampaign"
+          @update-session="updateSession"
+        />
 
-      <ToolsView v-else-if="currentView === 'tools'" />
+        <ToolsView v-else-if="currentView === 'tools'" />
 
-      <AdventureView
-        v-else-if="currentView === 'adventure'"
-        :characters="campaign.adventure.value.characters"
-        :active-threads="campaign.adventure.value.activeThreads"
-        :closed-threads="campaign.adventure.value.closedThreads"
-        :loading-add-character="adventure.loading.addCharacter"
-        :loading-remove-character="adventure.loading.removeCharacter"
-        :loading-add-thread="adventure.loading.addThread"
-        :loading-close-thread="adventure.loading.closeThread"
-        :loading-reopen-thread="adventure.loading.reopenThread"
-        :api-online="apiOnline ?? false"
-        @add-character="addCharacter"
-        @remove-character="removeCharacter"
-        @add-thread="addThread"
-        @close-thread="closeThread"
-        @reopen-thread="reopenThread"
-      />
+        <AdventureView
+          v-else-if="currentView === 'adventure'"
+          :characters="campaign.adventure.value.characters"
+          :active-threads="campaign.adventure.value.activeThreads"
+          :closed-threads="campaign.adventure.value.closedThreads"
+          :loading-add-character="adventure.loading.addCharacter"
+          :loading-remove-character="adventure.loading.removeCharacter"
+          :loading-add-thread="adventure.loading.addThread"
+          :loading-close-thread="adventure.loading.closeThread"
+          :loading-reopen-thread="adventure.loading.reopenThread"
+          :api-online="apiOnline ?? false"
+          @add-character="addCharacter"
+          @remove-character="removeCharacter"
+          @add-thread="addThread"
+          @close-thread="closeThread"
+          @reopen-thread="reopenThread"
+        />
 
-      <JournalView
-        v-else-if="currentView === 'journal'"
-        :campaign-id="campaign.currentCampaignId.value"
-        :api-online="apiOnline ?? false"
-      />
+        <JournalView
+          v-else-if="currentView === 'journal'"
+          :campaign-id="campaign.currentCampaignId.value"
+          :api-online="apiOnline ?? false"
+        />
 
-      <HistoryView
-        v-else-if="currentView === 'history'"
-        :entries="historyState.history.value"
-        :loading="historyState.loading.history"
-        :api-online="apiOnline ?? false"
-        @refresh="historyState.refreshHistory"
-      />
+        <HistoryView
+          v-else-if="currentView === 'history'"
+          :entries="historyState.history.value"
+          :loading="historyState.loading.history"
+          :api-online="apiOnline ?? false"
+          @refresh="historyState.refreshHistory"
+        />
+      </KeepAlive>
     </main>
 
     <ResultBanner />
