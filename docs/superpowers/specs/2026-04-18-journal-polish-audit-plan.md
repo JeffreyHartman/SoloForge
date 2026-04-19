@@ -47,7 +47,13 @@ When this audit is run, it should:
 
 Items logged during the option A implementation that are out of scope for that spec but worth handling in the audit. Append to this section as they surface.
 
-_(Empty — will be populated as option A is implemented.)_
+Logged during the `feat/journal-state-preservation` implementation (2026-04-19):
+
+- **Pre-existing flaky/broken e2e tests in `combat-tracker.spec.ts`.** Two tests fail reliably on `main` as well as on the feature branch when run in isolation: `HP quick-math widget adjusts HP` (:153) and `state persists across reload` (:196). Two others (`add and populate combatants`, `turn cycle increments round on wrap`) fail intermittently when run alongside other e2e files but pass in isolation. None of these are caused by the journal state preservation work — verified by running `npm run test:e2e -- combat-tracker` on `main`.
+- **`web/soloforge-web/test-results/` is tracked by git** (at least `.last-run.json`) but is a generated directory. Candidate for `.gitignore` entry.
+- **WysiwygEditor `insertContentAt` cursor preservation.** The Task 10 e2e test caught that `insertContentAt` defaults to `updateSelection: true`, moving the cursor to the insertion point. Fixed inline on `feat/journal-state-preservation` by passing `updateSelection: false`. Mentioning here because it's a Tiptap API detail worth remembering for any other append-style flows.
+- **`onDeactivated` reads `scrollTop = 0`.** KeepAlive-detached elements have `clientHeight = 0`, which causes browsers to clamp `scrollTop` to 0. Discovered during Task 8 e2e development. Fixed by tracking scroll continuously via event listeners on the active elements and restoring on reactivation. The logic is a bit duplicated between the textarea and the WYSIWYG scroll container — could be DRY'd into a small helper in a future pass.
+- **Vue import of `onMounted`/`onUnmounted` no longer used in `NoteEditor.vue`.** Cleaned up during Task 5 lifecycle migration; document here as a reminder that `<KeepAlive>` changes the lifecycle contract of every child component, and future additions to the file should default to `onActivated`/`onDeactivated` unless there is a specific reason to use mount/unmount.
 
 ---
 
