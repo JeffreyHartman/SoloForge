@@ -219,4 +219,30 @@ test.describe('Journal state preservation across nav', () => {
     expect(after.scrollHeight - after.scrollTop - after.clientHeight).toBeLessThan(80)
     expect(after.scrollHeight).toBeGreaterThan(before.scrollHeight)
   })
+
+  test('sticky scroll does not yank view when user is scrolled up', async ({ page }) => {
+    await openNoteInSidebar(page, 'E2E State Note A')
+    await editorTextarea(page).waitFor()
+    await waitForSaved(page)
+    await toggleToWysiwyg(page)
+
+    const root = wysiwygRoot(page)
+    await expect(root).toBeVisible()
+
+    await page.evaluate(() => {
+      const editor = document.querySelector('.wysiwyg-editor')
+      const container = editor?.parentElement as HTMLElement | null
+      if (container) container.scrollTop = 0
+    })
+    const before = await wysiwygScrollState(page)
+    expect(before.scrollTop).toBe(0)
+
+    await appendToNoteViaApi(page, NOTE_A, '\n\nAnother append far below.')
+    await reloadActiveNote(page)
+    await expect(root).toContainText('Another append far below.', { timeout: 5_000 })
+
+    await page.waitForTimeout(100)
+    const after = await wysiwygScrollState(page)
+    expect(after.scrollTop).toBeLessThan(50) // still at/near top
+  })
 })
